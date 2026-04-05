@@ -51,9 +51,9 @@ style to a plain string programmatically:
 ```python
 from md2linkedin import to_sans_bold, to_sans_italic, to_sans_bold_italic, apply_style
 
-to_sans_bold("Open to Work")       # 𝗢𝗽𝗲𝗻 𝘁𝗼 𝗪𝗼𝗿𝗸
-to_sans_italic("3 years of exp")   # 𝘴 𝘺𝘦𝘢𝘳𝘴 𝘰𝘧 𝘦𝘹𝘱
-to_sans_bold_italic("Key insight") # 𝙆𝙚𝙮 𝙞𝙣𝙨𝙞𝙜𝙝𝙩
+to_sans_bold("Open to Work")  # 𝗢𝗽𝗲𝗻 𝘁𝗼 𝗪𝗼𝗿𝗸
+to_sans_italic("3 years of exp")  # 𝘴 𝘺𝘦𝘢𝘳𝘴 𝘰𝘧 𝘦𝘹𝘱
+to_sans_bold_italic("Key insight")  # 𝙆𝙚𝙮 𝙞𝙣𝙨𝙞𝙜𝙝𝙩
 
 # Dynamic dispatch
 apply_style("Hiring!", "bold")
@@ -116,8 +116,8 @@ convert("```\n**not bold**\n```")
 Single underscores are italicised only when they sit at word boundaries:
 
 ```python
-convert("_italic_")           # → italic Unicode
-convert("snake_case_variable") # → unchanged
+convert("_italic_")  # → italic Unicode
+convert("snake_case_variable")  # → unchanged
 ```
 
 ### Unmatched / Orphaned Markers
@@ -126,8 +126,8 @@ Unmatched asterisks or underscores are left untouched — `md2linkedin` never
 crashes on malformed input:
 
 ```python
-convert("price: $10 * 3")   # → price: $10 * 3 (no crash)
-convert("under_score alone") # → unchanged
+convert("price: $10 * 3")  # → price: $10 * 3 (no crash)
+convert("under_score alone")  # → unchanged
 ```
 
 ### Large Documents

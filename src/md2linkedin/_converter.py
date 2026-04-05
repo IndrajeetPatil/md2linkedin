@@ -290,7 +290,7 @@ def _convert_bullets(text: str) -> str:
 
     def _bullet(m: re.Match[str]) -> str:
         indent = m.group(1)
-        return ("  ‣ " if len(indent) >= _NESTED_BULLET_MIN_INDENT else "• ")
+        return "  ‣ " if len(indent) >= _NESTED_BULLET_MIN_INDENT else "• "
 
     return re.sub(r"^(\s*)[-*+] ", _bullet, text, flags=re.MULTILINE)
 
@@ -449,7 +449,8 @@ def convert_file(
         >>> out = convert_file(tmp)
         >>> out.read_text(encoding="utf-8")
         '𝗯𝗼𝗹𝗱 and 𝘪𝘵𝘢𝘭𝘪𝘤\\n'
-        >>> os.unlink(tmp); os.unlink(str(out))
+        >>> os.unlink(tmp)
+        ... os.unlink(str(out))
     """
     input_path = Path(input_path)
     if not input_path.exists():
