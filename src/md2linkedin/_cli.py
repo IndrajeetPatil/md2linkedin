@@ -74,9 +74,7 @@ def main(
                 "No input file provided and stdin is a terminal. "
                 "Provide a file path or pipe content via stdin."
             )
-            raise click.UsageError(
-                msg
-            )
+            raise click.UsageError(msg)
         md_text = sys.stdin.read()
         result = convert(md_text, preserve_links=preserve_links)
         click.echo(result, nl=False)
