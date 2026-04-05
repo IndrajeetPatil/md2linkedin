@@ -12,7 +12,11 @@ from ._converter import convert, convert_file
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.version_option(__version__, "-V", "--version")
-@click.argument("input_file", required=False, type=click.Path(exists=True, dir_okay=False))
+@click.argument(
+    "input_file",
+    required=False,
+    type=click.Path(exists=True, dir_okay=False),
+)
 @click.option(
     "-o",
     "--output",
@@ -28,7 +32,10 @@ from ._converter import convert, convert_file
     "--preserve-links",
     is_flag=True,
     default=False,
-    help="Keep Markdown link syntax ([text](url)) in the output instead of stripping URLs.",
+    help=(
+        "Keep Markdown link syntax ([text](url)) in the output"
+        " instead of stripping URLs."
+    ),
 )
 def main(
     input_file: str | None,
@@ -63,9 +70,12 @@ def main(
     else:
         # Read from stdin
         if _stdin_is_tty():
-            raise click.UsageError(
+            msg = (
                 "No input file provided and stdin is a terminal. "
                 "Provide a file path or pipe content via stdin."
+            )
+            raise click.UsageError(
+                msg
             )
         md_text = sys.stdin.read()
         result = convert(md_text, preserve_links=preserve_links)

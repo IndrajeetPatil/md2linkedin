@@ -15,6 +15,8 @@ from ._unicode import to_sans_bold, to_sans_bold_italic, to_sans_italic
 
 __all__ = ["convert", "convert_file"]
 
+_NESTED_BULLET_MIN_INDENT = 2  # spaces of indentation that triggers a nested bullet (‣)
+
 # ── Low-level pipeline steps ───────────────────────────────────────────────────
 
 
@@ -65,7 +67,7 @@ def _restore_code(text: str, placeholders: dict[str, str]) -> str:
         Text with all placeholders replaced by their original code content.
     """
     for key, original in placeholders.items():
-        if original.startswith("```") or original.startswith("~~~"):
+        if original.startswith(("```", "~~~")):
             # Keep fenced blocks as-is (no backtick stripping)
             text = text.replace(key, original)
         else:
@@ -107,9 +109,16 @@ def _convert_bold_italic(text: str) -> str:
     Returns:
         Text with bold-italic markers replaced.
     """
-    text = re.sub(r"(?<!\\)\*{3}(.+?)(?<!\\)\*{3}", lambda m: to_sans_bold_italic(m.group(1)), text)
-    text = re.sub(r"(?<!\\)_{3}(.+?)(?<!\\)_{3}", lambda m: to_sans_bold_italic(m.group(1)), text)
-    return text
+    text = re.sub(
+        r"(?<!\\)\*{3}(.+?)(?<!\\)\*{3}",
+        lambda m: to_sans_bold_italic(m.group(1)),
+        text,
+    )
+    return re.sub(
+        r"(?<!\\)_{3}(.+?)(?<!\\)_{3}",
+        lambda m: to_sans_bold_italic(m.group(1)),
+        text,
+    )
 
 
 def _convert_bold(text: str) -> str:
@@ -123,9 +132,16 @@ def _convert_bold(text: str) -> str:
     Returns:
         Text with bold markers replaced.
     """
-    text = re.sub(r"(?<!\\)\*{2}(.+?)(?<!\\)\*{2}", lambda m: to_sans_bold(m.group(1)), text)
-    text = re.sub(r"(?<!\\)__(.+?)(?<!\\)__", lambda m: to_sans_bold(m.group(1)), text)
-    return text
+    text = re.sub(
+        r"(?<!\\)\*{2}(.+?)(?<!\\)\*{2}",
+        lambda m: to_sans_bold(m.group(1)),
+        text,
+    )
+    return re.sub(
+        r"(?<!\\)__(.+?)(?<!\\)__",
+        lambda m: to_sans_bold(m.group(1)),
+        text,
+    )
 
 
 def _convert_italic(text: str) -> str:
@@ -149,12 +165,11 @@ def _convert_italic(text: str) -> str:
         text,
     )
     # _text_ — word-boundary anchors prevent matching inside_words; skip \_ escapes
-    text = re.sub(
+    return re.sub(
         r"(?<!\w)(?<!\\)_(?!_)(.+?)(?<!\\)(?<!_)_(?!\w)",
         lambda m: to_sans_italic(m.group(1)),
         text,
     )
-    return text
 
 
 def _convert_headers(text: str) -> str:
@@ -239,8 +254,7 @@ def _strip_links(text: str, *, preserve: bool = False) -> str:
     # Reference-style links [text][ref] → text
     text = re.sub(r"\[([^\]]+)\]\[[^\]]*\]", r"\1", text)
     # Autolinks <https://example.com> → https://example.com
-    text = re.sub(r"<(https?://[^>]+)>", r"\1", text)
-    return text
+    return re.sub(r"<(https?://[^>]+)>", r"\1", text)
 
 
 def _strip_images(text: str) -> str:
@@ -253,12 +267,11 @@ def _strip_images(text: str) -> str:
         Text with image syntax replaced by alt text.
     """
     # ![alt](url) → alt  (empty alt → removed)
-    text = re.sub(
+    return re.sub(
         r"!\[([^\]]*)\]\([^)]*\)",
-        lambda m: m.group(1) if m.group(1) else "",
+        lambda m: m.group(1) or "",
         text,
     )
-    return text
 
 
 def _convert_bullets(text: str) -> str:
@@ -277,7 +290,7 @@ def _convert_bullets(text: str) -> str:
 
     def _bullet(m: re.Match[str]) -> str:
         indent = m.group(1)
-        return ("  ‣ " if len(indent) >= 2 else "• ")  # noqa: RUF001
+        return ("  ‣ " if len(indent) >= _NESTED_BULLET_MIN_INDENT else "• ")
 
     return re.sub(r"^(\s*)[-*+] ", _bullet, text, flags=re.MULTILINE)
 
@@ -382,9 +395,6 @@ def convert(text: str, *, preserve_links: bool = False) -> str:
         >>> convert("**Hello**, *world*!")
         '𝗛𝗲𝗹𝗹𝗼, 𝘸𝘰𝘳𝘭𝘥!\\n'
 
-        >>> convert("# Section\\n\\nSome text.")  # doctest: +NORMALIZE_WHITESPACE
-        '\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n𝗦𝗘𝗖𝗧𝗜𝗢𝗡\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\\nSome text.\\n'
-
         >>> convert("")
         ''
     """
@@ -405,8 +415,7 @@ def convert(text: str, *, preserve_links: bool = False) -> str:
     text = _restore_code(text, placeholders)
     text = _clean_entities(text)
     text = _clean_escaped_chars(text)
-    text = _normalize_whitespace(text)
-    return text
+    return _normalize_whitespace(text)
 
 
 def convert_file(

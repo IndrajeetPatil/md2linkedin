@@ -63,15 +63,40 @@ unsafe-fixes = true
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["COM812", "CPY", "D"]
+ignore = [
+    "COM812",
+    "CPY",
+    # Docstring content rules — we intentionally omit Returns/Raises sections
+    # in internal helpers, consistent with ignoring D (pydocstyle) above.
+    "D",
+    "DOC",
+    # This package's output IS Unicode Mathematical characters; having them in
+    # docstring examples and block-comment separators is intentional.
+    "RUF002",
+    "RUF003",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
     # docstring requirements
     "D",
     "DOC",
-    # tests can have asserts
+    # tests can use asserts
     "S101",
+    # pytest fixtures (e.g. tmp_path) don't need type annotations
+    "ANN001",
+    # tests legitimately import private internals to test them directly
+    "PLC2701",
+    # test methods inside classes don't need @staticmethod — class grouping is intentional
+    "PLR6301",
+    # test assertions for Unicode output use the literal Unicode chars (intentional)
+    "RUF001",
+    # `== ""` vs `not x` — both forms are acceptable in assertions
+    "PLC1901",
+    # magic numbers in assertions are fine (e.g. expected count == 3)
+    "PLR2004",
+    # large test classes are fine when grouping related cases
+    "PLR0904",
 ]
 
 [tool.ruff.format]
