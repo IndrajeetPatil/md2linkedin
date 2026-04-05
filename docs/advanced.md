@@ -140,6 +140,43 @@ big_md = Path("quarterly_report.md").read_text()
 result = convert(big_md)
 ```
 
+### Emojis and Non-ASCII Characters
+
+Emojis and accented characters pass through unchanged — only ASCII letters
+and digits are remapped to Unicode Mathematical variants:
+
+```python
+from md2linkedin import convert
+
+result = convert("**Excited to share** 🎉 *check this out*!")
+print(result)  # 𝗘𝘅𝗰𝗶𝘁𝗲𝗱 𝘁𝗼 𝘀𝗵𝗮𝗿𝗲 🎉 𝘤𝘩𝘦𝘤𝘬 𝘵𝘩𝘪𝘴 𝘰𝘂𝘵!
+```
+
+---
+
+## Running Without Installing (uvx)
+
+If you only need `md2linkedin` occasionally, you can run it directly with
+[`uvx`](https://docs.astral.sh/uv/guides/tools/) without a permanent
+installation:
+
+```bash
+# Convert a Markdown file (output: post.linkedin.txt)
+uvx md2linkedin post.md
+
+# Pipe from stdin
+echo "**bold** and *italic*" | uvx md2linkedin
+
+# Preserve link syntax
+uvx md2linkedin --preserve-links post.md
+
+# Explicit output path
+uvx md2linkedin post.md -o linkedin_post.txt
+```
+
+`uvx` downloads and caches the package in an isolated environment, so
+subsequent runs are fast.
+
 ---
 
 ## Integration with Pandoc (LaTeX → LinkedIn)

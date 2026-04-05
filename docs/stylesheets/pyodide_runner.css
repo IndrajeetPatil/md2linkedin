@@ -1,0 +1,111 @@
+/**
+ * Styles for Pyodide interactive code blocks
+ */
+
+.pyodide-controls {
+  margin: 0.5rem 0;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pyodide-run-btn,
+.pyodide-clear-btn {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pyodide-run-btn {
+  background-color: #4caf50;
+  color: white;
+}
+
+.pyodide-run-btn:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.pyodide-run-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.pyodide-clear-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.pyodide-clear-btn:hover {
+  background-color: #da190b;
+}
+
+.pyodide-output {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  border-left: 4px solid #2196f3;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+[data-md-color-scheme="slate"] .pyodide-output {
+  background-color: #1e1e1e;
+  border-left-color: #64b5f6;
+}
+
+.pyodide-stdout {
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: #333;
+}
+
+[data-md-color-scheme="slate"] .pyodide-stdout {
+  color: #e0e0e0;
+}
+
+.pyodide-error {
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: #d32f2f;
+}
+
+[data-md-color-scheme="slate"] .pyodide-error {
+  color: #ef5350;
+}
+
+.pyodide-loading {
+  color: #666;
+  font-style: italic;
+}
+
+[data-md-color-scheme="slate"] .pyodide-loading {
+  color: #999;
+}
+
+.pyodide-success {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+[data-md-color-scheme="slate"] .pyodide-success {
+  color: #66bb6a;
+}
+
+/* Make code blocks with Pyodide controls look better */
+.highlight.pyodide-enabled {
+  margin-bottom: 0;
+}
+
+/* Fallback for browsers without :has() support */
+@supports selector(:has(*)) {
+  .highlight:has(+ .pyodide-controls) {
+    margin-bottom: 0;
+  }
+}

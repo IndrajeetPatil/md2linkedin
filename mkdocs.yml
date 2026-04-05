@@ -112,3 +112,10 @@ validation:
   absolute_links: warn
   unrecognized_links: warn
   anchors: warn
+
+extra_javascript:
+  - javascripts/config.js
+  - javascripts/pyodide_runner.js
+
+extra_css:
+  - stylesheets/pyodide_runner.css
