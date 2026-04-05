@@ -1,7 +1,7 @@
 
 
 
-# md2linkedin <img src="https://raw.githubusercontent.com/IndrajeetPatil/md2linkedin/main/docs/assets/logo.png" align="right" width="240" />
+# md2linkedin <img src="docs/assets/logo.png" align="right" width="240" />
 
 [![PyPI
 version](https://img.shields.io/pypi/v/md2linkedin.png)](https://pypi.org/project/md2linkedin/)
