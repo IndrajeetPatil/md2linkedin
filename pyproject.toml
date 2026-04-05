@@ -1,0 +1,117 @@
+[project]
+name = "md2linkedin"
+version = "0.1.0"
+description = "Convert Markdown to LinkedIn-friendly Unicode text"
+readme = "README.md"
+authors = [
+    { name = "Indrajeet Patil", email = "patilindrajeet.science@gmail.com" }
+]
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE.md"]
+keywords = ["markdown", "linkedin", "unicode", "formatting", "conversion"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup",
+    "Topic :: Utilities",
+]
+dependencies = ["click>=8.0"]
+
+[project.scripts]
+md2linkedin = "md2linkedin._cli:main"
+
+[project.urls]
+Homepage = "https://github.com/IndrajeetPatil/md2linkedin"
+Documentation = "https://www.indrapatil.com/md2linkedin/"
+Repository = "https://github.com/IndrajeetPatil/md2linkedin"
+Issues = "https://github.com/IndrajeetPatil/md2linkedin/issues"
+Changelog = "https://github.com/IndrajeetPatil/md2linkedin/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+    "coverage>=7.13.5",
+    "jupyter>=1.1.1",
+    "zensical>=0.0.31",
+    "mkdocstrings-python>=2.0.3",
+    "ty>=0.0.28",
+    "prek>=0.3.8",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.1.0",
+    "pytest-random-order>=1.2.0",
+    "ruff>=0.15.9",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.2,<0.12"]
+build-backend = "uv_build"
+
+[tool.ruff]
+fix = true
+preview = true
+unsafe-fixes = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["COM812", "CPY", "D"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    # docstring requirements
+    "D",
+    "DOC",
+    # tests can have asserts
+    "S101",
+]
+
+[tool.ruff.format]
+preview = true
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+addopts = [
+    # error on problems parsing pytest configuration
+    "--strict-config",
+    # error on using unregistered marker
+    "--strict-markers",
+    # show extra test summary info for everything
+    "-ra",
+    # include more verbose output
+    "--verbose",
+    # using pytest-random-order plugin option
+    "--random-order",
+]
+testpaths = ["tests"]
+filterwarnings = ["error"]
+xfail_strict = true
+python_files = ["test_*.py", "test-*.py", "tests.py", "test.py"]
+
+[tool.coverage.run]
+branch = true
+source = ["md2linkedin"]
+
+[tool.coverage.report]
+fail_under = 100
+format = "markdown"
+sort = "-Cover"
+show_missing = true
+skip_empty = true
+
+[tool.ty.src]
+exclude = [".venv", "build", "dist", "docs"]
+
+[tool.ty.environment]
+python-version = "3.10"
+
+[tool.uv]
+required-version = ">=0.11.2"

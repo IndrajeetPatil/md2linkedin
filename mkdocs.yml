@@ -1,0 +1,114 @@
+site_name: md2linkedin
+site_description: Convert Markdown to LinkedIn-friendly Unicode text
+site_url: https://www.indrapatil.com/md2linkedin/
+site_author: IndrajeetPatil
+
+repo_name: md2linkedin
+repo_url: https://github.com/IndrajeetPatil/md2linkedin
+
+edit_uri: edit/main/docs/
+
+nav:
+  - Home: index.md
+  - Advanced Usage: advanced.md
+  - API Reference:
+      - Converter: reference/converter.md
+  - Changelog: changelog.md
+
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/favicon.ico
+  features:
+    - content.code.annotate
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+    - content.tooltips
+    - navigation.footer
+    - navigation.indexes
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.path
+  palette:
+    # Dark Mode
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Dark mode
+      primary: blue
+      accent: cyan
+
+    # Light Mode
+    - scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Light mode
+      primary: indigo
+      accent: blue
+
+markdown_extensions:
+  - admonition
+  - attr_list:
+  - md_in_html:
+  - pymdownx.details
+  - pymdownx.snippets:
+  - pymdownx.magiclink:
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite:
+  - pymdownx.superfences:
+  - markdown.extensions.attr_list:
+  - pymdownx.keys:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - toc:
+      anchorlink: true
+      anchorlink_class: "toclink"
+
+plugins:
+  - search
+  - tags
+  - llmstxt:
+      enabled: true
+      full_output: llms-full.txt
+      markdown_description: |-
+        md2linkedin is a Python library and CLI tool that converts Markdown text to
+        LinkedIn-compatible Unicode plain text. Bold and italic formatting is preserved
+        using Unicode Mathematical Sans-Serif characters so styling survives when pasting
+        into platforms that do not support Markdown.
+      sections:
+        Home documentation:
+          - index.md
+        Advanced usage:
+          - advanced.md
+        API documentation:
+          - reference/*.md
+        Changelog:
+          - changelog.md
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn

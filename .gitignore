@@ -1,0 +1,46 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.DS_Store
+
+# zensical documentation
+/site
+README.html
+README_files/
+docs/llms.txt
+docs/llms-full.txt
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+repos/
+.Rproj.user
+.Rhistory
+.claude/
+
+# Mutation testing
+.mutmut-cache/
+mutants_backup/
+mutants/
