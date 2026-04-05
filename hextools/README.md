@@ -17,7 +17,7 @@ sticker logo.
 2. **Install R dependencies**:
 
    ```r
-   install.packages(c("hexSticker", "magick", "showtext", "fs", "pkgdown"))
+   install.packages(c("hexSticker", "magick", "showtext"))
    ```
 
 3. **Run the script** from the repository root:

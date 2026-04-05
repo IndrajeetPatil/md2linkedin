@@ -40,6 +40,9 @@ repos/
 .Rhistory
 .claude/
 
+# Temporary R/pkgdown artefacts from hextools/script.R
+DESCRIPTION
+
 # Mutation testing
 .mutmut-cache/
 mutants_backup/
