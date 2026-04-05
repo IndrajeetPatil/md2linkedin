@@ -119,7 +119,7 @@ class TestApplyStyle:
 
     def test_invalid_style_raises(self) -> None:
         with pytest.raises(ValueError, match="Unknown style"):
-            apply_style("hello", "underline")  # type: ignore[arg-type]
+            apply_style("hello", "underline")  # ty: ignore[invalid-argument-type]
 
     def test_empty_string(self) -> None:
         assert apply_style("", "bold") == ""
