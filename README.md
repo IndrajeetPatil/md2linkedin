@@ -1,7 +1,7 @@
 
 
 
-# md2linkedin <img src="docs/assets/logo.png" align="right" width="240" />
+# md2linkedin <img src="https://raw.githubusercontent.com/IndrajeetPatil/md2linkedin/main/docs/assets/logo.png" align="right" width="240" />
 
 [![PyPI
 version](https://img.shields.io/pypi/v/md2linkedin.png)](https://pypi.org/project/md2linkedin/)
@@ -26,6 +26,7 @@ platforms like LinkedIn that do not support Markdown natively.
 ### Python API
 
 ``` python
+# @pyodide
 from md2linkedin import convert
 
 md = """
