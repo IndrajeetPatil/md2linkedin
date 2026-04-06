@@ -158,13 +158,17 @@ class TestApplyStyle:
         with pytest.raises(ValueError, match="Unknown style"):
             apply_style("hello", "underline")  # ty: ignore[invalid-argument-type]
 
-    def test_empty_string(self) -> None:
-        assert apply_style("", "bold") == ""
-        assert apply_style("", "italic") == ""
-        assert apply_style("", "bold_italic") == ""
+    @pytest.mark.parametrize("style", ["bold", "italic", "bold_italic"])
+    def test_empty_string(self, style: str) -> None:
+        assert apply_style("", style) == ""
 
-    def test_roundtrip_consistency(self) -> None:
-        text = "Test123"
-        assert apply_style(text, "bold") == to_sans_bold(text)
-        assert apply_style(text, "italic") == to_sans_italic(text)
-        assert apply_style(text, "bold_italic") == to_sans_bold_italic(text)
+    @pytest.mark.parametrize(
+        ("style", "func"),
+        [
+            ("bold", to_sans_bold),
+            ("italic", to_sans_italic),
+            ("bold_italic", to_sans_bold_italic),
+        ],
+    )
+    def test_roundtrip_consistency(self, style: str, func) -> None:
+        assert apply_style("Test123", style) == func("Test123")
