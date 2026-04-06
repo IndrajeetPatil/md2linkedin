@@ -30,20 +30,19 @@ from md2linkedin._converter import (
 
 
 class TestNormalizeLineEndings:
-    def test_crlf_to_lf(self) -> None:
-        assert _normalize_line_endings("a\r\nb") == "a\nb"
-
-    def test_cr_to_lf(self) -> None:
-        assert _normalize_line_endings("a\rb") == "a\nb"
-
-    def test_lf_unchanged(self) -> None:
-        assert _normalize_line_endings("a\nb") == "a\nb"
-
-    def test_empty(self) -> None:
-        assert _normalize_line_endings("") == ""
-
-    def test_mixed(self) -> None:
-        assert _normalize_line_endings("a\r\nb\rc\nd") == "a\nb\nc\nd"
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        [
+            ("a\r\nb", "a\nb"),
+            ("a\rb", "a\nb"),
+            ("a\nb", "a\nb"),
+            ("", ""),
+            ("a\r\nb\rc\nd", "a\nb\nc\nd"),
+        ],
+        ids=["crlf", "cr", "lf_unchanged", "empty", "mixed"],
+    )
+    def test_line_endings(self, text: str, expected: str) -> None:
+        assert _normalize_line_endings(text) == expected
 
 
 # ── _protect_code / _restore_code ─────────────────────────────────────────────
@@ -244,11 +243,11 @@ class TestConvertHeaders:
         assert "━" not in result
         assert "##" not in result
 
-    def test_h3_to_h6_no_separator(self) -> None:
-        for level in range(3, 7):
-            result = _convert_headers(f"{'#' * level} Heading")
-            assert "━" not in result
-            assert "#" not in result
+    @pytest.mark.parametrize("level", [3, 4, 5, 6])
+    def test_h3_to_h6_no_separator(self, level: int) -> None:
+        result = _convert_headers(f"{'#' * level} Heading")
+        assert "━" not in result
+        assert "#" not in result
 
     def test_setext_h1(self) -> None:
         result = _convert_headers("Title\n=====")
@@ -314,14 +313,13 @@ class TestStripImages:
 
 
 class TestConvertBullets:
-    def test_dash_bullet(self) -> None:
-        assert _convert_bullets("- item") == "• item"
-
-    def test_asterisk_bullet(self) -> None:
-        assert _convert_bullets("* item") == "• item"
-
-    def test_plus_bullet(self) -> None:
-        assert _convert_bullets("+ item") == "• item"
+    @pytest.mark.parametrize(
+        "marker",
+        ["-", "*", "+"],
+        ids=["dash", "asterisk", "plus"],
+    )
+    def test_bullet_markers(self, marker: str) -> None:
+        assert _convert_bullets(f"{marker} item") == "• item"
 
     def test_nested_bullet(self) -> None:
         result = _convert_bullets("  - nested")
@@ -359,23 +357,20 @@ class TestStripBlockquotes:
 
 
 class TestCleanEntities:
-    def test_gt(self) -> None:
-        assert _clean_entities("a &gt; b") == "a > b"
-
-    def test_lt(self) -> None:
-        assert _clean_entities("a &lt; b") == "a < b"
-
-    def test_amp(self) -> None:
-        assert _clean_entities("a &amp; b") == "a & b"
-
-    def test_nbsp(self) -> None:
-        assert _clean_entities("a&nbsp;b") == "a b"
-
-    def test_quot(self) -> None:
-        assert _clean_entities("&quot;text&quot;") == '"text"'
-
-    def test_apos(self) -> None:
-        assert _clean_entities("it&apos;s") == "it's"
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        [
+            ("a &gt; b", "a > b"),
+            ("a &lt; b", "a < b"),
+            ("a &amp; b", "a & b"),
+            ("a&nbsp;b", "a b"),
+            ("&quot;text&quot;", '"text"'),
+            ("it&apos;s", "it's"),
+        ],
+        ids=["gt", "lt", "amp", "nbsp", "quot", "apos"],
+    )
+    def test_entity(self, text: str, expected: str) -> None:
+        assert _clean_entities(text) == expected
 
     def test_no_entities_unchanged(self) -> None:
         assert _clean_entities("plain text") == "plain text"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import string
+from typing import TYPE_CHECKING, Literal
 
 import pytest
 
@@ -13,6 +14,9 @@ from md2linkedin._unicode import (
     to_sans_bold_italic,
     to_sans_italic,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 # ── to_sans_bold ───────────────────────────────────────────────────────────────
 
@@ -158,13 +162,24 @@ class TestApplyStyle:
         with pytest.raises(ValueError, match="Unknown style"):
             apply_style("hello", "underline")  # ty: ignore[invalid-argument-type]
 
-    def test_empty_string(self) -> None:
-        assert apply_style("", "bold") == ""
-        assert apply_style("", "italic") == ""
-        assert apply_style("", "bold_italic") == ""
+    @pytest.mark.parametrize("style", ["bold", "italic", "bold_italic"])
+    def test_empty_string(
+        self,
+        style: Literal["bold", "italic", "bold_italic"],
+    ) -> None:
+        assert apply_style("", style) == ""
 
-    def test_roundtrip_consistency(self) -> None:
-        text = "Test123"
-        assert apply_style(text, "bold") == to_sans_bold(text)
-        assert apply_style(text, "italic") == to_sans_italic(text)
-        assert apply_style(text, "bold_italic") == to_sans_bold_italic(text)
+    @pytest.mark.parametrize(
+        ("style", "func"),
+        [
+            ("bold", to_sans_bold),
+            ("italic", to_sans_italic),
+            ("bold_italic", to_sans_bold_italic),
+        ],
+    )
+    def test_roundtrip_consistency(
+        self,
+        style: Literal["bold", "italic", "bold_italic"],
+        func: Callable[[str], str],
+    ) -> None:
+        assert apply_style("Test123", style) == func("Test123")
