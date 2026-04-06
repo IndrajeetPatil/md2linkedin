@@ -18,7 +18,11 @@ def _get_llmstxt_config(config: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _write_section(
-    content: list[str], section_name: str, patterns: list[str], *, is_full: bool
+    content: list[str],
+    section_name: str,
+    patterns: list[str],
+    *,
+    is_full: bool,
 ) -> None:
     content.extend((f"## {section_name}", ""))
     for pattern in patterns:
