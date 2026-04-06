@@ -52,7 +52,7 @@ style to a plain string programmatically:
 from md2linkedin import to_sans_bold, to_sans_italic, to_sans_bold_italic, to_monospace, apply_style
 
 to_sans_bold("Open to Work")  # 𝗢𝗽𝗲𝗻 𝘁𝗼 𝗪𝗼𝗿𝗸
-to_sans_italic("3 years of exp")  # 𝘴 𝘺𝘦𝘢𝘳𝘴 𝘰𝘧 𝘦𝘹𝘱
+to_sans_italic("3 years of exp")  # 3 𝘺𝘦𝘢𝘳𝘴 𝘰𝘧 𝘦𝘹𝘱
 to_sans_bold_italic("Key insight")  # 𝙆𝙚𝙮 𝙞𝙣𝙨𝙞𝙜𝙝𝙩
 to_monospace("print('hi')")  # 𝚙𝚛𝚒𝚗𝚝('𝚑𝚒')
 

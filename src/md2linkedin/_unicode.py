@@ -120,7 +120,7 @@ def to_sans_bold_italic(text: str) -> str:
 
     Examples:
         >>> to_sans_bold_italic("Hello, World!")
-        '𝘼𝙡𝙡𝙤, 𝙒𝙤𝙧𝙡𝙙!'
+        '𝙃𝙚𝙡𝙡𝙤, 𝙒𝙤𝙧𝙡𝙙!'
 
         >>> to_sans_bold_italic("")
         ''
