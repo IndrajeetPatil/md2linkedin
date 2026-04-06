@@ -35,7 +35,7 @@ typecheck:
 audit:
 	uv audit --no-dev --preview-features audit
 
-qa: format lint typecheck
+qa: format lint typecheck audit
 
 hooks:
 	prek run --all-files
