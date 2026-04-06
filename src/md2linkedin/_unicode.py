@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-__all__ = ["apply_style", "to_sans_bold", "to_sans_bold_italic", "to_sans_italic"]
+__all__ = ["apply_style", "to_monospace", "to_sans_bold", "to_sans_bold_italic", "to_sans_italic"]
 
 # ── Unicode block offsets ──────────────────────────────────────────────────────
 # Reference: Unicode Mathematical Alphanumeric Symbols (U+1D400–U+1D7FF)
@@ -23,6 +23,10 @@ _SANS_ITALIC_LOWER = 0x1D622  # 𝘢
 
 _SANS_BOLD_ITALIC_UPPER = 0x1D63C  # 𝘼
 _SANS_BOLD_ITALIC_LOWER = 0x1D656  # 𝙖
+
+_MONOSPACE_UPPER = 0x1D670  # 𝙰
+_MONOSPACE_LOWER = 0x1D68A  # 𝚊
+_MONOSPACE_DIGIT = 0x1D7F6  # 𝟶
 
 
 # ── Public mapping functions ───────────────────────────────────────────────────
@@ -127,6 +131,43 @@ def to_sans_bold_italic(text: str) -> str:
             out.append(chr(_SANS_BOLD_ITALIC_UPPER + ord(c) - ord("A")))
         elif "a" <= c <= "z":
             out.append(chr(_SANS_BOLD_ITALIC_LOWER + ord(c) - ord("a")))
+        else:
+            out.append(c)
+    return "".join(out)
+
+
+def to_monospace(text: str) -> str:
+    """Convert text to Unicode Mathematical Monospace.
+
+    ASCII uppercase letters, lowercase letters, and digits are mapped to
+    their monospace counterparts. All other characters (spaces,
+    punctuation, non-ASCII) pass through unchanged.
+
+    Args:
+        text: The input string to convert.
+
+    Returns:
+        A new string with ASCII alphanumerics replaced by monospace
+        Unicode equivalents.
+
+    Examples:
+        >>> to_monospace("Hello, World! 123")
+        '𝙷𝚎𝚕𝚕𝚘, 𝚆𝚘𝚛𝚕𝚍! 𝟷𝟸𝟹'
+
+        >>> to_monospace("café")
+        '𝚌𝚊𝚏é'
+
+        >>> to_monospace("")
+        ''
+    """
+    out: list[str] = []
+    for c in text:
+        if "A" <= c <= "Z":
+            out.append(chr(_MONOSPACE_UPPER + ord(c) - ord("A")))
+        elif "a" <= c <= "z":
+            out.append(chr(_MONOSPACE_LOWER + ord(c) - ord("a")))
+        elif "0" <= c <= "9":
+            out.append(chr(_MONOSPACE_DIGIT + ord(c) - ord("0")))
         else:
             out.append(c)
     return "".join(out)

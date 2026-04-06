@@ -57,7 +57,7 @@ class TestProtectAndRestoreCode:
 
     def test_inline_code_content_preserved_on_restore(self) -> None:
         text, placeholders = _protect_code("say `hello world` here")
-        restored = _restore_code(text, placeholders)
+        restored = _restore_code(text, placeholders, monospace=False)
         # Backticks are stripped on restore
         assert "hello world" in restored
         assert "`" not in restored
@@ -70,21 +70,52 @@ class TestProtectAndRestoreCode:
     def test_fenced_block_restored_verbatim(self) -> None:
         original = "```python\nprint('hi')\n```"
         text, placeholders = _protect_code(original)
-        restored = _restore_code(text, placeholders)
+        restored = _restore_code(text, placeholders, monospace=False)
         assert restored == original
 
     def test_tilde_fenced_block(self) -> None:
         original = "~~~\nsome code\n~~~"
         text, placeholders = _protect_code(original)
-        restored = _restore_code(text, placeholders)
+        restored = _restore_code(text, placeholders, monospace=False)
         assert restored == original
 
     def test_code_not_transformed_by_bold(self) -> None:
         text, placeholders = _protect_code("use `**bold**` code")
         # Bold markers inside code are hidden from the converter
         assert "**bold**" not in text
-        restored = _restore_code(text, placeholders)
+        restored = _restore_code(text, placeholders, monospace=False)
         assert "**bold**" in restored
+
+    def test_inline_code_monospace(self) -> None:
+        text, placeholders = _protect_code("say `hello` here")
+        restored = _restore_code(text, placeholders, monospace=True)
+        assert "𝚑𝚎𝚕𝚕𝚘" in restored
+        assert "`" not in restored
+
+    def test_fenced_block_monospace(self) -> None:
+        text, placeholders = _protect_code("```python\nprint('hi')\n```")
+        restored = _restore_code(text, placeholders, monospace=True)
+        assert "𝚙𝚛𝚒𝚗𝚝" in restored
+        assert "```" not in restored
+        assert "python" not in restored
+
+    def test_tilde_fenced_block_monospace(self) -> None:
+        text, placeholders = _protect_code("~~~\nsome code\n~~~")
+        restored = _restore_code(text, placeholders, monospace=True)
+        assert "𝚜𝚘𝚖𝚎 𝚌𝚘𝚍𝚎" in restored
+        assert "~~~" not in restored
+
+    def test_fenced_block_monospace_empty_body(self) -> None:
+        text, placeholders = _protect_code("``````")
+        restored = _restore_code(text, placeholders, monospace=True)
+        assert "```" not in restored
+        assert restored == ""
+
+    def test_fenced_block_monospace_preserves_syntax_chars(self) -> None:
+        text, placeholders = _protect_code("```\n**not bold**\n```")
+        restored = _restore_code(text, placeholders, monospace=True)
+        # ** should pass through unchanged (not ASCII letters/digits)
+        assert "**" in restored
 
     def test_empty_no_placeholders(self) -> None:
         text, placeholders = _protect_code("no code here")
@@ -440,14 +471,35 @@ class TestConvert:
         assert "- " not in result
 
     def test_code_not_transformed(self) -> None:
-        result = convert("use `**bold**` here")
+        result = convert("use `**bold**` here", monospace_code=False)
         # The **bold** inside code backticks must NOT be unicode-transformed
         assert "**bold**" in result
 
     def test_fenced_code_preserved(self) -> None:
         md = "```python\nprint('hello')\n```"
-        result = convert(md)
+        result = convert(md, monospace_code=False)
         assert "print('hello')" in result
+
+    def test_code_monospace_default(self) -> None:
+        result = convert("use `hello` here")
+        assert "𝚑𝚎𝚕𝚕𝚘" in result
+
+    def test_fenced_code_monospace_default(self) -> None:
+        md = "```python\nprint('hello')\n```"
+        result = convert(md)
+        assert "𝚙𝚛𝚒𝚗𝚝" in result
+        assert "```" not in result
+
+    def test_code_monospace_disabled(self) -> None:
+        result = convert("use `hello` here", monospace_code=False)
+        assert "hello" in result
+        assert "𝚑𝚎𝚕𝚕𝚘" not in result
+
+    def test_code_monospace_preserves_markdown_syntax(self) -> None:
+        result = convert("use `**bold**` here")
+        # ** should remain as-is (not ASCII letters), bold text gets monospaced
+        assert "**" in result
+        assert "𝚋𝚘𝚕𝚍" in result
 
     def test_image_alt_text(self) -> None:
         result = convert("![Logo](logo.png)")
@@ -573,6 +625,21 @@ class TestConvertFile:
         content = out.read_text(encoding="utf-8")
         assert "é" in content
         assert "🎉" in content
+
+    def test_monospace_code_forwarded(self, tmp_path) -> None:
+        src = tmp_path / "test.md"
+        src.write_text("use `hello` here", encoding="utf-8")
+        out = convert_file(src, monospace_code=False)
+        content = out.read_text(encoding="utf-8")
+        assert "hello" in content
+        assert "𝚑𝚎𝚕𝚕𝚘" not in content
+
+    def test_monospace_code_default(self, tmp_path) -> None:
+        src = tmp_path / "test.md"
+        src.write_text("use `hello` here", encoding="utf-8")
+        out = convert_file(src)
+        content = out.read_text(encoding="utf-8")
+        assert "𝚑𝚎𝚕𝚕𝚘" in content
 
     def test_returns_path_object(self, tmp_path) -> None:
         src = tmp_path / "test.md"

@@ -75,6 +75,9 @@ echo "**Hello**, *world*!" | md2linkedin
 
 # Keep link URLs in the output
 md2linkedin post.md --preserve-links
+
+# Disable monospace code rendering
+md2linkedin post.md --no-monospace-code
 ```
 
 ## Key Features
@@ -84,9 +87,10 @@ md2linkedin post.md --preserve-links
 - **Bold-italic**: `***text***` or `___text___` → Unicode Sans-Serif Bold
   Italic (𝙗𝙤𝙡𝙙-𝙞𝙩𝙖𝙡𝙞𝙘)
 - **Headers**: `#`/`##`/etc. styled with bold Unicode; H1 gets a `━` border
-- **Code spans**: backticks stripped, content kept as plain text — *never*
-  Unicode-transformed
-- **Fenced code blocks**: preserved verbatim
+- **Code spans**: backticks stripped, content rendered in Unicode Monospace
+  (𝚌𝚘𝚍𝚎) by default; `--no-monospace-code` keeps plain text
+- **Fenced code blocks**: fences stripped and content rendered in Unicode
+  Monospace by default; `--no-monospace-code` preserves verbatim
 - **Links**: stripped to display text by default; `--preserve-links` retains
   URLs
 - **Images**: replaced by alt text

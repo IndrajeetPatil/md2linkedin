@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] — 2026-04-06
+
+### Added
+
+- Code spans and fenced code blocks are now rendered in Unicode Mathematical
+  Monospace font by default, making code visually distinct in LinkedIn posts.
+- New `monospace_code` parameter for `convert()` and `convert_file()` (default:
+  `True`). Set to `False` to restore the previous plain-text behavior.
+- New `--no-monospace-code` CLI flag to disable monospace code rendering.
+- New `to_monospace()` Unicode mapping function for programmatic use.
+
 ## [0.1.1] — 2026-04-06
 
 ### Fixed
