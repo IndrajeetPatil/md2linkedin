@@ -118,7 +118,7 @@ class TestToMonospace:
         assert result == "𝚊𝚋𝚌𝚡𝚢𝚣"
 
     def test_digits(self) -> None:
-        result = to_monospace("0123456789")
+        result = to_monospace(string.digits)
         assert result == "𝟶𝟷𝟸𝟹𝟺𝟻𝟼𝟽𝟾𝟿"
 
     def test_non_ascii_passthrough(self) -> None:

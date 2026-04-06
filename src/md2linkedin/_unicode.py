@@ -9,7 +9,13 @@ from __future__ import annotations
 
 from typing import Literal
 
-__all__ = ["apply_style", "to_monospace", "to_sans_bold", "to_sans_bold_italic", "to_sans_italic"]
+__all__ = [
+    "apply_style",
+    "to_monospace",
+    "to_sans_bold",
+    "to_sans_bold_italic",
+    "to_sans_italic",
+]
 
 # ── Unicode block offsets ──────────────────────────────────────────────────────
 # Reference: Unicode Mathematical Alphanumeric Symbols (U+1D400–U+1D7FF)

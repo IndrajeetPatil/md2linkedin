@@ -49,7 +49,13 @@ The Unicode mapping functions are public and useful for applying a specific
 style to a plain string programmatically:
 
 ```python
-from md2linkedin import to_sans_bold, to_sans_italic, to_sans_bold_italic, to_monospace, apply_style
+from md2linkedin import (
+    to_sans_bold,
+    to_sans_italic,
+    to_sans_bold_italic,
+    to_monospace,
+    apply_style,
+)
 
 to_sans_bold("Open to Work")  # 𝗢𝗽𝗲𝗻 𝘁𝗼 𝗪𝗼𝗿𝗸
 to_sans_italic("3 years of exp")  # 𝘴 𝘺𝘦𝘢𝘳𝘴 𝘰𝘧 𝘦𝘹𝘱

@@ -53,7 +53,10 @@ def _protect_code(text: str) -> tuple[str, dict[str, str]]:
 
 
 def _restore_code(
-    text: str, placeholders: dict[str, str], *, monospace: bool = False
+    text: str,
+    placeholders: dict[str, str],
+    *,
+    monospace: bool = False,
 ) -> str:
     """Restore code placeholders to their original content.
 
@@ -84,10 +87,7 @@ def _restore_code(
                 body = rest[: rest.rfind(fence)]
                 # Strip optional language tag (first line of body)
                 first_nl = body.find("\n")
-                if first_nl != -1:
-                    content = body[first_nl + 1 :]
-                else:
-                    content = ""
+                content = body[first_nl + 1 :] if first_nl != -1 else ""
                 text = text.replace(key, to_monospace(content))
             else:
                 # Keep fenced blocks as-is (no backtick stripping)
@@ -387,7 +387,10 @@ def _normalize_whitespace(text: str) -> str:
 
 
 def convert(
-    text: str, *, preserve_links: bool = False, monospace_code: bool = True
+    text: str,
+    *,
+    preserve_links: bool = False,
+    monospace_code: bool = True,
 ) -> str:
     """Convert Markdown text to LinkedIn-compatible Unicode plain text.
 
@@ -497,6 +500,10 @@ def convert_file(
     output_path = Path(output_path)
 
     md_text = input_path.read_text(encoding="utf-8")
-    result = convert(md_text, preserve_links=preserve_links, monospace_code=monospace_code)
+    result = convert(
+        md_text,
+        preserve_links=preserve_links,
+        monospace_code=monospace_code,
+    )
     output_path.write_text(result, encoding="utf-8")
     return output_path

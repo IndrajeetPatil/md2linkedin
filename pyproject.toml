@@ -50,6 +50,7 @@ dev = [
     "pytest-cov>=7.1.0",
     "pytest-random-order>=1.2.0",
     "ruff>=0.15.9",
+    "add-trailing-comma>=4.0.0",
 ]
 
 [build-system]

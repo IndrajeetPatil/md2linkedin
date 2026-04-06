@@ -99,7 +99,11 @@ def main(
             )
             raise click.UsageError(msg)
         md_text = sys.stdin.read()
-        result = convert(md_text, preserve_links=preserve_links, monospace_code=monospace_code)
+        result = convert(
+            md_text,
+            preserve_links=preserve_links,
+            monospace_code=monospace_code,
+        )
         click.echo(result, nl=False)
 
 
