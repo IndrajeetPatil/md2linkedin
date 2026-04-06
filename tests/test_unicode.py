@@ -8,6 +8,7 @@ import pytest
 
 from md2linkedin._unicode import (
     apply_style,
+    to_monospace,
     to_sans_bold,
     to_sans_bold_italic,
     to_sans_italic,
@@ -102,6 +103,42 @@ class TestToSansBoldItalic:
     def test_mixed(self) -> None:
         result = to_sans_bold_italic("Hello World!")
         assert result == "𝙃𝙚𝙡𝙡𝙤 𝙒𝙤𝙧𝙡𝙙!"
+
+
+# ── to_monospace ──────────────────────────────────────────────────────────────
+
+
+class TestToMonospace:
+    def test_uppercase_letters(self) -> None:
+        result = to_monospace("ABCXYZ")
+        assert result == "𝙰𝙱𝙲𝚇𝚈𝚉"
+
+    def test_lowercase_letters(self) -> None:
+        result = to_monospace("abcxyz")
+        assert result == "𝚊𝚋𝚌𝚡𝚢𝚣"
+
+    def test_digits(self) -> None:
+        result = to_monospace("0123456789")
+        assert result == "𝟶𝟷𝟸𝟹𝟺𝟻𝟼𝟽𝟾𝟿"
+
+    def test_non_ascii_passthrough(self) -> None:
+        assert to_monospace("café") == "𝚌𝚊𝚏é"
+
+    def test_emoji_passthrough(self) -> None:
+        assert to_monospace("hi 🎉") == "𝚑𝚒 🎉"
+
+    def test_punctuation_passthrough(self) -> None:
+        assert to_monospace("Hello, World!") == "𝙷𝚎𝚕𝚕𝚘, 𝚆𝚘𝚛𝚕𝚍!"
+
+    def test_spaces_passthrough(self) -> None:
+        assert to_monospace("a b") == "𝚊 𝚋"
+
+    def test_empty_string(self) -> None:
+        assert to_monospace("") == ""
+
+    def test_full_sentence(self) -> None:
+        result = to_monospace("Hello World 123")
+        assert result == "𝙷𝚎𝚕𝚕𝚘 𝚆𝚘𝚛𝚕𝚍 𝟷𝟸𝟹"
 
 
 # ── apply_style ────────────────────────────────────────────────────────────────

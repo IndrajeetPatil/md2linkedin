@@ -16,7 +16,7 @@ from __future__ import annotations
 from importlib.metadata import version
 
 from ._converter import convert, convert_file
-from ._unicode import apply_style, to_sans_bold, to_sans_bold_italic, to_sans_italic
+from ._unicode import apply_style, to_monospace, to_sans_bold, to_sans_bold_italic, to_sans_italic
 
 __version__ = version("md2linkedin")
 
@@ -25,6 +25,7 @@ __all__ = [
     "apply_style",
     "convert",
     "convert_file",
+    "to_monospace",
     "to_sans_bold",
     "to_sans_bold_italic",
     "to_sans_italic",

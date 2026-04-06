@@ -49,11 +49,12 @@ The Unicode mapping functions are public and useful for applying a specific
 style to a plain string programmatically:
 
 ```python
-from md2linkedin import to_sans_bold, to_sans_italic, to_sans_bold_italic, apply_style
+from md2linkedin import to_sans_bold, to_sans_italic, to_sans_bold_italic, to_monospace, apply_style
 
 to_sans_bold("Open to Work")  # 𝗢𝗽𝗲𝗻 𝘁𝗼 𝗪𝗼𝗿𝗸
 to_sans_italic("3 years of exp")  # 𝘴 𝘺𝘦𝘢𝘳𝘴 𝘰𝘧 𝘦𝘹𝘱
 to_sans_bold_italic("Key insight")  # 𝙆𝙚𝙮 𝙞𝙣𝙨𝙞𝙜𝙝𝙩
+to_monospace("print('hi')")  # 𝚙𝚛𝚒𝚗𝚝('𝚑𝚒')
 
 # Dynamic dispatch
 apply_style("Hiring!", "bold")
@@ -68,8 +69,8 @@ apply_style("Hiring!", "bold")
 | `**bold**` / `__bold__` | Unicode 𝗯𝗼𝗹𝗱 |
 | `*italic*` / `_italic_` | Unicode 𝘪𝘵𝘢𝘭𝘪𝘤 |
 | `***bold-italic***` / `___bold-italic___` | Unicode 𝙗𝙤𝙡𝙙-𝙞𝙩𝙖𝙡𝙞𝙘 |
-| `` `inline code` `` | Backticks stripped, text kept as-is |
-| ` ```fenced block``` ` | Kept verbatim, never transformed |
+| `` `inline code` `` | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (backticks stripped) |
+| ` ```fenced block``` ` | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (fences stripped) |
 | `# H1` | Bold Unicode + `━` border |
 | `## H2`–`###### H6` | Bold Unicode, no border |
 | `[text](url)` | `text` (URL discarded) |
@@ -98,16 +99,28 @@ convert("***very important***")  # → bold-italic Unicode
 convert("**bold and *italic* inside**")  # → bold wrapping italic
 ```
 
-### Code Content Is Never Transformed
+### Code Is Rendered in Monospace
 
-Inline code and fenced blocks are protected before any Unicode substitution
-takes place, so Markdown syntax inside code is preserved:
+By default, inline code and fenced code blocks are converted to Unicode
+Mathematical Monospace characters. Only ASCII letters and digits are mapped;
+all other characters (including Markdown syntax like `**`) pass through
+unchanged — no nested processing is performed:
 
 ```python
 convert("Use `**bold**` in Markdown")
-# → Use **bold** in Markdown   (backticks stripped, ** kept as-is)
+# → Use **𝚋𝚘𝚕𝚍** in Markdown   (backticks stripped, letters monospaced, ** kept)
 
-convert("```\n**not bold**\n```")
+convert("```\nprint('hi')\n```")
+# → 𝚙𝚛𝚒𝚗𝚝('𝚑𝚒')   (fences stripped, content monospaced)
+```
+
+To disable monospace rendering and restore the previous plain-text behavior:
+
+```python
+convert("Use `**bold**` in Markdown", monospace_code=False)
+# → Use **bold** in Markdown   (backticks stripped, content as plain text)
+
+convert("```\n**not bold**\n```", monospace_code=False)
 # → ```\n**not bold**\n```     (fenced block fully preserved)
 ```
 
@@ -172,6 +185,9 @@ uvx md2linkedin --preserve-links post.md
 
 # Explicit output path
 uvx md2linkedin post.md -o linkedin_post.txt
+
+# Disable monospace code rendering
+uvx md2linkedin --no-monospace-code post.md
 ```
 
 `uvx` downloads and caches the package in an isolated environment, so
@@ -215,6 +231,7 @@ Usage: md2linkedin [OPTIONS] [INPUT_FILE]
 Options:
   -o, --output PATH    Output file path.
   --preserve-links     Keep link syntax in output.
+  --no-monospace-code  Disable monospace Unicode rendering for code.
   -V, --version        Show the version and exit.
   -h, --help           Show this message and exit.
 ```

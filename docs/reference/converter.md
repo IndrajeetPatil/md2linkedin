@@ -10,6 +10,8 @@
 
 ::: md2linkedin.apply_style
 
+::: md2linkedin.to_monospace
+
 ::: md2linkedin.to_sans_bold
 
 ::: md2linkedin.to_sans_italic

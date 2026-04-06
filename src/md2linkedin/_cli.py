@@ -37,17 +37,31 @@ from ._converter import convert, convert_file
         " instead of stripping URLs."
     ),
 )
+@click.option(
+    "--no-monospace-code",
+    is_flag=True,
+    default=False,
+    help=(
+        "Disable monospace Unicode rendering for inline code and fenced"
+        " code blocks. When set, inline code is kept as plain text and"
+        " fenced blocks are preserved verbatim."
+    ),
+)
 def main(
     input_file: str | None,
     output_file: str | None,
     *,
     preserve_links: bool,
+    no_monospace_code: bool,
 ) -> None:
     """Convert Markdown to LinkedIn-friendly Unicode text.
 
     Reads from INPUT_FILE (or stdin when INPUT_FILE is omitted) and writes
     LinkedIn-compatible plain text in which bold and italic formatting is
     preserved using Unicode Mathematical Sans-Serif characters.
+
+    Code spans and fenced code blocks are rendered in Unicode Monospace by
+    default. Use --no-monospace-code to disable this.
 
     \b
     Examples:
@@ -63,9 +77,18 @@ def main(
 
       # Keep link URLs in the output
       md2linkedin README.md --preserve-links
+
+      # Disable monospace code rendering
+      md2linkedin README.md --no-monospace-code
     """
+    monospace_code = not no_monospace_code
     if input_file is not None:
-        out_path = convert_file(input_file, output_file, preserve_links=preserve_links)
+        out_path = convert_file(
+            input_file,
+            output_file,
+            preserve_links=preserve_links,
+            monospace_code=monospace_code,
+        )
         click.echo(f"LinkedIn-formatted text written to: {out_path}")
     else:
         # Read from stdin
@@ -76,7 +99,7 @@ def main(
             )
             raise click.UsageError(msg)
         md_text = sys.stdin.read()
-        result = convert(md_text, preserve_links=preserve_links)
+        result = convert(md_text, preserve_links=preserve_links, monospace_code=monospace_code)
         click.echo(result, nl=False)
 
 

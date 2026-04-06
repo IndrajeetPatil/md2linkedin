@@ -11,7 +11,7 @@ import re
 import uuid
 from pathlib import Path
 
-from ._unicode import to_sans_bold, to_sans_bold_italic, to_sans_italic
+from ._unicode import to_monospace, to_sans_bold, to_sans_bold_italic, to_sans_italic
 
 __all__ = ["convert", "convert_file"]
 
@@ -52,24 +52,49 @@ def _protect_code(text: str) -> tuple[str, dict[str, str]]:
     return text, placeholders
 
 
-def _restore_code(text: str, placeholders: dict[str, str]) -> str:
+def _restore_code(
+    text: str, placeholders: dict[str, str], *, monospace: bool = False
+) -> str:
     """Restore code placeholders to their original content.
 
     For inline code, the surrounding backticks are stripped (the plain text
     content is kept). For fenced blocks, the entire original block is kept
     intact so structure is preserved.
 
+    When *monospace* is ``True``, code content is converted to Unicode
+    Mathematical Monospace characters. Only ASCII letters and digits are
+    mapped; all other characters (including Markdown syntax) pass through
+    unchanged, so no nested processing is needed.
+
     Args:
         text: Text containing placeholders.
         placeholders: Map of placeholder → original code string.
+        monospace: When ``True``, apply monospace Unicode mapping to code.
 
     Returns:
         Text with all placeholders replaced by their original code content.
     """
     for key, original in placeholders.items():
         if original.startswith(("```", "~~~")):
-            # Keep fenced blocks as-is (no backtick stripping)
-            text = text.replace(key, original)
+            if monospace:
+                # Strip fences and optional language tag, convert content
+                fence = original[:3]
+                rest = original[3:]
+                # Remove closing fence
+                body = rest[: rest.rfind(fence)]
+                # Strip optional language tag (first line of body)
+                first_nl = body.find("\n")
+                if first_nl != -1:
+                    content = body[first_nl + 1 :]
+                else:
+                    content = ""
+                text = text.replace(key, to_monospace(content))
+            else:
+                # Keep fenced blocks as-is (no backtick stripping)
+                text = text.replace(key, original)
+        elif monospace:
+            # Strip backticks and apply monospace for inline code
+            text = text.replace(key, to_monospace(original[1:-1]))
         else:
             # Strip the surrounding backticks for inline code
             text = text.replace(key, original[1:-1])
@@ -361,7 +386,9 @@ def _normalize_whitespace(text: str) -> str:
 # ── Public API ─────────────────────────────────────────────────────────────────
 
 
-def convert(text: str, *, preserve_links: bool = False) -> str:
+def convert(
+    text: str, *, preserve_links: bool = False, monospace_code: bool = True
+) -> str:
     """Convert Markdown text to LinkedIn-compatible Unicode plain text.
 
     Bold (``**text**`` / ``__text__``), italic (``*text*`` / ``_text_``), and
@@ -372,8 +399,10 @@ def convert(text: str, *, preserve_links: bool = False) -> str:
     The following Markdown constructs are also handled:
 
     * **Headers** — ATX (``#``) and setext styles; H1 gets a ``━`` border.
-    * **Code spans** — backticks stripped, content kept as plain text.
-    * **Fenced code blocks** — preserved verbatim (no Unicode transforms).
+    * **Code spans** — backticks stripped; content converted to Unicode
+      Monospace by default (see *monospace_code*).
+    * **Fenced code blocks** — fences stripped and content converted to
+      Unicode Monospace by default (see *monospace_code*).
     * **Links** — stripped to display text by default (see *preserve_links*).
     * **Images** — replaced by alt text.
     * **Bullet lists** — ``-`` / ``*`` / ``+`` → ``•`` / ``‣`` (nested).
@@ -387,6 +416,10 @@ def convert(text: str, *, preserve_links: bool = False) -> str:
         text: The Markdown source string.
         preserve_links: When ``True``, link syntax (``[text](url)``) is left
             unchanged in the output instead of being reduced to display text.
+        monospace_code: When ``True`` (the default), inline code spans and
+            fenced code blocks are rendered in Unicode Mathematical Monospace.
+            When ``False``, inline code is kept as plain text and fenced
+            blocks are preserved verbatim.
 
     Returns:
         A plain-text string suitable for pasting into LinkedIn.
@@ -412,7 +445,7 @@ def convert(text: str, *, preserve_links: bool = False) -> str:
     text = _strip_links(text, preserve=preserve_links)
     text = _convert_bullets(text)
     text = _strip_blockquotes(text)
-    text = _restore_code(text, placeholders)
+    text = _restore_code(text, placeholders, monospace=monospace_code)
     text = _clean_entities(text)
     text = _clean_escaped_chars(text)
     return _normalize_whitespace(text)
@@ -423,6 +456,7 @@ def convert_file(
     output_path: str | Path | None = None,
     *,
     preserve_links: bool = False,
+    monospace_code: bool = True,
 ) -> Path:
     """Convert a Markdown file and write the result to a ``.txt`` file.
 
@@ -433,6 +467,7 @@ def convert_file(
             the input path with the extension replaced by
             ``.linkedin.txt``.
         preserve_links: Passed through to :func:`convert`.
+        monospace_code: Passed through to :func:`convert`.
 
     Returns:
         The resolved path of the written output file.
@@ -462,6 +497,6 @@ def convert_file(
     output_path = Path(output_path)
 
     md_text = input_path.read_text(encoding="utf-8")
-    result = convert(md_text, preserve_links=preserve_links)
+    result = convert(md_text, preserve_links=preserve_links, monospace_code=monospace_code)
     output_path.write_text(result, encoding="utf-8")
     return output_path

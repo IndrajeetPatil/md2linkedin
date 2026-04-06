@@ -81,6 +81,34 @@ class TestCliStdin:
         assert result.exit_code != 0
 
 
+class TestCliNoMonospaceCode:
+    def test_no_monospace_code_flag_file(self, tmp_path) -> None:
+        src = tmp_path / "post.md"
+        src.write_text("use `hello` here", encoding="utf-8")
+        dst = tmp_path / "out.txt"
+        runner = CliRunner()
+        runner.invoke(main, [str(src), "-o", str(dst), "--no-monospace-code"])
+        content = dst.read_text(encoding="utf-8")
+        assert "hello" in content
+        assert "𝚑𝚎𝚕𝚕𝚘" not in content
+
+    def test_monospace_code_default_on(self, tmp_path) -> None:
+        src = tmp_path / "post.md"
+        src.write_text("use `hello` here", encoding="utf-8")
+        dst = tmp_path / "out.txt"
+        runner = CliRunner()
+        runner.invoke(main, [str(src), "-o", str(dst)])
+        content = dst.read_text(encoding="utf-8")
+        assert "𝚑𝚎𝚕𝚕𝚘" in content
+
+    def test_no_monospace_code_stdin(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["--no-monospace-code"], input="use `hello` here")
+        assert result.exit_code == 0
+        assert "hello" in result.output
+        assert "𝚑𝚎𝚕𝚕𝚘" not in result.output
+
+
 class TestCliFlags:
     def test_version_flag(self) -> None:
         runner = CliRunner()
