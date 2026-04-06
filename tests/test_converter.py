@@ -364,7 +364,7 @@ class TestCleanEntities:
             ("a &lt; b", "a < b"),
             ("a &amp; b", "a & b"),
             ("a&nbsp;b", "a b"),
-            ('&quot;text&quot;', '"text"'),
+            ("&quot;text&quot;", '"text"'),
             ("it&apos;s", "it's"),
         ],
         ids=["gt", "lt", "amp", "nbsp", "quot", "apos"],
