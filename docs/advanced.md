@@ -30,11 +30,12 @@ print(f"Written to: {out}")  # post.linkedin.txt
 out = convert_file("post.md", "my_post.txt")
 ```
 
-### Preserving Links
+### Stripping and Preserving Links
 
 By default, Markdown link syntax is stripped to display text only
-(`[GitHub](https://github.com)` → `GitHub`). Pass `preserve_links=True` to
-retain the full link syntax:
+(`[GitHub](https://github.com)` → `GitHub`). This is useful for removing clickable URLs from your output, keeping only the descriptive text.
+
+Pass `preserve_links=True` to retain the full link syntax:
 
 ```python
 result = convert("[GitHub](https://github.com)", preserve_links=True)

@@ -38,6 +38,7 @@ platforms like LinkedIn that do not support Markdown natively.
 ### Python API
 
 ```{python}
+# @pyodide
 from md2linkedin import convert
 
 md = """
