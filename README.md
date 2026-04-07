@@ -102,6 +102,27 @@ md2linkedin post.md --no-monospace-code
 - **Emojis & non-ASCII**: pass through unchanged — no accidental
   corruption
 
+## Limitations
+
+Converting Markdown to LinkedIn-friendly text relies on Unicode
+Mathematical Alphanumeric Symbols to simulate styling. This approach has
+notable limitations:
+
+- **Code Blocks**: Monospace Unicode characters do not enforce true
+  fixed-width alignment on proportional fonts (like LinkedIn’s default
+  font). As a result, indentation and column alignment in code blocks
+  will often break visually.
+- **Tables**: Markdown tables are not converted — they pass through as
+  raw pipe syntax (`| col | col |`), which LinkedIn does not render,
+  producing unreadable output.
+- **Accessibility**: Screen readers often read Unicode mathematical
+  characters aloud individually (e.g., “mathematical sans-serif bold b”)
+  instead of as complete words, making the content difficult for
+  visually impaired users to understand.
+- **Searchability**: Text styled with these Unicode characters may not
+  be indexed properly by LinkedIn’s search algorithm, meaning people
+  searching for your keywords might not find your post.
+
 For more examples, check out the package documentation at:
 <https://www.indrapatil.com/md2linkedin/>
 
