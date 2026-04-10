@@ -11,38 +11,4 @@ permissions:
 
 jobs:
   qa:
-    name: Code Quality Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
-
-      - name: Install dependencies
-        run: |
-          uv python install
-          uv sync --all-extras --dev
-
-      - name: Build the package
-        run: uv build
-
-      - name: Run QA checks
-        run: make qa
-
-      - name: Compute Coverage
-        run: |
-          uv run coverage run -m pytest tests/
-          uv run coverage report --fail-under=95
-          uv run coverage html
-
-      - name: Install Pandoc
-        uses: r-lib/actions/setup-pandoc@6f6e5bc62fba3a704f74e7ad7ef7676c5c6a2590 # v2.11.4
-
-      - name: Install Quarto
-        uses: quarto-dev/quarto-actions/setup@8a96df13519ee81fd526f2dfca5962811136661b # v2.2.0
-
-      - name: Check README examples
-        run: uv run quarto render README.qmd
+    uses: IndrajeetPatil/workflows/.github/workflows/python-qa.yaml@main
