@@ -1,6 +1,6 @@
 [project]
 name = "md2linkedin"
-version = "0.2.1"
+version = "0.2.2"
 description = "Convert Markdown to LinkedIn-friendly Unicode text"
 readme = "README.md"
 authors = [
@@ -26,7 +26,7 @@ classifiers = [
     "Topic :: Text Processing :: Markup",
     "Topic :: Utilities",
 ]
-dependencies = ["click>=8.3.2"]
+dependencies = ["click>=8.3.3"]
 
 [project.scripts]
 md2linkedin = "md2linkedin._cli:main"
@@ -42,14 +42,14 @@ Changelog = "https://github.com/IndrajeetPatil/md2linkedin/blob/main/CHANGELOG.m
 dev = [
     "coverage>=7.13.5",
     "jupyter>=1.1.1",
-    "zensical>=0.0.31",
+    "zensical>=0.0.36",
     "mkdocstrings-python>=2.0.3",
-    "ty>=0.0.29",
-    "prek>=0.3.8",
-    "pytest>=9.0.2",
+    "ty>=0.0.32",
+    "prek>=0.3.10",
+    "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
     "pytest-random-order>=1.2.0",
-    "ruff>=0.15.9",
+    "ruff>=0.15.11",
     "add-trailing-comma>=4.0.0",
 ]
 
