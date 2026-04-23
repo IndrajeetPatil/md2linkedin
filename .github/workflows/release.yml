@@ -9,7 +9,40 @@ permissions:
 
 jobs:
   release:
-    uses: IndrajeetPatil/workflows/.github/workflows/python-release.yaml@main
-    permissions:
-      contents: write
-      id-token: write
+    name: Create GitHub Release and Publish to PyPI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+
+      - name: Resolve version
+        id: version
+        env:
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          version=$(uv version | awk '{print $NF}')
+          echo "tag=${version}" >> "$GITHUB_OUTPUT"
+          echo "title=${REPO_NAME} ${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: |
+          uv python install
+          uv sync --all-extras --dev
+
+      - name: Build package
+        run: uv build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.title }}
+          generate_release_notes: true
+          target_commitish: ${{ github.sha }}
+
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
