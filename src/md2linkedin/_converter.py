@@ -317,7 +317,7 @@ def _convert_bullets(text: str) -> str:
         indent = m.group(1)
         return "  ‣ " if len(indent) >= _NESTED_BULLET_MIN_INDENT else "• "
 
-    return re.sub(r"^(\s*)[-*+] ", _bullet, text, flags=re.MULTILINE)
+    return re.sub(r"^([ \t]*)[-*+] ", _bullet, text, flags=re.MULTILINE)
 
 
 def _strip_blockquotes(text: str) -> str:

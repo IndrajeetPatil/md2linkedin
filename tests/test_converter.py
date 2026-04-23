@@ -333,6 +333,13 @@ class TestConvertBullets:
         result = _convert_bullets(text)
         assert result.count("•") == 3
 
+    def test_bullet_after_blank_lines_not_nested(self) -> None:
+        text = "some text\n\n\n- first\n  - sub\n- second"
+        result = _convert_bullets(text)
+        assert result.startswith("some text\n\n\n• first")
+        assert "  ‣ sub" in result
+        assert result.endswith("• second")
+
 
 # ── _strip_blockquotes ────────────────────────────────────────────────────────
 
@@ -568,6 +575,12 @@ class TestConvert:
         result = convert("<https://example.com>")
         assert "<" not in result
         assert "https://example.com" in result
+
+    def test_bullet_list_after_heading(self) -> None:
+        result = convert("# Heading\n\n- first\n  - sub\n- second")
+        assert "• first" in result
+        assert "  ‣ sub" in result
+        assert "• second" in result
 
 
 # ── convert_file ──────────────────────────────────────────────────────────────
