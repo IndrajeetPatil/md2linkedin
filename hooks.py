@@ -1,14 +1,15 @@
-import os
+from pathlib import Path
+from typing import Any
 
 
-def on_post_build(config, **kwargs):
-    well_known = os.path.join(config["site_dir"], ".well-known")
-    os.makedirs(well_known, exist_ok=True)
-    with open(os.path.join(well_known, "llms.txt"), "w") as f:
-        f.write(
-            "# LLM Documentation Index for md2linkedin\n"
-            "# Machine-readable documentation index for AI assistants\n"
-            "# See https://llmstxt.org/ for the specification\n\n"
-            "/llms.txt: Concise package overview for AI assistants\n"
-            "/llms-full.txt: Complete package documentation for AI assistants\n"
-        )
+def on_post_build(config: dict[str, Any]) -> None:
+    well_known = Path(config["site_dir"]) / ".well-known"
+    well_known.mkdir(exist_ok=True)
+    (well_known / "llms.txt").write_text(
+        "# LLM Documentation Index for md2linkedin\n"
+        "# Machine-readable documentation index for AI assistants\n"
+        "# See https://llmstxt.org/ for the specification\n\n"
+        "/llms.txt: Concise package overview for AI assistants\n"
+        "/llms-full.txt: Complete package documentation for AI assistants\n",
+        encoding="utf-8",
+    )
