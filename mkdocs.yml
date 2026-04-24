@@ -17,6 +17,7 @@ nav:
 
 theme:
   name: material
+  custom_dir: overrides
   logo: assets/logo.png
   favicon: assets/favicon.ico
   features:
@@ -119,3 +120,11 @@ extra_javascript:
 
 extra_css:
   - stylesheets/pyodide_runner.css
+
+extra:
+  analytics:
+    provider: google
+    property: G-3BQ49J7KYH
+
+hooks:
+  - hooks.py

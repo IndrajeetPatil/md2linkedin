@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+  {{ super() }}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "md2linkedin",
+    "description": "A Python library and CLI tool that converts Markdown text to LinkedIn-compatible Unicode plain text. Bold and italic formatting is preserved using Unicode Mathematical Sans-Serif characters so styling survives when pasting into platforms that do not support Markdown.",
+    "url": "https://www.indrapatil.com/md2linkedin/",
+    "codeRepository": "https://github.com/IndrajeetPatil/md2linkedin",
+    "programmingLanguage": {
+      "@type": "ComputerLanguage",
+      "name": "Python"
+    },
+    "license": "https://opensource.org/licenses/MIT",
+    "version": "0.2.2",
+    "author": {
+      "@type": "Person",
+      "name": "Indrajeet Patil",
+      "url": "https://www.indrapatil.com/",
+      "sameAs": "https://orcid.org/0000-0003-1995-6531"
+    },
+    "keywords": ["Python", "Markdown", "LinkedIn", "Unicode", "text conversion", "CLI", "formatting"]
+  }
+  </script>
+  <meta name="citation_title" content="md2linkedin: Convert Markdown to LinkedIn-friendly Unicode text" />
+  <meta name="citation_author" content="Indrajeet Patil" />
+  <meta name="citation_software_version" content="0.2.2" />
+  <link rel="alternate" type="text/plain" href="/md2linkedin/llms.txt" title="LLM-friendly documentation summary" />
+  <link rel="alternate" type="text/plain" href="/md2linkedin/llms-full.txt" title="Full LLM documentation" />
+{% endblock %}
