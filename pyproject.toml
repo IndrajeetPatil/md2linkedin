@@ -26,7 +26,9 @@ classifiers = [
     "Topic :: Text Processing :: Markup",
     "Topic :: Utilities",
 ]
-dependencies = ["click>=8.3.3"]
+dependencies = [
+    "click>=8.3.3",
+]
 
 [project.scripts]
 md2linkedin = "md2linkedin._cli:main"
@@ -42,19 +44,19 @@ Changelog = "https://github.com/IndrajeetPatil/md2linkedin/blob/main/CHANGELOG.m
 dev = [
     "coverage>=7.13.5",
     "jupyter>=1.1.1",
-    "zensical>=0.0.36",
+    "zensical>=0.0.38",
     "mkdocstrings-python>=2.0.3",
-    "ty>=0.0.32",
-    "prek>=0.3.10",
+    "ty>=0.0.33",
+    "prek>=0.3.11",
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
     "pytest-random-order>=1.2.0",
-    "ruff>=0.15.11",
+    "ruff>=0.15.12",
     "add-trailing-comma>=4.0.0",
 ]
 
 [build-system]
-requires = ["uv_build>=0.11.2,<0.12"]
+requires = ["uv_build>=0.11.8,<0.12"]
 build-backend = "uv_build"
 
 [tool.ruff]
@@ -140,4 +142,4 @@ exclude = [".venv", "build", "dist", "docs"]
 python-version = "3.10"
 
 [tool.uv]
-required-version = ">=0.11.2"
+required-version = ">=0.11.8"
