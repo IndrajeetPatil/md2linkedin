@@ -21,6 +21,13 @@ natively.
 | pip             | `pip install md2linkedin` |
 | uv              | `uv add md2linkedin`      |
 
+> [!TIP]
+> Run the CLI without installing it:
+>
+> ```bash
+> uvx md2linkedin post.md
+> ```
+
 ## Usage
 
 ### Python API
@@ -53,6 +60,7 @@ print(convert(md))
     I'm thrilled to share that 𝘄𝗲 𝗷𝘂𝘀𝘁 𝗹𝗮𝘂𝗻𝗰𝗵𝗲𝗱 a new product!
 
     Key highlights:
+
     • 𝗣𝗲𝗿𝗳𝗼𝗿𝗺𝗮𝗻𝗰𝗲: 3𝘹 𝘧𝘢𝘴𝘵𝘦𝘳 than the previous version
     • 𝗥𝗲𝗹𝗶𝗮𝗯𝗶𝗹𝗶𝘁𝘆: 𝙯𝙚𝙧𝙤 𝙙𝙤𝙬𝙣𝙩𝙞𝙢𝙚 deployments
     • 𝗗𝗲𝘃𝗲𝗹𝗼𝗽𝗲𝗿 𝗨𝗫: clean, intuitive API
