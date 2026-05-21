@@ -33,14 +33,8 @@ platforms like LinkedIn that do not support Markdown natively.
 | pip             | `pip install md2linkedin` |
 | uv              | `uv add md2linkedin`      |
 
-```{=markdown}
-> [!TIP]
-> Run the CLI without installing it:
->
-> ```bash
-> uvx md2linkedin post.md
-> ```
-```
+> **Tip:** Run the CLI without installing it with
+> `uvx md2linkedin post.md`.
 
 ## Usage
 
