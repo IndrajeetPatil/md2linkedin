@@ -21,12 +21,8 @@ natively.
 | pip             | `pip install md2linkedin` |
 | uv              | `uv add md2linkedin`      |
 
-> [!TIP]
-> Run the CLI without installing it:
->
-> ```bash
-> uvx md2linkedin post.md
-> ```
+> **Tip:** Run the CLI without installing it with
+> `uvx md2linkedin post.md`.
 
 ## Usage
 
