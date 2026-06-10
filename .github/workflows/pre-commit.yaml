@@ -1,0 +1,11 @@
+on:
+  pull_request:
+    branches: [main]
+
+name: prek
+
+jobs:
+  prek:
+    uses: IndrajeetPatil/workflows/.github/workflows/pre-commit.yaml@main
+    permissions:
+      contents: write
