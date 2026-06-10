@@ -4,10 +4,17 @@ default_stages = ["pre-commit"]
 
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.15.13"
+rev = "v0.15.16"
 hooks = [
   { id = "ruff", args = ["--fix"] },
   { id = "ruff-format" },
+]
+
+[[repos]]
+repo = "https://github.com/astral-sh/ty-pre-commit"
+rev = "v0.0.47"
+hooks = [
+  { id = "ty", args = ["--isolated"] },
 ]
 
 [[repos]]
