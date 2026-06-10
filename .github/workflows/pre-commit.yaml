@@ -6,6 +6,6 @@ name: prek
 
 jobs:
   prek:
-    uses: IndrajeetPatil/workflows/.github/workflows/pre-commit.yaml@main
+    uses: IndrajeetPatil/workflows/.github/workflows/pre-commit.yaml@c73d24befb19ed51e2737558d076189ac23ad69d
     permissions:
-      contents: write
+      contents: read
