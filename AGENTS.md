@@ -12,7 +12,9 @@ This is a Python package repository following standard development practices.
 ## Setup & Dependencies
 - We use [`uv`](https://github.com/astral-sh/uv) for fast package and environment management.
 - **Do not** use `pip`, `pipenv`, or `poetry` directly.
-- **Do not** manually edit `uv.lock`. Use `make update-deps` to sync and update dependencies.
+- **Do not** manually edit `uv.lock`. 
+- To reproduce the locked environment, run `uv sync`.
+- To explicitly upgrade dependencies and pre-commit hooks, run `make update-deps`.
 
 ## Code Quality & Testing
 - Code formatting and linting are handled by `ruff`, and type checking by `ty`.
