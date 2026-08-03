@@ -56,7 +56,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.11.15,<0.12"]
+requires = ["uv_build>=0.12.0,<0.13"]
 build-backend = "uv_build"
 
 [tool.ruff]
@@ -67,39 +67,35 @@ unsafe-fixes = true
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "COM812",
+    # Required for compatibility with Ruff's formatter.
+    "missing-trailing-comma",
+    # Mutually exclusive with D211 and D212, respectively.
+    "incorrect-blank-line-before-class",
+    "multi-line-summary-second-line",
+    # This project uses a repository-level LICENSE instead of per-file notices.
     "CPY",
-    # Docstring content rules — we intentionally omit Returns/Raises sections
-    # in internal helpers, consistent with ignoring D (pydocstyle) above.
-    "D",
-    "DOC",
     # This package's output IS Unicode Mathematical characters; having them in
     # docstring examples and block-comment separators is intentional.
-    "RUF002",
-    "RUF003",
+    "ambiguous-unicode-character-docstring",
+    "ambiguous-unicode-character-comment",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
     # docstring requirements
     "D",
-    "DOC",
     # tests can use asserts
-    "S101",
-    # pytest fixtures (e.g. tmp_path) don't need type annotations
-    "ANN001",
+    "assert",
     # tests legitimately import private internals to test them directly
-    "PLC2701",
+    "import-private-name",
     # test methods inside classes don't need @staticmethod — class grouping is intentional
-    "PLR6301",
+    "no-self-use",
     # test assertions for Unicode output use the literal Unicode chars (intentional)
-    "RUF001",
-    # `== ""` vs `not x` — both forms are acceptable in assertions
-    "PLC1901",
+    "ambiguous-unicode-character-string",
     # magic numbers in assertions are fine (e.g. expected count == 3)
-    "PLR2004",
+    "magic-value-comparison",
     # large test classes are fine when grouping related cases
-    "PLR0904",
+    "too-many-public-methods",
 ]
 
 [tool.ruff.format]
@@ -142,4 +138,4 @@ exclude = [".venv", "build", "dist", "docs"]
 python-version = "3.10"
 
 [tool.uv]
-required-version = ">=0.11.15"
+required-version = ">=0.12.0"

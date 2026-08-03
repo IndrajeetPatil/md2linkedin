@@ -54,7 +54,7 @@ def main(
     preserve_links: bool,
     no_monospace_code: bool,
 ) -> None:
-    """Convert Markdown to LinkedIn-friendly Unicode text.
+    r"""Convert Markdown to LinkedIn-friendly Unicode text.
 
     Reads from INPUT_FILE (or stdin when INPUT_FILE is omitted) and writes
     LinkedIn-compatible plain text in which bold and italic formatting is
@@ -80,6 +80,10 @@ def main(
 
       # Disable monospace code rendering
       md2linkedin README.md --no-monospace-code
+
+    Raises:
+        click.UsageError: If neither an input file nor piped stdin is provided.
+
     """
     monospace_code = not no_monospace_code
     if input_file is not None:
@@ -112,5 +116,9 @@ def _stdin_is_tty() -> bool:
 
     Extracted into its own function so tests can mock it cleanly without
     fighting Click's own stdin-swapping inside ``CliRunner.invoke``.
+
+    Returns:
+        Whether stdin is connected to an interactive terminal.
+
     """
     return sys.stdin.isatty()

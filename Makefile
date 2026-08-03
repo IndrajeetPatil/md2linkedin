@@ -83,7 +83,7 @@ help:
 	@printf "    $(RED)lint$(NC)          - Lint code with ruff and fix issues\n"
 	@printf "    $(RED)typecheck$(NC)     - Run type checking with ty\n"
 	@printf "    $(RED)audit$(NC)         - Audit prod dependencies for vulnerabilities\n"
-	@printf "    $(RED)qa$(NC)            - Run all quality checks (format, lint, typecheck)\n"
+	@printf "    $(RED)qa$(NC)            - Run all quality checks (format, lint, typecheck, audit)\n"
 	@printf "    $(RED)hooks$(NC)         - Run all prek pre-commit hooks\n\n"
 	@printf "$(GREEN) Testing and Packaging:$(NC)\n"
 	@printf "    $(RED)test-coverage$(NC) - Run tests and generate coverage report\n"

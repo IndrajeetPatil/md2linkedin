@@ -21,7 +21,12 @@ _NESTED_BULLET_MIN_INDENT = 2  # spaces of indentation that triggers a nested bu
 
 
 def _normalize_line_endings(text: str) -> str:
-    """Normalize Windows (\\r\\n) and classic Mac (\\r) line endings to \\n."""
+    r"""Normalize Windows (\\r\\n) and classic Mac (\\r) line endings to \\n.
+
+    Returns:
+        Text containing only Unix-style line endings.
+
+    """
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
@@ -37,6 +42,7 @@ def _protect_code(text: str) -> tuple[str, dict[str, str]]:
     Returns:
         A ``(modified_text, placeholder_map)`` tuple where *placeholder_map*
         maps each placeholder back to its original code string.
+
     """
     placeholders: dict[str, str] = {}
 
@@ -76,6 +82,7 @@ def _restore_code(
 
     Returns:
         Text with all placeholders replaced by their original code content.
+
     """
     for key, original in placeholders.items():
         if original.startswith(("```", "~~~")):
@@ -112,6 +119,7 @@ def _strip_html_spans(text: str) -> str:
 
     Returns:
         Text with all span elements removed and their inner content preserved.
+
     """
     prev = None
     while prev != text:
@@ -121,7 +129,7 @@ def _strip_html_spans(text: str) -> str:
 
 
 def _convert_bold_italic(text: str) -> str:
-    """Replace ``***text***`` (or ``___text___``) with bold-italic Unicode.
+    r"""Replace ``***text***`` (or ``___text___``) with bold-italic Unicode.
 
     Must run before :func:`_convert_bold` and :func:`_convert_italic` to
     prevent the triple markers from being consumed piecemeal.
@@ -133,6 +141,7 @@ def _convert_bold_italic(text: str) -> str:
 
     Returns:
         Text with bold-italic markers replaced.
+
     """
     text = re.sub(
         r"(?<!\\)\*{3}(.+?)(?<!\\)\*{3}",
@@ -147,7 +156,7 @@ def _convert_bold_italic(text: str) -> str:
 
 
 def _convert_bold(text: str) -> str:
-    """Replace ``**text**`` (or ``__text__``) with bold Unicode.
+    r"""Replace ``**text**`` (or ``__text__``) with bold Unicode.
 
     Backslash-escaped markers (``\\**``) are not matched.
 
@@ -156,6 +165,7 @@ def _convert_bold(text: str) -> str:
 
     Returns:
         Text with bold markers replaced.
+
     """
     text = re.sub(
         r"(?<!\\)\*{2}(.+?)(?<!\\)\*{2}",
@@ -170,7 +180,7 @@ def _convert_bold(text: str) -> str:
 
 
 def _convert_italic(text: str) -> str:
-    """Replace ``*text*`` or ``_text_`` with italic Unicode.
+    r"""Replace ``*text*`` or ``_text_`` with italic Unicode.
 
     Uses negative look-around to avoid matching asterisks that are part of
     bold (``**``) or bold-italic (``***``) markers already consumed by
@@ -182,6 +192,7 @@ def _convert_italic(text: str) -> str:
 
     Returns:
         Text with italic markers replaced.
+
     """
     # *text* — negative look-around prevents matching residual ** markers or \* escapes
     text = re.sub(
@@ -208,6 +219,7 @@ def _convert_headers(text: str) -> str:
 
     Returns:
         Text with headers replaced by styled plain text.
+
     """
     separator = "━" * 40
 
@@ -269,6 +281,7 @@ def _strip_links(text: str, *, preserve: bool = False) -> str:
 
     Returns:
         Text with links handled according to *preserve*.
+
     """
     if preserve:
         return text
@@ -290,6 +303,7 @@ def _strip_images(text: str) -> str:
 
     Returns:
         Text with image syntax replaced by alt text.
+
     """
     # ![alt](url) → alt  (empty alt → removed)
     return re.sub(
@@ -311,6 +325,7 @@ def _convert_bullets(text: str) -> str:
 
     Returns:
         Text with list markers replaced.
+
     """
 
     def _bullet(m: re.Match[str]) -> str:
@@ -328,6 +343,7 @@ def _strip_blockquotes(text: str) -> str:
 
     Returns:
         Text with blockquote markers stripped from line beginnings.
+
     """
     return re.sub(r"^> ?", "", text, flags=re.MULTILINE)
 
@@ -341,6 +357,7 @@ def _clean_entities(text: str) -> str:
     Returns:
         Text with ``&gt;``, ``&lt;``, ``&amp;``, ``&nbsp;``, ``&quot;``
         replaced by their literal equivalents.
+
     """
     replacements = {
         "&gt;": ">",
@@ -356,13 +373,14 @@ def _clean_entities(text: str) -> str:
 
 
 def _clean_escaped_chars(text: str) -> str:
-    """Remove Markdown backslash escapes (e.g. ``\\*`` → ``*``).
+    r"""Remove Markdown backslash escapes (e.g. ``\\*`` → ``*``).
 
     Args:
         text: Input text.
 
     Returns:
         Text with backslash escapes resolved.
+
     """
     return re.sub(r"\\([\\`*_{}\[\]()#+\-.!])", r"\1", text)
 
@@ -378,6 +396,7 @@ def _normalize_whitespace(text: str) -> str:
 
     Returns:
         Normalized text with a single trailing newline.
+
     """
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip() + "\n"
@@ -392,7 +411,7 @@ def convert(
     preserve_links: bool = False,
     monospace_code: bool = True,
 ) -> str:
-    """Convert Markdown text to LinkedIn-compatible Unicode plain text.
+    r"""Convert Markdown text to LinkedIn-compatible Unicode plain text.
 
     Bold (``**text**`` / ``__text__``), italic (``*text*`` / ``_text_``), and
     bold-italic (``***text***`` / ``___text___``) markers are replaced with
@@ -433,6 +452,7 @@ def convert(
 
         >>> convert("")
         ''
+
     """
     if not text or not text.strip():
         return ""
@@ -461,7 +481,7 @@ def convert_file(
     preserve_links: bool = False,
     monospace_code: bool = True,
 ) -> Path:
-    """Convert a Markdown file and write the result to a ``.txt`` file.
+    r"""Convert a Markdown file and write the result to a ``.txt`` file.
 
     Args:
         input_path: Path to the Markdown source file (``.md`` or any text
@@ -489,6 +509,7 @@ def convert_file(
         '𝗯𝗼𝗹𝗱 and 𝘪𝘵𝘢𝘭𝘪𝘤\\n'
         >>> os.unlink(tmp)
         ... os.unlink(str(out))
+
     """
     input_path = Path(input_path)
     if not input_path.exists():

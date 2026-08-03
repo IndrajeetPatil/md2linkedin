@@ -108,7 +108,7 @@ class TestProtectAndRestoreCode:
         text, placeholders = _protect_code("``````")
         restored = _restore_code(text, placeholders, monospace=True)
         assert "```" not in restored
-        assert restored == ""
+        assert not restored
 
     def test_fenced_block_monospace_preserves_syntax_chars(self) -> None:
         text, placeholders = _protect_code("```\n**not bold**\n```")
@@ -303,7 +303,7 @@ class TestStripImages:
         assert _strip_images("![Logo](logo.png)") == "Logo"
 
     def test_image_with_empty_alt_removed(self) -> None:
-        assert _strip_images("![](logo.png)") == ""
+        assert not _strip_images("![](logo.png)")
 
     def test_no_images_unchanged(self) -> None:
         assert _strip_images("plain text") == "plain text"
@@ -426,10 +426,10 @@ class TestNormalizeWhitespace:
 
 class TestConvert:
     def test_empty_string(self) -> None:
-        assert convert("") == ""
+        assert not convert("")
 
     def test_whitespace_only(self) -> None:
-        assert convert("   \n  ") == ""
+        assert not convert("   \n  ")
 
     def test_bold(self) -> None:
         result = convert("**hello**")
@@ -587,7 +587,7 @@ class TestConvert:
 
 
 class TestConvertFile:
-    def test_basic_conversion(self, tmp_path) -> None:
+    def test_basic_conversion(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
         src.write_text("**bold** text", encoding="utf-8")
         out = convert_file(src)
@@ -595,14 +595,14 @@ class TestConvertFile:
         content = out.read_text(encoding="utf-8")
         assert "**" not in content
 
-    def test_default_output_path(self, tmp_path) -> None:
+    def test_default_output_path(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
         src.write_text("hello", encoding="utf-8")
         out = convert_file(src)
         assert out.suffix == ".txt"
         assert "linkedin" in out.name
 
-    def test_explicit_output_path(self, tmp_path) -> None:
+    def test_explicit_output_path(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
         dst = tmp_path / "output.txt"
         src.write_text("hello", encoding="utf-8")
@@ -610,23 +610,23 @@ class TestConvertFile:
         assert out == dst
         assert dst.exists()
 
-    def test_preserve_links_forwarded(self, tmp_path) -> None:
+    def test_preserve_links_forwarded(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
         src.write_text("[GitHub](https://github.com)", encoding="utf-8")
         out = convert_file(src, preserve_links=True)
         assert "https://github.com" in out.read_text(encoding="utf-8")
 
-    def test_string_path_accepted(self, tmp_path) -> None:
+    def test_string_path_accepted(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
         src.write_text("hello", encoding="utf-8")
         out = convert_file(str(src))
         assert out.exists()
 
-    def test_file_not_found_raises(self, tmp_path) -> None:
+    def test_file_not_found_raises(self, tmp_path: Path) -> None:
         with pytest.raises(FileNotFoundError):
             convert_file(tmp_path / "nonexistent.md")
 
-    def test_output_is_utf8(self, tmp_path) -> None:
+    def test_output_is_utf8(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
         src.write_text("**café** résumé 🎉", encoding="utf-8")
         out = convert_file(src)
@@ -634,7 +634,7 @@ class TestConvertFile:
         assert "é" in content
         assert "🎉" in content
 
-    def test_monospace_code_forwarded(self, tmp_path) -> None:
+    def test_monospace_code_forwarded(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
         src.write_text("use `hello` here", encoding="utf-8")
         out = convert_file(src, monospace_code=False)
@@ -642,14 +642,14 @@ class TestConvertFile:
         assert "hello" in content
         assert "𝚑𝚎𝚕𝚕𝚘" not in content
 
-    def test_monospace_code_default(self, tmp_path) -> None:
+    def test_monospace_code_default(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
         src.write_text("use `hello` here", encoding="utf-8")
         out = convert_file(src)
         content = out.read_text(encoding="utf-8")
         assert "𝚑𝚎𝚕𝚕𝚘" in content
 
-    def test_returns_path_object(self, tmp_path) -> None:
+    def test_returns_path_object(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
         src.write_text("hello", encoding="utf-8")
         result = convert_file(src)
