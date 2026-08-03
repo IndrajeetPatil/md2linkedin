@@ -1,4 +1,4 @@
-"""Command-line interface for md2linkedin."""
+"""Command-line interface for converting Markdown with md2linkedin."""
 
 from __future__ import annotations
 
