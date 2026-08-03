@@ -61,6 +61,7 @@ def to_sans_bold(text: str) -> str:
 
         >>> to_sans_bold("")
         ''
+
     """
     out: list[str] = []
     for c in text:
@@ -98,6 +99,7 @@ def to_sans_italic(text: str) -> str:
 
         >>> to_sans_italic("")
         ''
+
     """
     out: list[str] = []
     for c in text:
@@ -130,6 +132,7 @@ def to_sans_bold_italic(text: str) -> str:
 
         >>> to_sans_bold_italic("")
         ''
+
     """
     out: list[str] = []
     for c in text:
@@ -165,6 +168,7 @@ def to_monospace(text: str) -> str:
 
         >>> to_monospace("")
         ''
+
     """
     out: list[str] = []
     for c in text:
@@ -205,6 +209,7 @@ def apply_style(text: str, style: Literal["bold", "italic", "bold_italic"]) -> s
 
         >>> apply_style("hello", "bold_italic")
         '𝙝𝙚𝙡𝙡𝙤'
+
     """
     if style == "bold":
         return to_sans_bold(text)

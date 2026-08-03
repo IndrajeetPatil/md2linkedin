@@ -1,8 +1,11 @@
+"""Zensical build hooks for generated documentation assets."""
+
 from pathlib import Path
 from typing import Any
 
 
 def on_post_build(config: dict[str, Any]) -> None:
+    """Write the site-wide llms.txt discovery file after a docs build."""
     well_known = Path(config["site_dir"]) / ".well-known"
     well_known.mkdir(exist_ok=True)
     (well_known / "llms.txt").write_text(

@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 from click.testing import CliRunner
 
 from md2linkedin._cli import main
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 class TestCliFileInput:
-    def test_converts_file(self, tmp_path) -> None:
+    def test_converts_file(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
         src.write_text("**bold** text", encoding="utf-8")
         runner = CliRunner()
@@ -18,7 +22,7 @@ class TestCliFileInput:
         assert result.exit_code == 0
         assert "LinkedIn-formatted" in result.output
 
-    def test_default_output_filename(self, tmp_path) -> None:
+    def test_default_output_filename(self, tmp_path: Path) -> None:
         src = tmp_path / "post.md"
         src.write_text("hello", encoding="utf-8")
         runner = CliRunner()
@@ -26,7 +30,7 @@ class TestCliFileInput:
         expected = tmp_path / "post.linkedin.txt"
         assert expected.exists()
 
-    def test_explicit_output_path(self, tmp_path) -> None:
+    def test_explicit_output_path(self, tmp_path: Path) -> None:
         src = tmp_path / "post.md"
         dst = tmp_path / "out.txt"
         src.write_text("hello", encoding="utf-8")
@@ -35,7 +39,7 @@ class TestCliFileInput:
         assert result.exit_code == 0
         assert dst.exists()
 
-    def test_preserve_links_flag(self, tmp_path) -> None:
+    def test_preserve_links_flag(self, tmp_path: Path) -> None:
         src = tmp_path / "post.md"
         src.write_text("[GitHub](https://github.com)", encoding="utf-8")
         dst = tmp_path / "out.txt"
@@ -43,14 +47,14 @@ class TestCliFileInput:
         runner.invoke(main, [str(src), "-o", str(dst), "--preserve-links"])
         assert "https://github.com" in dst.read_text(encoding="utf-8")
 
-    def test_output_path_printed(self, tmp_path) -> None:
+    def test_output_path_printed(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
         src.write_text("hello", encoding="utf-8")
         runner = CliRunner()
         result = runner.invoke(main, [str(src)])
         assert str(tmp_path) in result.output
 
-    def test_nonexistent_file_error(self, tmp_path) -> None:
+    def test_nonexistent_file_error(self, tmp_path: Path) -> None:
         runner = CliRunner()
         result = runner.invoke(main, [str(tmp_path / "missing.md")])
         assert result.exit_code != 0
@@ -82,7 +86,7 @@ class TestCliStdin:
 
 
 class TestCliNoMonospaceCode:
-    def test_no_monospace_code_flag_file(self, tmp_path) -> None:
+    def test_no_monospace_code_flag_file(self, tmp_path: Path) -> None:
         src = tmp_path / "post.md"
         src.write_text("use `hello` here", encoding="utf-8")
         dst = tmp_path / "out.txt"
@@ -92,7 +96,7 @@ class TestCliNoMonospaceCode:
         assert "hello" in content
         assert "𝚑𝚎𝚕𝚕𝚘" not in content
 
-    def test_monospace_code_default_on(self, tmp_path) -> None:
+    def test_monospace_code_default_on(self, tmp_path: Path) -> None:
         src = tmp_path / "post.md"
         src.write_text("use `hello` here", encoding="utf-8")
         dst = tmp_path / "out.txt"

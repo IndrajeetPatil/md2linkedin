@@ -20,7 +20,7 @@ This is a Python package repository following standard development practices.
 - Code formatting and linting are handled by `ruff`, and type checking by `ty`.
 - Pre-commit hooks are configured via `prek`.
 - **Do not** commit code with linting errors, type warnings, or failing tests.
-- Always run `make qa` to format, lint, and type-check your code.
+- Always run `make qa` to format, lint, type-check, and audit dependencies.
 - Run `make check-package` to run the full validation suite (QA + Tests + Build).
 - **Do not** bypass the `Makefile`; rely on its targets for standardized workflows.
 

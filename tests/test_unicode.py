@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import string
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import pytest
 
@@ -47,7 +47,7 @@ class TestToSansBold:
         assert to_sans_bold("a b") == "𝗮 𝗯"
 
     def test_empty_string(self) -> None:
-        assert to_sans_bold("") == ""
+        assert not to_sans_bold("")
 
     def test_full_sentence(self) -> None:
         result = to_sans_bold("Hello World 123")
@@ -80,7 +80,7 @@ class TestToSansItalic:
         assert to_sans_italic("Hello!") == "𝘏𝘦𝘭𝘭𝘰!"
 
     def test_empty_string(self) -> None:
-        assert to_sans_italic("") == ""
+        assert not to_sans_italic("")
 
 
 # ── to_sans_bold_italic ────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ class TestToSansBoldItalic:
         assert to_sans_bold_italic("café") == "𝙘𝙖𝙛é"
 
     def test_empty_string(self) -> None:
-        assert to_sans_bold_italic("") == ""
+        assert not to_sans_bold_italic("")
 
     def test_mixed(self) -> None:
         result = to_sans_bold_italic("Hello World!")
@@ -138,7 +138,7 @@ class TestToMonospace:
         assert to_monospace("a b") == "𝚊 𝚋"
 
     def test_empty_string(self) -> None:
-        assert to_monospace("") == ""
+        assert not to_monospace("")
 
     def test_full_sentence(self) -> None:
         result = to_monospace("Hello World 123")
@@ -160,14 +160,14 @@ class TestApplyStyle:
 
     def test_invalid_style_raises(self) -> None:
         with pytest.raises(ValueError, match="Unknown style"):
-            apply_style("hello", "underline")  # ty: ignore[invalid-argument-type]
+            apply_style("hello", cast("Any", "underline"))
 
     @pytest.mark.parametrize("style", ["bold", "italic", "bold_italic"])
     def test_empty_string(
         self,
         style: Literal["bold", "italic", "bold_italic"],
     ) -> None:
-        assert apply_style("", style) == ""
+        assert not apply_style("", style)
 
     @pytest.mark.parametrize(
         ("style", "func"),
