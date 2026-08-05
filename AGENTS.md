@@ -29,3 +29,11 @@ This is a Python package repository following standard development practices.
 2. Implement your code changes within `src/` and corresponding tests within `tests/`.
 3. Verify all changes by running `make check-package`.
 4. Commit your changes and push to the branch to update the Pull Request.
+
+## Release Process
+To release a new version of this package on PyPI and GitHub:
+1. Ensure all tests and QA checks pass (`make check-package`).
+2. Verify that the version in `pyproject.toml` is correctly bumped.
+3. Build the package distribution files (sdist and wheel) by running `make build`.
+4. Publish the package to PyPI using `uv publish`.
+5. Create a new release on GitHub using the GitHub CLI: `gh release create v<new_version> --title "v<new_version>" --generate-notes`.
