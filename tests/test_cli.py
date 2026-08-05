@@ -45,7 +45,7 @@ class TestCliFileInput:
         dst = tmp_path / "out.txt"
         runner = CliRunner()
         runner.invoke(main, [str(src), "-o", str(dst), "--preserve-links"])
-        assert "https://github.com" in dst.read_text(encoding="utf-8")
+        assert dst.read_text(encoding="utf-8").strip() == "[GitHub](https://github.com)"
 
     def test_output_path_printed(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
