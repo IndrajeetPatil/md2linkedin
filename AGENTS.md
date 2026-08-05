@@ -37,3 +37,8 @@ To release a new version of this package on PyPI and GitHub:
 3. Build the package distribution files (sdist and wheel) by running `make build`.
 4. Publish the package to PyPI using `uv publish`.
 5. Create a new release on GitHub using the GitHub CLI: `gh release create v<new_version> --title "v<new_version>" --generate-notes`.
+6. **Release Notes Formatting**: The GitHub release body/notes must perfectly match the formatting of the newly added entry in `CHANGELOG.md` to maintain stylistic consistency with past releases. Do not rely entirely on the auto-generated release notes (which just list PRs); you should manually provide or edit the release notes (e.g. `gh release edit <tag> --notes-file ...`) to match the CHANGELOG.
+
+## Security
+- **Code Scanning Alerts**: During the release process, code scanning alerts should be checked via the GitHub API (`gh api repos/IndrajeetPatil/md2linkedin/code-scanning/alerts`).
+- If alerts are false positives or occur in tests, they should be dismissed using `gh api -X PATCH repos/IndrajeetPatil/md2linkedin/code-scanning/alerts/{number} -f state=dismissed -f dismissed_reason="..."` (valid reasons: "false positive", "won't fix", "used in tests").
