@@ -465,7 +465,7 @@ class TestConvert:
 
     def test_link_preserved_with_flag(self) -> None:
         result = convert("[GitHub](https://github.com)", preserve_links=True)
-        assert "https://github.com" in result
+        assert result.strip() == "[GitHub](https://github.com)"
 
     def test_bullet_list(self) -> None:
         result = convert("- item one\n- item two")
