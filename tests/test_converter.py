@@ -573,8 +573,7 @@ class TestConvert:
 
     def test_autolink(self) -> None:
         result = convert("<https://example.com>")
-        assert "<" not in result
-        assert "https://example.com" in result
+        assert result.strip() == "https://example.com"
 
     def test_bullet_list_after_heading(self) -> None:
         result = convert("# Heading\n\n- first\n  - sub\n- second")
@@ -614,7 +613,7 @@ class TestConvertFile:
         src = tmp_path / "test.md"
         src.write_text("[GitHub](https://github.com)", encoding="utf-8")
         out = convert_file(src, preserve_links=True)
-        assert "https://github.com" in out.read_text(encoding="utf-8")
+        assert out.read_text(encoding="utf-8").strip() == "[GitHub](https://github.com)"
 
     def test_string_path_accepted(self, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
