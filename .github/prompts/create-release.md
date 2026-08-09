@@ -11,26 +11,32 @@ Ask the user exactly one question before doing anything else:
 
 Pause for the answer. Accept only `patch`, `minor`, or `major`
 (case-insensitive); do not infer the release type from the repository state.
-After receiving a valid answer, take ownership of the remaining release work.
+If the answer is invalid, ask the same question again and remain paused. Repeat
+until the user gives a valid value; do not begin release work before then. After
+receiving a valid answer, take ownership of the remaining release work.
 
 ## Prepare the release
 
 Read `AGENTS.md`, `.github/workflows/release.yml`, `pyproject.toml`, and the
-latest entries in `CHANGELOG.md`. Use the dispatchable trusted-publishing
-workflow rather than uploading distributions from the developer's machine.
+latest entries in `CHANGELOG.md`. For publication,
+`.github/workflows/release.yml` is authoritative: its trusted-publishing flow
+supersedes legacy instructions in `AGENTS.md` to run `uv publish` or
+`gh release create` locally. Do not upload distributions from the developer's
+machine.
 
 1. Verify `gh` authentication, fetch and prune `origin`, and inspect the working
    tree. Preserve unrelated local changes. If necessary, use a clean worktree.
 2. Start from the latest `origin/main`. Confirm that the version in
    `pyproject.toml`, the latest GitHub release tag, and the latest PyPI release
-   describe the expected current stable version.
+   describe the expected current stable version. Versions and tags use the
+   unprefixed `x.y.z` form; do not add a `v` prefix.
 3. Use the current `uv` CLI to preview the requested semantic version bump and
    capture the computed version:
 
    ```bash
    uv version --bump <patch|minor|major> --dry-run
    ```
-4. Create a `release-vx.y.z` branch for the computed version.
+4. Create a `release-x.y.z` branch for the computed version.
 5. Apply the bump with `uv version --bump <patch|minor|major>`. Keep the project
    entry in `uv.lock` synchronized; never edit the lockfile by hand.
 6. Review commits and merged pull requests since the latest release. Add a dated
