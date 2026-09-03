@@ -1,0 +1,42 @@
+name: Mutation Testing
+
+on:
+  # Only run on demand and on schedule to avoid burning CI minutes on every PR.
+  workflow_dispatch:
+  schedule:
+    # Weekly on Monday at 07:17 UTC.
+    - cron: "17 7 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  mutmut:
+    name: Run mutmut
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      - name: Install dependencies
+        run: |
+          uv python install
+          uv sync --all-extras --dev
+
+      - name: Run mutation tests
+        run: make mutation-test
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mutmut-report
+          path: mutants/
+          if-no-files-found: ignore

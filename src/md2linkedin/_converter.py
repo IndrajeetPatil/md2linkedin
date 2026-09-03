@@ -121,11 +121,11 @@ def _strip_html_spans(text: str) -> str:
         Text with all span elements removed and their inner content preserved.
 
     """
-    prev = None
-    while prev != text:
-        prev = text
-        text = re.sub(r"<span[^>]*>(.*?)</span>", r"\1", text, flags=re.DOTALL)
-    return text
+    while True:
+        new_text = re.sub(r"<span[^>]*>(.*?)</span>", r"\1", text, flags=re.DOTALL)
+        if new_text == text:
+            return text
+        text = new_text
 
 
 def _convert_bold_italic(text: str) -> str:
@@ -239,7 +239,7 @@ def _convert_headers(text: str) -> str:
         atx = re.match(r"^(#{1,6})\s+(.*)", line)
         if atx:
             level = len(atx.group(1))
-            title = atx.group(2).rstrip()
+            title = atx.group(2)
             if level == 1:
                 out.append(_fmt_h1(title))
             else:

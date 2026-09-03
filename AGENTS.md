@@ -24,6 +24,21 @@ This is a Python package repository following standard development practices.
 - Run `make check-package` to run the full validation suite (QA + Tests + Build).
 - **Do not** bypass the `Makefile`; rely on its targets for standardized workflows.
 
+## Mutation Testing
+- We use [`mutmut`](https://mutmut.readthedocs.io/) to check whether the test
+  suite actually catches semantic changes to the source, not just line coverage.
+- Configuration lives in the `[tool.mutmut]` section of `pyproject.toml`.
+- Run `make mutation-test` locally to execute the full mutation run and print
+  the results table. All surviving mutants MUST be either killed by a new test
+  or explicitly justified as equivalent via `do_not_mutate_patterns` in
+  `pyproject.toml` (with a comment explaining why).
+- CI runs mutation testing on a weekly schedule and on `workflow_dispatch`;
+  see `.github/workflows/mutation-test.yml`. It is intentionally NOT gated on
+  every PR because full runs are slow.
+- Investigate a single surviving mutant with `uv run mutmut show <mutant-id>`
+  and rerun just that mutant with `uv run mutmut run <mutant-id>` after
+  strengthening the tests.
+
 ## Contribution Workflow
 1. Ensure you are on a feature branch.
 2. Implement your code changes within `src/` and corresponding tests within `tests/`.
