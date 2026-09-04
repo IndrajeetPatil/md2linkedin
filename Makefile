@@ -1,4 +1,4 @@
-.PHONY: update-deps upgrade-deps format lint typecheck audit qa hooks test-coverage build test-package check-package serve-docs help
+.PHONY: update-deps upgrade-deps format lint typecheck audit qa hooks test-coverage mutation-test build test-package check-package serve-docs help
 
 # ANSI color codes
 RED = \033[0;31m
@@ -49,6 +49,18 @@ test-coverage:
 	uv run coverage report
 	uv run coverage html
 
+mutation-test:
+	rm -rf mutants/
+	uv run mutmut run
+	uv run mutmut results
+	uv run mutmut export-cicd-stats
+	@survived=$$(uv run python -c "import json, sys; sys.stdout.write(str(json.load(open('mutants/mutmut-cicd-stats.json'))['survived']))"); \
+	echo "Surviving mutants: $$survived"; \
+	if [ "$$survived" != "0" ]; then \
+		printf "$(RED)Mutation testing failed: $$survived mutant(s) survived.$(NC)\n"; \
+		exit 1; \
+	fi
+
 build:
 	uv build
 
@@ -87,6 +99,7 @@ help:
 	@printf "    $(RED)hooks$(NC)         - Run all prek pre-commit hooks\n\n"
 	@printf "$(GREEN) Testing and Packaging:$(NC)\n"
 	@printf "    $(RED)test-coverage$(NC) - Run tests and generate coverage report\n"
+	@printf "    $(RED)mutation-test$(NC) - Run mutmut mutation testing on the source\n"
 	@printf "    $(RED)build$(NC)         - Build the package\n"
 	@printf "    $(RED)test-package$(NC)  - Run tests and coverage\n"
 	@printf "    $(RED)check-package$(NC) - Full package check (tests, QA, build)\n\n"

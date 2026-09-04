@@ -16,6 +16,7 @@ from ._unicode import to_monospace, to_sans_bold, to_sans_bold_italic, to_sans_i
 __all__ = ["convert", "convert_file"]
 
 _NESTED_BULLET_MIN_INDENT = 2  # spaces of indentation that triggers a nested bullet (‣)
+_ENCODING = "utf-8"
 
 # ── Low-level pipeline steps ───────────────────────────────────────────────────
 
@@ -91,7 +92,8 @@ def _restore_code(
                 fence = original[:3]
                 rest = original[3:]
                 # Remove closing fence
-                body = rest[: rest.rfind(fence)]
+                closing_fence = rest.rfind(fence)
+                body = rest[:closing_fence]
                 # Strip optional language tag (first line of body)
                 first_nl = body.find("\n")
                 content = body[first_nl + 1 :] if first_nl != -1 else ""
@@ -121,11 +123,11 @@ def _strip_html_spans(text: str) -> str:
         Text with all span elements removed and their inner content preserved.
 
     """
-    prev = None
-    while prev != text:
-        prev = text
-        text = re.sub(r"<span[^>]*>(.*?)</span>", r"\1", text, flags=re.DOTALL)
-    return text
+    while True:
+        new_text = re.sub(r"<span[^>]*>(.*?)</span>", r"\1", text, flags=re.DOTALL)
+        if new_text == text:
+            return text
+        text = new_text
 
 
 def _convert_bold_italic(text: str) -> str:
@@ -239,7 +241,7 @@ def _convert_headers(text: str) -> str:
         atx = re.match(r"^(#{1,6})\s+(.*)", line)
         if atx:
             level = len(atx.group(1))
-            title = atx.group(2).rstrip()
+            title = atx.group(2)
             if level == 1:
                 out.append(_fmt_h1(title))
             else:
@@ -520,11 +522,11 @@ def convert_file(
         output_path = input_path.with_suffix("").with_suffix(".linkedin.txt")
     output_path = Path(output_path)
 
-    md_text = input_path.read_text(encoding="utf-8")
+    md_text = input_path.read_text(encoding=_ENCODING)
     result = convert(
         md_text,
         preserve_links=preserve_links,
         monospace_code=monospace_code,
     )
-    output_path.write_text(result, encoding="utf-8")
+    output_path.write_text(result, encoding=_ENCODING)
     return output_path

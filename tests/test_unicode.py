@@ -53,6 +53,23 @@ class TestToSansBold:
         result = to_sans_bold("Hello World 123")
         assert result == "𝗛𝗲𝗹𝗹𝗼 𝗪𝗼𝗿𝗹𝗱 𝟭𝟮𝟯"
 
+    @pytest.mark.parametrize(
+        ("char", "expected"),
+        [("A", "𝗔"), ("Z", "𝗭"), ("a", "𝗮"), ("z", "𝘇"), ("0", "𝟬"), ("9", "𝟵")],
+        ids=["A", "Z", "a", "z", "0", "9"],
+    )
+    def test_boundary_characters_mapped(self, char: str, expected: str) -> None:
+        # Guard against boundary mutations (e.g. "A" <= c <= "z", "0" <= c <= "9").
+        assert to_sans_bold(char) == expected
+
+    @pytest.mark.parametrize(
+        "char",
+        ["[", "\\", "]", "^", "_", "`", "{", "|", "}", "~", ":", ";", "?", "@"],
+    )
+    def test_between_ascii_ranges_passthrough(self, char: str) -> None:
+        # Chars in ASCII gaps like Z<x<a or 9<x<A must pass through unchanged.
+        assert to_sans_bold(char) == char
+
 
 # ── to_sans_italic ─────────────────────────────────────────────────────────────
 
@@ -82,6 +99,19 @@ class TestToSansItalic:
     def test_empty_string(self) -> None:
         assert not to_sans_italic("")
 
+    @pytest.mark.parametrize(
+        ("char", "expected"),
+        [("A", "𝘈"), ("Z", "𝘡"), ("a", "𝘢"), ("z", "𝘻")],
+        ids=["A", "Z", "a", "z"],
+    )
+    def test_boundary_characters_mapped(self, char: str, expected: str) -> None:
+        # Guard against boundary mutations in the "a" <= c <= "z" comparison.
+        assert to_sans_italic(char) == expected
+
+    @pytest.mark.parametrize("char", ["[", "\\", "]", "^", "_", "`"])
+    def test_between_ranges_passthrough(self, char: str) -> None:
+        assert to_sans_italic(char) == char
+
 
 # ── to_sans_bold_italic ────────────────────────────────────────────────────────
 
@@ -107,6 +137,18 @@ class TestToSansBoldItalic:
     def test_mixed(self) -> None:
         result = to_sans_bold_italic("Hello World!")
         assert result == "𝙃𝙚𝙡𝙡𝙤 𝙒𝙤𝙧𝙡𝙙!"
+
+    @pytest.mark.parametrize(
+        ("char", "expected"),
+        [("A", "𝘼"), ("Z", "𝙕"), ("a", "𝙖"), ("z", "𝙯")],
+        ids=["A", "Z", "a", "z"],
+    )
+    def test_boundary_characters_mapped(self, char: str, expected: str) -> None:
+        assert to_sans_bold_italic(char) == expected
+
+    @pytest.mark.parametrize("char", ["[", "\\", "]", "^", "_", "`"])
+    def test_between_ranges_passthrough(self, char: str) -> None:
+        assert to_sans_bold_italic(char) == char
 
 
 # ── to_monospace ──────────────────────────────────────────────────────────────
@@ -143,6 +185,18 @@ class TestToMonospace:
     def test_full_sentence(self) -> None:
         result = to_monospace("Hello World 123")
         assert result == "𝙷𝚎𝚕𝚕𝚘 𝚆𝚘𝚛𝚕𝚍 𝟷𝟸𝟹"
+
+    @pytest.mark.parametrize(
+        ("char", "expected"),
+        [("A", "𝙰"), ("Z", "𝚉"), ("a", "𝚊"), ("z", "𝚣"), ("0", "𝟶"), ("9", "𝟿")],
+        ids=["A", "Z", "a", "z", "0", "9"],
+    )
+    def test_boundary_characters_mapped(self, char: str, expected: str) -> None:
+        assert to_monospace(char) == expected
+
+    @pytest.mark.parametrize("char", ["[", "\\", "]", "^", "_", "`", ":", "@"])
+    def test_between_ranges_passthrough(self, char: str) -> None:
+        assert to_monospace(char) == char
 
 
 # ── apply_style ────────────────────────────────────────────────────────────────

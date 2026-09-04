@@ -53,6 +53,7 @@ dev = [
     "pytest-random-order>=1.2.0",
     "ruff>=0.15.13",
     "add-trailing-comma>=4.0.0",
+    "mutmut>=3.7.0",
 ]
 
 [build-system]
@@ -130,6 +131,29 @@ format = "markdown"
 sort = "-Cover"
 show_missing = true
 skip_empty = true
+
+[tool.mutmut]
+source_paths = ["src/md2linkedin/"]
+pytest_add_cli_args_test_selection = ["tests/"]
+# Only mutate lines exercised by the test suite so mutmut concentrates on
+# meaningful mutations that the tests should actually catch.
+mutate_only_covered_lines = true
+# Skip mutations that cannot be detected by the tests in practice. The
+# pattern is hoisted onto its own source line so the line-granularity
+# exclusion below suppresses only the equivalence mutation described and
+# not any other operations on the same statement.
+# * ``closing_fence = rest.rfind(fence)`` on a fenced code block is
+#   equivalent to ``rest.find(fence)`` because the non-greedy regex that
+#   captured the block already trims to the shortest matching span, so
+#   no additional ``fence`` marker can appear inside ``rest``.
+#
+# ``encoding=_ENCODING`` mutations (``encoding=None`` / arg-removal) are
+# NOT excluded here — they are covered by focused tests that assert the
+# UTF-8 argument is passed explicitly, so surviving mutants would show up
+# as real test failures rather than being silently skipped.
+do_not_mutate_patterns = [
+    'closing_fence = rest\.rfind\(fence\)',
+]
 
 [tool.ty.src]
 exclude = [".venv", "build", "dist", "docs"]
