@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -695,7 +696,9 @@ class TestConvertFile:
         missing = tmp_path / "nonexistent.md"
         # The error message must name the missing path so that users can
         # diagnose the failure; mutmut mutates the f-string body to `None`.
-        with pytest.raises(FileNotFoundError, match=str(missing)):
+        # `re.escape` is required so Windows path separators aren't treated
+        # as regex escapes.
+        with pytest.raises(FileNotFoundError, match=re.escape(str(missing))):
             convert_file(missing)
 
     def test_default_strips_links(self, tmp_path: Path) -> None:
