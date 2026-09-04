@@ -53,6 +53,13 @@ mutation-test:
 	rm -rf mutants/
 	uv run mutmut run
 	uv run mutmut results
+	uv run mutmut export-cicd-stats
+	@survived=$$(uv run python -c "import json, sys; sys.stdout.write(str(json.load(open('mutants/mutmut-cicd-stats.json'))['survived']))"); \
+	echo "Surviving mutants: $$survived"; \
+	if [ "$$survived" != "0" ]; then \
+		printf "$(RED)Mutation testing failed: $$survived mutant(s) survived.$(NC)\n"; \
+		exit 1; \
+	fi
 
 build:
 	uv build

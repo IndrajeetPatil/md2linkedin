@@ -138,18 +138,21 @@ pytest_add_cli_args_test_selection = ["tests/"]
 # Only mutate lines exercised by the test suite so mutmut concentrates on
 # meaningful mutations that the tests should actually catch.
 mutate_only_covered_lines = true
-# Skip mutations that cannot be detected by the tests in practice.
-# * ``encoding="utf-8"`` is passed to ``read_text``/``write_text`` for
-#   documentation and Windows portability. On Linux/macOS the default
-#   locale is UTF-8, so mutating the argument to ``None`` or the alias
-#   ``"UTF-8"`` produces indistinguishable behaviour under CI.
-# * ``rest.rfind(fence)`` on a fenced code block is equivalent to
-#   ``rest.find(fence)`` because the non-greedy regex that captured the
-#   block already trims to the shortest matching span, so no additional
-#   ``fence`` marker can appear inside ``rest``.
+# Skip mutations that cannot be detected by the tests in practice. The
+# pattern is hoisted onto its own source line so the line-granularity
+# exclusion below suppresses only the equivalence mutation described and
+# not any other operations on the same statement.
+# * ``closing_fence = rest.rfind(fence)`` on a fenced code block is
+#   equivalent to ``rest.find(fence)`` because the non-greedy regex that
+#   captured the block already trims to the shortest matching span, so
+#   no additional ``fence`` marker can appear inside ``rest``.
+#
+# ``encoding=_ENCODING`` mutations (``encoding=None`` / arg-removal) are
+# NOT excluded here — they are covered by focused tests that assert the
+# UTF-8 argument is passed explicitly, so surviving mutants would show up
+# as real test failures rather than being silently skipped.
 do_not_mutate_patterns = [
-    'encoding="utf-8"',
-    'rest\.rfind\(fence\)',
+    'closing_fence = rest\.rfind\(fence\)',
 ]
 
 [tool.ty.src]

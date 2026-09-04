@@ -738,3 +738,83 @@ class TestConvertFile:
         src.write_text("hello", encoding="utf-8")
         result = convert_file(src)
         assert isinstance(result, Path)
+
+    def test_read_text_called_with_utf8_encoding(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Guard against a mutation that flips ``encoding=_ENCODING`` on
+        # ``input_path.read_text`` to ``encoding=None`` or drops the
+        # keyword argument entirely.  Both variants are indistinguishable
+        # on Linux/macOS at runtime (the default locale is already
+        # UTF-8), so we assert the argument explicitly via a spy.
+        src = tmp_path / "test.md"
+        src.write_text("hello", encoding="utf-8")
+
+        recorded: dict[str, object] = {}
+
+        def spy_read_text(
+            self: Path,
+            encoding: str | None = None,
+            errors: str | None = None,
+            newline: str | None = None,
+        ) -> str:
+            if self == src:
+                recorded["encoding"] = encoding
+                recorded["errors"] = errors
+                recorded["newline"] = newline
+            # Bypass the patched method by using the underlying file API.
+            with self.open(encoding=encoding, errors=errors, newline=newline) as f:
+                return f.read()
+
+        monkeypatch.setattr(Path, "read_text", spy_read_text)
+        convert_file(src)
+
+        # ``encoding="utf-8"`` must be passed explicitly.  Mutations to
+        # ``None`` or an arg-drop (which defaults to ``None``) both fail.
+        assert recorded["encoding"] == "utf-8"
+
+    def test_write_text_called_with_utf8_encoding(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Guard against a mutation that flips ``encoding=_ENCODING`` on
+        # ``output_path.write_text`` to ``encoding=None`` or drops the
+        # keyword argument entirely.  Both variants are indistinguishable
+        # on Linux/macOS at runtime (the default locale is already
+        # UTF-8), so we assert the argument explicitly via a spy.
+        src = tmp_path / "test.md"
+        src.write_text("hello", encoding="utf-8")
+
+        recorded: dict[str, object] = {}
+
+        def spy_write_text(
+            self: Path,
+            data: str,
+            encoding: str | None = None,
+            errors: str | None = None,
+            newline: str | None = None,
+        ) -> int:
+            if self != src:
+                recorded["encoding"] = encoding
+                recorded["errors"] = errors
+                recorded["newline"] = newline
+                recorded["data"] = data
+            # Bypass the patched method by using the underlying file API.
+            with self.open(
+                "w",
+                encoding=encoding,
+                errors=errors,
+                newline=newline,
+            ) as f:
+                return f.write(data)
+
+        monkeypatch.setattr(Path, "write_text", spy_write_text)
+        convert_file(src)
+
+        # ``encoding="utf-8"`` must be passed explicitly.  Mutations to
+        # ``None`` or an arg-drop (which defaults to ``None``) both fail.
+        assert recorded["encoding"] == "utf-8"
+        assert isinstance(recorded["data"], str)
