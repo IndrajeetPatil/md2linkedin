@@ -46,11 +46,12 @@ dev = [
     "jupyter>=1.1.1",
     "zensical>=0.0.43",
     "mkdocstrings-python>=2.0.3",
-    "ty>=0.0.47",
+    "ty>=0.0.79",
     "prek>=0.4.1",
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
     "pytest-random-order>=1.2.0",
+    "pyyaml>=6.0.3",
     "ruff>=0.15.13",
     "add-trailing-comma>=4.0.0",
     "mutmut>=3.7.0",
@@ -160,6 +161,18 @@ exclude = [".venv", "build", "dist", "docs"]
 
 [tool.ty.environment]
 python-version = "3.10"
+
+[tool.ty.rules]
+# Enable every current diagnostic, including soundness and suppression checks that
+# ty leaves disabled by default. Pinning ty in uv.lock keeps new rules from arriving
+# silently between dependency updates.
+all = "error"
+
+[tool.ty.analysis]
+# Prefer sound narrowing over convenience assumptions at external-data boundaries.
+respect-type-ignore-comments = false
+strict-equality-semantics = true
+strict-generic-narrowing = true
 
 [tool.uv]
 required-version = ">=0.12.0"
