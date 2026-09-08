@@ -121,4 +121,4 @@ def _stdin_is_tty() -> bool:
         Whether stdin is connected to an interactive terminal.
 
     """
-    return sys.stdin.isatty()
+    return bool(sys.stdin.isatty())
