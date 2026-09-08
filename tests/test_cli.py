@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
+import pytest
 from click.testing import CliRunner
 
-from md2linkedin._cli import main
+from md2linkedin._cli import _stdin_is_tty, main
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -61,6 +62,11 @@ class TestCliFileInput:
 
 
 class TestCliStdin:
+    @pytest.mark.parametrize("is_tty", [True, False])
+    def test_detects_terminal(self, *, is_tty: bool) -> None:
+        with patch("md2linkedin._cli.sys.stdin.isatty", return_value=is_tty):
+            assert _stdin_is_tty() is is_tty
+
     def test_reads_from_stdin(self) -> None:
         runner = CliRunner()
         result = runner.invoke(main, [], input="**hello** world")
