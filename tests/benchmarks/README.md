@@ -1,5 +1,7 @@
 # Benchmarking
 
+This guide is for contributors maintaining the performance regression checks.
+
 Benchmarks use the MIT-licensed [pytest-codspeed package](https://github.com/CodSpeedHQ/pytest-codspeed)
 in standalone **walltime** mode. No CodSpeed account, token, GitHub App,
 hosted dashboard, CodSpeed action, or paid runner is required. The package
