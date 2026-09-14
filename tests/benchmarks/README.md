@@ -45,6 +45,7 @@ silently passing. The CodSpeed dependency is pinned because the comparator reads
 its JSON format; validate the schema and gate tests when upgrading.
 
 The job summary contains the measured commit SHAs and comparison table.
+Table columns are padded so the Markdown report also aligns in raw CI logs.
 The `standalone-codspeed-results` artifact retains raw JSON, the comparison,
 and commit SHAs for 14 days, including on regression failures.
 The job uses read-only repository permissions and no secrets.

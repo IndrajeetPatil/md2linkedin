@@ -76,6 +76,32 @@ def load_results(directory: Path, samples: int) -> dict[str, float]:
     return {uri: median(report[uri] for report in reports) for uri in reports[0]}
 
 
+def _format_table(rows: list[tuple[str, ...]]) -> list[str]:
+    """Pad Markdown table columns for readable plain-text CI logs.
+
+    Returns:
+        Table lines with left-aligned labels and right-aligned numeric columns.
+
+    """
+    alignments = ("<", ">", ">", ">", "<")
+    widths = [max(map(len, column)) for column in zip(*rows, strict=True)]
+    lines = [
+        "| "
+        + " | ".join(
+            f"{cell:{alignment}{width}}"
+            for cell, alignment, width in zip(row, alignments, widths, strict=True)
+        )
+        + " |"
+        for row in rows
+    ]
+    separator = " | ".join(
+        "-" * (width - 1) + ":" if alignment == ">" else "-" * width
+        for alignment, width in zip(alignments, widths, strict=True)
+    )
+    lines.insert(1, f"| {separator} |")
+    return lines
+
+
 def compare(
     baseline: dict[str, float],
     candidate: dict[str, float],
@@ -98,8 +124,9 @@ def compare(
         "",
         f"Fail when median walltime increases by more than {threshold:g}%.",
         "",
-        "| Benchmark | Base (ns) | Candidate (ns) | Change | Result |",
-        "| --- | ---: | ---: | ---: | --- |",
+    ]
+    rows: list[tuple[str, ...]] = [
+        ("Benchmark", "Base (ns)", "Candidate (ns)", "Change", "Result"),
     ]
     failed = False
     for uri, before in sorted(baseline.items()):
@@ -109,9 +136,14 @@ def compare(
         failed |= regression
         verdict = "FAIL" if regression else "PASS"
         name = uri.replace("|", "\\|")
-        lines.append(
-            f"| `{name}` | {before:,.0f} | {after:,.0f} | {change:+.1f}% | {verdict} |",
-        )
+        rows.append((
+            f"`{name}`",
+            f"{before:,.0f}",
+            f"{after:,.0f}",
+            f"{change:+.1f}%",
+            verdict,
+        ))
+    lines.extend(_format_table(rows))
     return "\n".join(lines) + "\n", failed
 
 
