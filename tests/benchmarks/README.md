@@ -37,7 +37,7 @@ Each revision gets three independent runs, alternating which revision runs
 first. CodSpeed warms each benchmark for one second and measures it for up to
 three seconds per run. The comparator takes the median of the three
 `stats.median_ns` measurements for each benchmark and fails if the candidate is
-**more than 30% slower** than the base. Exactly 30% passes.
+**more than 10% slower** than the base. Exactly 10% passes.
 
 Missing reports, empty results, invalid timings, incompatible CodSpeed versions,
 duplicate benchmark IDs, or mismatched benchmark sets fail the gate rather than
@@ -45,13 +45,14 @@ silently passing. The CodSpeed dependency is pinned because the comparator reads
 its JSON format; validate the schema and gate tests when upgrading.
 
 The job summary contains the measured commit SHAs and comparison table.
+Table columns are padded so the Markdown report also aligns in raw CI logs.
 The `standalone-codspeed-results` artifact retains raw JSON, the comparison,
 and commit SHAs for 14 days, including on regression failures.
 The job uses read-only repository permissions and no secrets.
 
-Wall-clock measurements on shared runners have noise. Three runs and the 30%
-margin target substantial regressions; this does not provide CodSpeed's
-instruction-count simulation or guarantee detection of small slowdowns.
+Wall-clock measurements on shared runners have noise. Three runs and the 10%
+margin balance regression sensitivity with timing noise. This does not provide
+CodSpeed's instruction-count simulation or guarantee detection of small slowdowns.
 Investigate the raw timings and rerun noisy results before changing the limit.
 Repository branch protection must require the
 `Standalone CodSpeed regression check` status if it should block merging.
@@ -72,7 +73,7 @@ make benchmark-compare
 ```
 
 Use an empty `benchmark-results/` directory for each comparison. Extra or stale
-reports are rejected. `BENCHMARK_THRESHOLD=30` controls the allowed slowdown
+reports are rejected. `BENCHMARK_THRESHOLD=10` controls the allowed slowdown
 percentage for `make benchmark-compare`.
 
 To validate failure detection, temporarily add expensive work or a delay inside

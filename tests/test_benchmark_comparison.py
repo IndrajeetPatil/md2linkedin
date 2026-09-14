@@ -32,9 +32,9 @@ def write_report(directory: Path, sample: int, value: float = 100) -> Path:
     return path
 
 
-@pytest.mark.parametrize(("value", "failed"), [(80, False), (130, False), (131, True)])
+@pytest.mark.parametrize(("value", "failed"), [(80, False), (110, False), (111, True)])
 def test_threshold(value: float, *, failed: bool) -> None:
-    report, actual = compare({"example": 100}, {"example": value}, 30)
+    report, actual = compare({"example": 100}, {"example": value}, 10)
     assert actual is failed
     assert ("FAIL" if failed else "PASS") in report
 
@@ -92,10 +92,13 @@ def test_changed_sample_set(tmp_path: Path) -> None:
 @pytest.mark.parametrize("candidate", [{}, {"other": 100}])
 def test_missing_or_renamed_benchmarks(candidate: dict[str, float]) -> None:
     with pytest.raises(ValueError, match="same nonempty benchmark set"):
-        compare({"example": 100}, candidate, 30)
+        compare({"example": 100}, candidate, 10)
 
 
-@pytest.mark.parametrize(("value", "exit_code"), [(100, 0), (300, 1)])
+@pytest.mark.parametrize(
+    ("value", "exit_code"),
+    [(100, 0), (110, 0), (111, 1), (300, 1)],
+)
 def test_cli_exit_status(tmp_path: Path, value: float, exit_code: int) -> None:
     for sample in range(1, 4):
         write_report(tmp_path / "base", sample)
