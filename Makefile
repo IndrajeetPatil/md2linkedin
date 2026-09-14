@@ -1,4 +1,4 @@
-.PHONY: update-deps upgrade-deps format lint typecheck audit qa hooks test-coverage mutation-test build test-package check-package serve-docs help
+.PHONY: update-deps upgrade-deps format lint typecheck audit qa hooks test-coverage mutation-test benchmark benchmark-compare build test-package check-package serve-docs help
 
 # ANSI color codes
 RED = \033[0;31m
@@ -48,6 +48,18 @@ test-coverage:
 	uv run coverage run -m pytest .
 	uv run coverage report
 	uv run coverage html
+
+# Benchmarking uses the candidate environment for both source revisions.
+BENCHMARK_SOURCE ?= $(CURDIR)/src
+BENCHMARK_OUTPUT ?= $(CURDIR)/.codspeed/local
+BENCHMARK_THRESHOLD ?= 30
+
+benchmark:
+	PYTHONPATH="$(BENCHMARK_SOURCE)" uv run --no-sync python -c 'import md2linkedin; from pathlib import Path; print("Benchmark source:", md2linkedin.__file__); assert Path(md2linkedin.__file__).resolve().parent == Path("$(BENCHMARK_SOURCE)").resolve() / "md2linkedin"'
+	PYTHONPATH="$(BENCHMARK_SOURCE)" PYTHONHASHSEED=0 CODSPEED_PROFILE_FOLDER="$(BENCHMARK_OUTPUT)" uv run --no-sync pytest tests/benchmarks --codspeed --codspeed-mode=walltime --random-order-bucket=none
+
+benchmark-compare:
+	uv run --no-sync python scripts/compare_benchmarks.py benchmark-results/base benchmark-results/candidate --threshold "$(BENCHMARK_THRESHOLD)" --output benchmark-results/comparison.md
 
 mutation-test:
 	rm -rf mutants/
@@ -100,6 +112,8 @@ help:
 	@printf "$(GREEN) Testing and Packaging:$(NC)\n"
 	@printf "    $(RED)test-coverage$(NC) - Run tests and generate coverage report\n"
 	@printf "    $(RED)mutation-test$(NC) - Run mutmut mutation testing on the source\n"
+	@printf "    $(RED)benchmark$(NC)     - Run standalone CodSpeed walltime benchmarks\n"
+	@printf "    $(RED)benchmark-compare$(NC) - Compare three base/candidate benchmark runs\n"
 	@printf "    $(RED)build$(NC)         - Build the package\n"
 	@printf "    $(RED)test-package$(NC)  - Run tests and coverage\n"
 	@printf "    $(RED)check-package$(NC) - Full package check (tests, QA, build)\n\n"

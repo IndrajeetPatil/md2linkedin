@@ -1,0 +1,91 @@
+name: Benchmarks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Every push must finish its comparison with the previous commit. Unique run
+  # IDs also prevent pending push runs from replacing one another.
+  group: benchmarks-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  benchmarks:
+    name: Standalone CodSpeed regression check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONHASHSEED: "0"
+      UV_PYTHON: "3.14"
+      # A PR measures its exact head against its base. Pushes use the previous
+      # commit; a manual run compares HEAD with its first parent.
+      BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout baseline source
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/benchmark-base" "$BASE_REF"
+          {
+            echo "Base: $(git -C "$RUNNER_TEMP/benchmark-base" rev-parse HEAD)"
+            echo "Candidate: $(git rev-parse HEAD)"
+          } | tee benchmark-revisions.txt
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --locked --dev
+
+      - name: Measure base and candidate
+        # Both revisions use the candidate's benchmark suite, configuration,
+        # interpreter, and dependencies. Only the imported source tree changes.
+        run: |
+          for sample in 1 2 3; do
+            # Alternate which revision runs first to reduce ordering bias.
+            revisions="base candidate"
+            if [ "$sample" = 2 ]; then revisions="candidate base"; fi
+            for revision in $revisions; do
+              source="$GITHUB_WORKSPACE/src"
+              if [ "$revision" = base ]; then source="$RUNNER_TEMP/benchmark-base/src"; fi
+              make benchmark \
+                BENCHMARK_SOURCE="$source" \
+                BENCHMARK_OUTPUT="$GITHUB_WORKSPACE/benchmark-results/$revision/$sample"
+            done
+          done
+
+      - name: Fail on performance regressions
+        run: make benchmark-compare
+
+      - name: Publish comparison summary
+        if: always()
+        run: |
+          cat benchmark-revisions.txt >> "$GITHUB_STEP_SUMMARY"
+          if [ -f benchmark-results/comparison.md ]; then
+            cat benchmark-results/comparison.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload local benchmark reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: standalone-codspeed-results
+          path: |
+            benchmark-results/
+            benchmark-revisions.txt
+          if-no-files-found: error
+          retention-days: 14
