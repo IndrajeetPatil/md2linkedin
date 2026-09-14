@@ -136,6 +136,8 @@ skip_empty = true
 
 [tool.mutmut]
 source_paths = ["src/md2linkedin/"]
+# The regression-gate tests import the comparator from this support package.
+also_copy = ["scripts/"]
 pytest_add_cli_args_test_selection = ["tests/"]
 # Only mutate lines exercised by the test suite so mutmut concentrates on
 # meaningful mutations that the tests should actually catch.
