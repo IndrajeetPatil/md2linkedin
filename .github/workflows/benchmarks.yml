@@ -11,8 +11,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: benchmarks-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Every push must finish its comparison with the previous commit. Unique run
+  # IDs also prevent pending push runs from replacing one another.
+  group: benchmarks-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   benchmarks:

@@ -27,6 +27,10 @@ against each source tree in the **same locked candidate environment** on one
 Ubuntu runner. The import path is checked before each run. This isolates source
 changes; dependency-only regressions are outside the comparison.
 
+New runs for the same PR replace older runs. Push and manual runs each have a
+unique concurrency group, so a later push cannot cancel or replace a pending
+comparison and hide a regression in an earlier commit.
+
 Each revision gets three independent runs, alternating which revision runs
 first. CodSpeed warms each benchmark for one second and measures it for up to
 three seconds per run. The comparator takes the median of the three
