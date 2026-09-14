@@ -11,6 +11,7 @@ edit_uri: edit/main/docs/
 nav:
   - Home: index.md
   - Advanced Usage: advanced.md
+  - Benchmarking: benchmarking.md
   - API Reference:
       - Converter: reference/converter.md
   - Changelog: changelog.md
