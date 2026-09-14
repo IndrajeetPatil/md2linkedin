@@ -125,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("baseline", type=Path)
     parser.add_argument("candidate", type=Path)
-    parser.add_argument("--threshold", type=float, default=30)
+    parser.add_argument("--threshold", type=float, default=10)
     parser.add_argument("--samples", type=int, default=3)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
