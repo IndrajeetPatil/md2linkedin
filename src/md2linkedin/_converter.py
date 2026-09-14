@@ -8,7 +8,6 @@ regex conflicts (e.g. bold-italic must be processed before bold or italic).
 from __future__ import annotations
 
 import re
-import time
 import uuid
 from pathlib import Path
 
@@ -460,8 +459,6 @@ def convert(
     if not text or not text.strip():
         return ""
 
-    # Temporary CI validation: revert after the regression gate fails.
-    time.sleep(0.05)
     text = _normalize_line_endings(text)
     text, placeholders = _protect_code(text)
     text = _strip_html_spans(text)
