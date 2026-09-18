@@ -96,8 +96,9 @@ def test_missing_or_renamed_benchmarks(candidate: dict[str, float]) -> None:
 
 
 @pytest.mark.parametrize(
+    # No --threshold is passed, so these also pin the CLI's default margin.
     ("value", "exit_code"),
-    [(100, 0), (110, 0), (111, 1), (300, 1)],
+    [(100, 0), (105, 0), (106, 1), (300, 1)],
 )
 def test_cli_exit_status(tmp_path: Path, value: float, exit_code: int) -> None:
     for sample in range(1, 4):

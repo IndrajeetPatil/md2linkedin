@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from pathlib import Path
 
 import pytest
 
+from md2linkedin import to_monospace, to_sans_bold, to_sans_italic
 from md2linkedin._converter import (
+    _PLACEHOLDER_BASE,
     _clean_entities,
     _clean_escaped_chars,
     _convert_bold,
@@ -117,12 +120,18 @@ class TestProtectAndRestoreCode:
         assert not restored
 
     def test_fenced_block_no_newline_body_monospace(self) -> None:
-        # A degenerate fenced block that has no newline in its body — the
-        # implementation treats it as empty content (guarding the
-        # `first_nl == -1` sentinel branch).
+        # A single-line fenced run has no language tag, because a tag is only a
+        # tag when a newline ends it. The whole body is content.
         text, placeholders = _protect_code("```hi```")
         restored = _restore_code(text, placeholders, monospace=True)
-        assert not restored
+        assert restored == "𝚑𝚒"
+
+    def test_fenced_block_language_tag_needs_a_newline(self) -> None:
+        # The same body with a newline after it *is* a language tag, so `py`
+        # is dropped. This pins the distinction the branch above turns on.
+        text, placeholders = _protect_code("```py\nhi\n```")
+        restored = _restore_code(text, placeholders, monospace=True)
+        assert restored == "𝚑𝚒\n"
 
     def test_fenced_block_monospace_preserves_syntax_chars(self) -> None:
         text, placeholders = _protect_code("```\n**not bold**\n```")
@@ -134,6 +143,143 @@ class TestProtectAndRestoreCode:
         text, placeholders = _protect_code("no code here")
         assert text == "no code here"
         assert placeholders == {}
+
+    def test_nul_stripped_from_input(self) -> None:
+        # NUL delimits placeholders, so it must not survive in user text.
+        text, _ = _protect_code("a\x00b")
+        assert text == "ab"
+
+    def test_placeholders_are_unique(self) -> None:
+        _, placeholders = _protect_code("`a` `b` `c` and ```\nd\n```")
+        assert len(placeholders) == 4
+
+    def test_every_placeholder_body_is_private_use(self) -> None:
+        # Keys must ascend through the Private Use Area. Walking the other way
+        # would land on surrogates, which cannot be encoded as UTF-8.
+        _, placeholders = _protect_code("`a` `b` `c`")
+        bodies = [key.strip("\x00") for key in placeholders]
+        assert len(bodies) == 3
+        assert all(unicodedata.category(body) == "Co" for body in bodies)
+
+
+# ── code placeholder integrity (regression: #63) ──────────────────────────────
+
+
+class TestCodePlaceholderIntegrity:
+    """A code span must survive every step that runs before _restore_code.
+
+    The steps between _protect_code and _restore_code rewrite ASCII
+    alphanumerics, so a placeholder built from ASCII used to be mangled past
+    recognition and leak into the output.
+    """
+
+    @pytest.mark.parametrize(
+        "markdown",
+        [
+            "# H1 with `code`",
+            "## H2 with `code`",
+            "### H3 with `code`",
+            "#### H4 with `code`",
+            "##### H5 with `code`",
+            "###### H6 with `code`",
+            "Setext H1 with `code`\n=====",
+            "Setext H2 with `code`\n-----",
+            "**`code`**",
+            "*`code`*",
+            "***`code`***",
+            "__`code`__",
+            "___`code`___",
+            "plain `code` here",
+            "- item `code`",
+            "> quote `code`",
+            "# H1 `a` and `b`",
+            "**bold** then # not a header `code`",
+        ],
+        ids=[
+            "atx_h1",
+            "atx_h2",
+            "atx_h3",
+            "atx_h4",
+            "atx_h5",
+            "atx_h6",
+            "setext_h1",
+            "setext_h2",
+            "bold_asterisk",
+            "italic_asterisk",
+            "bold_italic_asterisk",
+            "bold_underscore",
+            "bold_italic_underscore",
+            "paragraph",
+            "bullet",
+            "blockquote",
+            "two_spans_in_header",
+            "inline_hash",
+        ],
+    )
+    def test_no_placeholder_leak(self, markdown: str) -> None:
+        result = convert(markdown)
+        # A leaked placeholder shows up as its NUL delimiter.
+        assert "\x00" not in result
+        assert "CODE" not in result
+        assert to_monospace("code") in result or to_monospace("a") in result
+
+    def test_header_code_span_is_monospace_not_bold(self) -> None:
+        # The header's own words are bold-uppercased; the code span is
+        # rendered monospace and is deliberately exempt from both.
+        assert convert("# Why is `Any` bad?").strip().splitlines()[1] == (
+            f"{to_sans_bold('WHY IS ')}{to_monospace('Any')}{to_sans_bold(' BAD?')}"
+        )
+
+    def test_emphasis_around_code_flattens_to_monospace(self) -> None:
+        # There is no bold-monospace Unicode block, so bold around a code span
+        # is dropped rather than approximated.
+        assert convert("**`code`**").strip() == to_monospace("code")
+
+    def test_output_is_deterministic(self) -> None:
+        markdown = "# Why is everything `Any`-typed?"
+        assert convert(markdown) == convert(markdown)
+
+    def test_underscore_italic_adjacent_to_code_span(self) -> None:
+        # The placeholder is NUL-delimited, so the \\w lookarounds in the
+        # underscore italic pattern see the same boundary either side of it.
+        assert convert("_a_`c`_b_").strip() == (
+            f"{to_sans_italic('a')}{to_monospace('c')}{to_sans_italic('b')}"
+        )
+
+    def test_private_use_character_in_input_is_not_a_placeholder(self) -> None:
+        # Text may legitimately contain Private Use Area characters; only the
+        # NUL-delimited ones are ours.
+        result = convert(f"{chr(_PLACEHOLDER_BASE)} and `code`")
+        assert chr(_PLACEHOLDER_BASE) in result
+        assert to_monospace("code") in result
+
+    def test_no_leak_with_monospace_disabled(self) -> None:
+        result = convert("# H1 with `code`", monospace_code=False)
+        assert "\x00" not in result
+        assert "code" in result
+
+    def test_inline_span_wrapping_a_fenced_placeholder(self) -> None:
+        # The fenced pass runs first, so this inline span captures a fenced
+        # placeholder into its stored value; restoring oldest-first would
+        # strand the inner key in the output.
+        text, placeholders = _protect_code("| ` ```fenced``` ` |")
+        assert len(placeholders) == 2
+        restored = _restore_code(text, placeholders, monospace=True)
+        # Two spaces either side: the outer span's own padding is code content.
+        assert restored == "|  𝚏𝚎𝚗𝚌𝚎𝚍  |"
+
+    @pytest.mark.parametrize(
+        "markdown",
+        [
+            "| ` ```fenced block``` ` |",
+            "a ` ```x``` ` b",
+            "# header with ` ```x``` `",
+        ],
+        ids=["table_cell", "paragraph", "header"],
+    )
+    def test_no_leak_for_nested_placeholders(self, markdown: str) -> None:
+        assert "\x00" not in convert(markdown)
+        assert "\x00" not in convert(markdown, monospace_code=False)
 
 
 # ── _strip_html_spans ─────────────────────────────────────────────────────────
