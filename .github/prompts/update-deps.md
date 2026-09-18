@@ -18,7 +18,7 @@ Ensure that all dependencies in `pyproject.toml` remain alphabetically sorted.
 
 If the `uv` version changes, ensure any hardcoded versions are kept in sync.
 
-`make update-deps` runs `prek update`, which refreshes each prek hook to its latest tag. 
+`make update-deps` runs `prek update`, which refreshes each prek hook to its latest tag.
 Ensure that versions of hooks (like `ruff` and `ty`) in `prek.toml` are matching their respective versions in `pyproject.toml`.
 
 Once the dependency update is green, review relevant changelogs and current documentation for upgraded libraries. Apply small compatibility simplifications only when they reduce local complexity or remove a workaround, and rerun the affected checks after each change.
