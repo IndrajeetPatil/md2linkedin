@@ -133,9 +133,10 @@ def _restore_code(
                 # Remove closing fence
                 closing_fence = rest.rfind(fence)
                 body = rest[:closing_fence]
-                # Strip optional language tag (first line of body)
-                first_nl = body.find("\n")
-                content = body[first_nl + 1 :] if first_nl != -1 else ""
+                # Strip the optional language tag, which is only a language tag
+                # when a newline terminates it. A single-line run (```hi```) has
+                # no tag, so find returns -1 and the slice keeps the whole body.
+                content = body[body.find("\n") + 1 :]
                 return to_monospace(content)
             # Keep fenced blocks as-is (no backtick stripping)
             return original

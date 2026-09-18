@@ -120,12 +120,18 @@ class TestProtectAndRestoreCode:
         assert not restored
 
     def test_fenced_block_no_newline_body_monospace(self) -> None:
-        # A degenerate fenced block that has no newline in its body — the
-        # implementation treats it as empty content (guarding the
-        # `first_nl == -1` sentinel branch).
+        # A single-line fenced run has no language tag, because a tag is only a
+        # tag when a newline ends it. The whole body is content.
         text, placeholders = _protect_code("```hi```")
         restored = _restore_code(text, placeholders, monospace=True)
-        assert not restored
+        assert restored == "𝚑𝚒"
+
+    def test_fenced_block_language_tag_needs_a_newline(self) -> None:
+        # The same body with a newline after it *is* a language tag, so `py`
+        # is dropped. This pins the distinction the branch above turns on.
+        text, placeholders = _protect_code("```py\nhi\n```")
+        restored = _restore_code(text, placeholders, monospace=True)
+        assert restored == "𝚑𝚒\n"
 
     def test_fenced_block_monospace_preserves_syntax_chars(self) -> None:
         text, placeholders = _protect_code("```\n**not bold**\n```")
@@ -258,7 +264,9 @@ class TestCodePlaceholderIntegrity:
         # strand the inner key in the output.
         text, placeholders = _protect_code("| ` ```fenced``` ` |")
         assert len(placeholders) == 2
-        assert "\x00" not in _restore_code(text, placeholders, monospace=True)
+        restored = _restore_code(text, placeholders, monospace=True)
+        # Two spaces either side: the outer span's own padding is code content.
+        assert restored == "|  𝚏𝚎𝚗𝚌𝚎𝚍  |"
 
     @pytest.mark.parametrize(
         "markdown",

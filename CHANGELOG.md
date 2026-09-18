@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   leaves an unexpanded placeholder in the output. Placeholders are now
   restored in reverse insertion order, so an outer span is expanded before
   the keys nested inside it.
+- A single-line fenced run (` ```code``` `) no longer converts to nothing.
+  Its body was treated as a language tag and discarded, but a language tag
+  is only a language tag when a newline terminates it, so the whole body is
+  content.
 
 ### Changed
 
