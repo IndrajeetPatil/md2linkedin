@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dependencies = [
-    "click>=8.4.0",
+    "click>=8.5.0",
 ]
 
 [project.scripts]
@@ -42,20 +42,20 @@ Changelog = "https://github.com/IndrajeetPatil/md2linkedin/blob/main/CHANGELOG.m
 
 [dependency-groups]
 dev = [
-    "coverage>=7.14.0",
+    "add-trailing-comma>=4.0.0",
+    "coverage>=7.16.1",
     "jupyter>=1.1.1",
-    "zensical>=0.0.43",
-    "mkdocstrings-python>=2.0.3",
-    "ty>=0.0.79",
-    "prek>=0.4.1",
-    "pytest>=9.0.3",
+    "mkdocstrings-python>=2.0.8",
+    "mutmut>=3.8.0",
+    "prek>=0.5.3",
+    "pytest>=9.1.1",
     "pytest-codspeed==5.0.3",
     "pytest-cov>=7.1.0",
     "pytest-random-order>=1.2.0",
     "pyyaml>=6.0.3",
-    "ruff>=0.15.13",
-    "add-trailing-comma>=4.0.0",
-    "mutmut>=3.7.0",
+    "ruff>=0.16.8",
+    "ty>=0.0.82",
+    "zensical>=0.0.62",
 ]
 
 [build-system]
