@@ -10,13 +10,26 @@ from __future__ import annotations
 import re
 import uuid
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ._unicode import to_monospace, to_sans_bold, to_sans_bold_italic, to_sans_italic
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 __all__ = ["convert", "convert_file"]
 
 _NESTED_BULLET_MIN_INDENT = 2  # spaces of indentation that triggers a nested bullet (‣)
 _ENCODING = "utf-8"
+
+_HTML_ENTITIES = {
+    "&gt;": ">",
+    "&lt;": "<",
+    "&amp;": "&",
+    "&nbsp;": " ",
+    "&quot;": '"',
+    "&apos;": "'",
+}
 
 # ── Low-level pipeline steps ───────────────────────────────────────────────────
 
@@ -130,6 +143,45 @@ def _strip_html_spans(text: str) -> str:
         text = new_text
 
 
+# Emphasis markers. Each style has an asterisk variant and an underscore
+# variant, applied in that order; ``(?<!\\)`` skips backslash-escaped markers.
+_BOLD_ITALIC_PATTERNS = (
+    r"(?<!\\)\*{3}(.+?)(?<!\\)\*{3}",
+    r"(?<!\\)_{3}(.+?)(?<!\\)_{3}",
+)
+_BOLD_PATTERNS = (
+    r"(?<!\\)\*{2}(.+?)(?<!\\)\*{2}",
+    r"(?<!\\)__(.+?)(?<!\\)__",
+)
+# Italic also needs negative look-around, so that residual ** markers are never
+# matched, and word-boundary anchors, so that inside_words is left alone.
+_ITALIC_PATTERNS = (
+    r"(?<!\\)(?<!\*)\*(?!\*)(.+?)(?<!\\)(?<!\*)\*(?!\*)",
+    r"(?<!\w)(?<!\\)_(?!_)(.+?)(?<!\\)(?<!_)_(?!\w)",
+)
+
+
+def _style_markers(
+    text: str,
+    patterns: tuple[str, ...],
+    style: Callable[[str], str],
+) -> str:
+    """Apply *style* to the text captured by each emphasis pattern in turn.
+
+    Args:
+        text: Input text.
+        patterns: Regexes whose first capture group is the text to style.
+        style: Unicode mapping function applied to each captured group.
+
+    Returns:
+        Text with every matched marker pair replaced by styled Unicode.
+
+    """
+    for pattern in patterns:
+        text = re.sub(pattern, lambda m: style(m.group(1)), text)
+    return text
+
+
 def _convert_bold_italic(text: str) -> str:
     r"""Replace ``***text***`` (or ``___text___``) with bold-italic Unicode.
 
@@ -145,16 +197,7 @@ def _convert_bold_italic(text: str) -> str:
         Text with bold-italic markers replaced.
 
     """
-    text = re.sub(
-        r"(?<!\\)\*{3}(.+?)(?<!\\)\*{3}",
-        lambda m: to_sans_bold_italic(m.group(1)),
-        text,
-    )
-    return re.sub(
-        r"(?<!\\)_{3}(.+?)(?<!\\)_{3}",
-        lambda m: to_sans_bold_italic(m.group(1)),
-        text,
-    )
+    return _style_markers(text, _BOLD_ITALIC_PATTERNS, to_sans_bold_italic)
 
 
 def _convert_bold(text: str) -> str:
@@ -169,16 +212,7 @@ def _convert_bold(text: str) -> str:
         Text with bold markers replaced.
 
     """
-    text = re.sub(
-        r"(?<!\\)\*{2}(.+?)(?<!\\)\*{2}",
-        lambda m: to_sans_bold(m.group(1)),
-        text,
-    )
-    return re.sub(
-        r"(?<!\\)__(.+?)(?<!\\)__",
-        lambda m: to_sans_bold(m.group(1)),
-        text,
-    )
+    return _style_markers(text, _BOLD_PATTERNS, to_sans_bold)
 
 
 def _convert_italic(text: str) -> str:
@@ -196,18 +230,7 @@ def _convert_italic(text: str) -> str:
         Text with italic markers replaced.
 
     """
-    # *text* — negative look-around prevents matching residual ** markers or \* escapes
-    text = re.sub(
-        r"(?<!\\)(?<!\*)\*(?!\*)(.+?)(?<!\\)(?<!\*)\*(?!\*)",
-        lambda m: to_sans_italic(m.group(1)),
-        text,
-    )
-    # _text_ — word-boundary anchors prevent matching inside_words; skip \_ escapes
-    return re.sub(
-        r"(?<!\w)(?<!\\)_(?!_)(.+?)(?<!\\)(?<!_)_(?!\w)",
-        lambda m: to_sans_italic(m.group(1)),
-        text,
-    )
+    return _style_markers(text, _ITALIC_PATTERNS, to_sans_italic)
 
 
 def _convert_headers(text: str) -> str:
@@ -361,15 +384,7 @@ def _clean_entities(text: str) -> str:
         replaced by their literal equivalents.
 
     """
-    replacements = {
-        "&gt;": ">",
-        "&lt;": "<",
-        "&amp;": "&",
-        "&nbsp;": " ",
-        "&quot;": '"',
-        "&apos;": "'",
-    }
-    for entity, char in replacements.items():
+    for entity, char in _HTML_ENTITIES.items():
         text = text.replace(entity, char)
     return text
 
