@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Inline code spans and fenced code blocks no longer leak their internal
+  protection placeholder into the output. A code span inside a header
+  (`` # Heading with `code` ``) or inside emphasis markers (``**`code`**``)
+  emitted a NUL control character followed by a run of bold hex digits,
+  because the placeholder was built from ASCII alphanumerics that the
+  Unicode mapping steps then rewrote. Placeholders now use Private Use Area
+  characters, which those steps leave untouched (fixes #63).
+- An inline code span that wraps a fenced block (`` ` ```x``` ` ``) no longer
+  leaves an unexpanded placeholder in the output. Placeholders are now
+  restored in reverse insertion order, so an outer span is expanded before
+  the keys nested inside it.
+
+### Changed
+
+- `convert()` and `convert_file()` are now deterministic. Code placeholders
+  were previously derived from `uuid4()`, so any input whose placeholder
+  leaked produced different output on every call.
+
 ## [0.2.3] — 2026-08-05
 
 ### Changed

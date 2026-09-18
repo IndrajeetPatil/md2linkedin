@@ -8,7 +8,6 @@ regex conflicts (e.g. bold-italic must be processed before bold or italic).
 from __future__ import annotations
 
 import re
-import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -44,11 +43,24 @@ def _normalize_line_endings(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
+# Placeholder bodies are drawn from the Private Use Area (U+E000+). A
+# placeholder has to survive every step between _protect_code and
+# _restore_code untouched, and those steps rewrite ASCII alphanumerics
+# (to_sans_*) or apply .upper(). PUA codepoints are immune to both, whereas an
+# ASCII body gets mangled and the placeholder then leaks into the output (#63).
+_PLACEHOLDER_BASE = 0xE000
+
+
 def _protect_code(text: str) -> tuple[str, dict[str, str]]:
-    """Replace code spans and fenced blocks with unique placeholders.
+    r"""Replace code spans and fenced blocks with unique placeholders.
 
     Code content must never be transformed by the Unicode mapping steps.
-    Placeholders are UUID-based so they cannot accidentally match user text.
+
+    Each placeholder is a Private Use Area character delimited by ``\x00``,
+    chosen so that no later pipeline step can alter it; see
+    :data:`_PLACEHOLDER_BASE`. Any ``\x00`` already in *text* is dropped,
+    which is what keeps the sequentially numbered keys from colliding with
+    content that happens to contain Private Use Area characters.
 
     Args:
         text: Markdown text.
@@ -58,10 +70,11 @@ def _protect_code(text: str) -> tuple[str, dict[str, str]]:
         maps each placeholder back to its original code string.
 
     """
+    text = text.replace("\x00", "")
     placeholders: dict[str, str] = {}
 
     def _replace(match: re.Match[str]) -> str:
-        key = f"\x00CODE{uuid.uuid4().hex}\x00"
+        key = f"\x00{chr(_PLACEHOLDER_BASE + len(placeholders))}\x00"
         placeholders[key] = match.group(0)
         return key
 
@@ -89,6 +102,13 @@ def _restore_code(
     mapped; all other characters (including Markdown syntax) pass through
     unchanged, so no nested processing is needed.
 
+    Placeholders are expanded in reverse insertion order. :func:`_protect_code`
+    matches fenced blocks before inline spans, so an inline span that wraps a
+    fenced run swallows the fenced placeholder into its own stored value.
+    Expanding oldest-first would substitute that inner key while it is still
+    hidden inside the outer value, and the outer expansion would then
+    reintroduce the key with nothing left to restore it.
+
     Args:
         text: Text containing placeholders.
         placeholders: Map of placeholder → original code string.
@@ -98,7 +118,7 @@ def _restore_code(
         Text with all placeholders replaced by their original code content.
 
     """
-    for key, original in placeholders.items():
+    for key, original in reversed(placeholders.items()):
         if original.startswith(("```", "~~~")):
             if monospace:
                 # Strip fences and optional language tag, convert content

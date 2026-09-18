@@ -29,7 +29,7 @@ def test_convert_document(benchmark: BenchmarkFixture, repetitions: int) -> None
     assert result.count("𝗙𝗮𝘀𝘁") == repetitions
     assert result.count("documentation") == repetitions
     assert "**" not in result
-    assert "\x00CODE" not in result
+    assert "\x00" not in result
 
 
 def test_preserve_links_and_plain_code(benchmark: BenchmarkFixture) -> None:
@@ -37,7 +37,7 @@ def test_preserve_links_and_plain_code(benchmark: BenchmarkFixture) -> None:
     result = benchmark(convert, text, preserve_links=True, monospace_code=False)
     assert result.count("[documentation](https://example.com)") == 20
     assert result.count("code()") == 20
-    assert "\x00CODE" not in result
+    assert "\x00" not in result
 
 
 def test_unicode_mapping(benchmark: BenchmarkFixture) -> None:

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 import pytest
 
 from md2linkedin._unicode import (
+    _build_table,
     apply_style,
     to_monospace,
     to_sans_bold,
@@ -17,6 +18,35 @@ from md2linkedin._unicode import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+# ── _build_table ──────────────────────────────────────────────────────────────
+
+
+class TestBuildTable:
+    """Direct tests for the table builder.
+
+    The public mapping functions only exercise it indirectly, via tables built
+    once at import, so an error in the offset arithmetic could otherwise hide
+    behind whichever styles happen to be asserted elsewhere.
+    """
+
+    def test_letters_map_to_consecutive_codepoints(self) -> None:
+        table = _build_table(0x100, 0x200)
+        assert [table[ord(c)] for c in "ABC"] == [0x100, 0x101, 0x102]
+        assert [table[ord(c)] for c in "abc"] == [0x200, 0x201, 0x202]
+        assert table[ord("Z")] == 0x100 + 25
+        assert table[ord("z")] == 0x200 + 25
+
+    def test_digits_included_when_base_given(self) -> None:
+        table = _build_table(0x100, 0x200, 0x300)
+        assert [table[ord(d)] for d in "09"] == [0x300, 0x309]
+        assert len(table) == len(string.ascii_letters) + len(string.digits)
+
+    def test_digits_omitted_when_base_is_none(self) -> None:
+        table = _build_table(0x100, 0x200)
+        assert not any(ord(d) in table for d in string.digits)
+        assert len(table) == len(string.ascii_letters)
+
 
 # ── to_sans_bold ───────────────────────────────────────────────────────────────
 
