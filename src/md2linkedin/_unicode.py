@@ -7,6 +7,7 @@ styling in plain-text environments like LinkedIn.
 
 from __future__ import annotations
 
+import string
 from typing import Literal
 
 __all__ = [
@@ -33,6 +34,42 @@ _SANS_BOLD_ITALIC_LOWER = 0x1D656  # 𝙖
 _MONOSPACE_UPPER = 0x1D670  # 𝙰
 _MONOSPACE_LOWER = 0x1D68A  # 𝚊
 _MONOSPACE_DIGIT = 0x1D7F6  # 𝟶
+
+
+# ── Translation tables ─────────────────────────────────────────────────────────
+
+
+def _build_table(upper: int, lower: int, digit: int | None = None) -> dict[int, int]:
+    """Build a :meth:`str.translate` table for one Unicode style block.
+
+    Args:
+        upper: Codepoint of the styled ``A``.
+        lower: Codepoint of the styled ``a``.
+        digit: Codepoint of the styled ``0``, or ``None`` for styles whose
+            Unicode block has no digits (the italic blocks).
+
+    Returns:
+        A mapping from ASCII codepoint to styled codepoint. Characters absent
+        from the mapping are left unchanged by :meth:`str.translate`.
+
+    """
+    blocks = [(string.ascii_uppercase, upper), (string.ascii_lowercase, lower)]
+    if digit is not None:
+        blocks.append((string.digits, digit))
+    return {
+        ord(char): base + offset
+        for chars, base in blocks
+        for offset, char in enumerate(chars)
+    }
+
+
+_SANS_BOLD_TABLE = _build_table(_SANS_BOLD_UPPER, _SANS_BOLD_LOWER, _SANS_BOLD_DIGIT)
+_SANS_ITALIC_TABLE = _build_table(_SANS_ITALIC_UPPER, _SANS_ITALIC_LOWER)
+_SANS_BOLD_ITALIC_TABLE = _build_table(
+    _SANS_BOLD_ITALIC_UPPER,
+    _SANS_BOLD_ITALIC_LOWER,
+)
+_MONOSPACE_TABLE = _build_table(_MONOSPACE_UPPER, _MONOSPACE_LOWER, _MONOSPACE_DIGIT)
 
 
 # ── Public mapping functions ───────────────────────────────────────────────────
@@ -63,17 +100,7 @@ def to_sans_bold(text: str) -> str:
         ''
 
     """
-    out: list[str] = []
-    for c in text:
-        if "A" <= c <= "Z":
-            out.append(chr(_SANS_BOLD_UPPER + ord(c) - ord("A")))
-        elif "a" <= c <= "z":
-            out.append(chr(_SANS_BOLD_LOWER + ord(c) - ord("a")))
-        elif "0" <= c <= "9":
-            out.append(chr(_SANS_BOLD_DIGIT + ord(c) - ord("0")))
-        else:
-            out.append(c)
-    return "".join(out)
+    return text.translate(_SANS_BOLD_TABLE)
 
 
 def to_sans_italic(text: str) -> str:
@@ -101,15 +128,7 @@ def to_sans_italic(text: str) -> str:
         ''
 
     """
-    out: list[str] = []
-    for c in text:
-        if "A" <= c <= "Z":
-            out.append(chr(_SANS_ITALIC_UPPER + ord(c) - ord("A")))
-        elif "a" <= c <= "z":
-            out.append(chr(_SANS_ITALIC_LOWER + ord(c) - ord("a")))
-        else:
-            out.append(c)
-    return "".join(out)
+    return text.translate(_SANS_ITALIC_TABLE)
 
 
 def to_sans_bold_italic(text: str) -> str:
@@ -134,15 +153,7 @@ def to_sans_bold_italic(text: str) -> str:
         ''
 
     """
-    out: list[str] = []
-    for c in text:
-        if "A" <= c <= "Z":
-            out.append(chr(_SANS_BOLD_ITALIC_UPPER + ord(c) - ord("A")))
-        elif "a" <= c <= "z":
-            out.append(chr(_SANS_BOLD_ITALIC_LOWER + ord(c) - ord("a")))
-        else:
-            out.append(c)
-    return "".join(out)
+    return text.translate(_SANS_BOLD_ITALIC_TABLE)
 
 
 def to_monospace(text: str) -> str:
@@ -170,17 +181,7 @@ def to_monospace(text: str) -> str:
         ''
 
     """
-    out: list[str] = []
-    for c in text:
-        if "A" <= c <= "Z":
-            out.append(chr(_MONOSPACE_UPPER + ord(c) - ord("A")))
-        elif "a" <= c <= "z":
-            out.append(chr(_MONOSPACE_LOWER + ord(c) - ord("a")))
-        elif "0" <= c <= "9":
-            out.append(chr(_MONOSPACE_DIGIT + ord(c) - ord("0")))
-        else:
-            out.append(c)
-    return "".join(out)
+    return text.translate(_MONOSPACE_TABLE)
 
 
 def apply_style(text: str, style: Literal["bold", "italic", "bold_italic"]) -> str:
