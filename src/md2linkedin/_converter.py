@@ -49,6 +49,11 @@ def _normalize_line_endings(text: str) -> str:
 # (to_sans_*) or apply .upper(). PUA codepoints are immune to both, whereas an
 # ASCII body gets mangled and the placeholder then leaks into the output (#63).
 _PLACEHOLDER_BASE = 0xE000
+# Matches any key built above. Restoring via one regex pass beats a str.replace
+# per key: the keys are only three characters, and CPython's substring search
+# skips much less on a short needle, so repeated scans of a long document
+# dominated the conversion.
+_PLACEHOLDER_RE = re.compile(r"\x00.\x00", re.DOTALL)
 
 
 def _protect_code(text: str) -> tuple[str, dict[str, str]]:
@@ -102,12 +107,11 @@ def _restore_code(
     mapped; all other characters (including Markdown syntax) pass through
     unchanged, so no nested processing is needed.
 
-    Placeholders are expanded in reverse insertion order. :func:`_protect_code`
-    matches fenced blocks before inline spans, so an inline span that wraps a
-    fenced run swallows the fenced placeholder into its own stored value.
-    Expanding oldest-first would substitute that inner key while it is still
-    hidden inside the outer value, and the outer expansion would then
-    reintroduce the key with nothing left to restore it.
+    All placeholders are expanded in a single pass, repeated until the text
+    stops changing. :func:`_protect_code` matches fenced blocks before inline
+    spans, so an inline span that wraps a fenced run swallows the fenced
+    placeholder into its own stored value; expanding the outer span
+    reintroduces the inner key, which the next pass resolves.
 
     Args:
         text: Text containing placeholders.
@@ -118,7 +122,9 @@ def _restore_code(
         Text with all placeholders replaced by their original code content.
 
     """
-    for key, original in reversed(placeholders.items()):
+
+    def _expand(match: re.Match[str]) -> str:
+        original = placeholders[match.group(0)]
         if original.startswith(("```", "~~~")):
             if monospace:
                 # Strip fences and optional language tag, convert content
@@ -130,16 +136,20 @@ def _restore_code(
                 # Strip optional language tag (first line of body)
                 first_nl = body.find("\n")
                 content = body[first_nl + 1 :] if first_nl != -1 else ""
-                text = text.replace(key, to_monospace(content))
-            else:
-                # Keep fenced blocks as-is (no backtick stripping)
-                text = text.replace(key, original)
-        elif monospace:
+                return to_monospace(content)
+            # Keep fenced blocks as-is (no backtick stripping)
+            return original
+        if monospace:
             # Strip backticks and apply monospace for inline code
-            text = text.replace(key, to_monospace(original[1:-1]))
-        else:
-            # Strip the surrounding backticks for inline code
-            text = text.replace(key, original[1:-1])
+            return to_monospace(original[1:-1])
+        # Strip the surrounding backticks for inline code
+        return original[1:-1]
+
+    while placeholders:
+        new_text = _PLACEHOLDER_RE.sub(_expand, text)
+        if new_text == text:
+            break
+        text = new_text
     return text
 
 

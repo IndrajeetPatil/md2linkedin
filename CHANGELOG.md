@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `convert()` and `convert_file()` are now deterministic. Code placeholders
   were previously derived from `uuid4()`, so any input whose placeholder
   leaked produced different output on every call.
+- Documents with many code spans convert faster. Placeholders are restored in
+  a single regex pass rather than one `str.replace` scan per placeholder,
+  which removes the quadratic cost of that step.
 
 ## [0.2.3] — 2026-08-05
 
