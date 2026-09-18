@@ -14,7 +14,7 @@ NC = \033[0m
 update-deps:
 	uv lock --upgrade
 	uv sync
-	prek update
+	prek update --freeze
 
 upgrade-deps: update-deps
 
