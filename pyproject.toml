@@ -1,6 +1,6 @@
 [project]
 name = "md2linkedin"
-version = "0.3.0"
+version = "0.4.0"
 description = "Convert Markdown to LinkedIn-friendly Unicode text"
 readme = "README.md"
 authors = [
