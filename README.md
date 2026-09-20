@@ -132,7 +132,10 @@ For more examples, check out the package documentation at:
 
 ## See Also
 
-- [md2linkedin Web App](https://019d695e-8448-ee38-5db3-7ca4acf2ce2c.share.connect.posit.cloud/) — an interactive web interface for `md2linkedin`, built by [Yann Cohen](https://github.com/iamYannC).
+- [md2linkedin Web
+  App](https://019d695e-8448-ee38-5db3-7ca4acf2ce2c.share.connect.posit.cloud/)
+  — an interactive web interface for `md2linkedin`, built by [Yann
+  Cohen](https://github.com/iamYannC).
 
 ## License
 
