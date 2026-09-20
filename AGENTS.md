@@ -17,7 +17,8 @@ This is a Python package repository following standard development practices.
 - To explicitly upgrade dependencies and pre-commit hooks, run `make update-deps`.
 
 ## Code Quality & Testing
-- Code formatting and linting are handled by `ruff`, and type checking by `ty`.
+- Code formatting and linting are handled by `ruff`, and type checking by `ty`. We use `pyrefly` to enforce 100% type coverage.
+- If `pyrefly` and `ty` conflict on any issue, `ty` should win.
 - Pre-commit hooks are configured via `prek`.
 - **Do not** commit code with linting errors, type warnings, or failing tests.
 - Always run `make qa` to format, lint, type-check, and audit dependencies.
