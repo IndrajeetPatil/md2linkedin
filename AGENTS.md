@@ -25,6 +25,23 @@ This is a Python package repository following standard development practices.
 - Run `make check-package` to run the full validation suite (QA + Tests + Build).
 - **Do not** bypass the `Makefile`; rely on its targets for standardized workflows.
 
+## Docstrings & Comments
+- Only the public API carries docstrings: `convert()`, `convert_file()`, the
+  `_unicode` mapping functions, the CLI `main()` (its docstring *is* the
+  `--help` text), and the module docstrings that orient a reader entering a
+  file. These are what `mkdocstrings` renders and what `help()` shows.
+- **Do not** write docstrings for internal functions — anything with a leading
+  underscore, such as `_has_indented_line()` or `_strip_images()`. Their
+  `Args:`/`Returns:` sections only restate the signature and go stale.
+- When an internal function *does* need explaining (an ordering constraint, a
+  non-obvious algorithm, a workaround and its reason), put a short comment
+  immediately above the `def`, and keep step-by-step notes as inline comments
+  in the body. Explain *why*, not *what*.
+- Ruff's `pydocstyle` rules only demand docstrings on public names, so this
+  convention needs no ignores in `pyproject.toml`. If a future rule does flag
+  an undocumented internal function, relax that rule rather than reinstating
+  the docstring.
+
 ## Mutation Testing
 - We use [`mutmut`](https://mutmut.readthedocs.io/) to check whether the test
   suite actually catches semantic changes to the source, not just line coverage.

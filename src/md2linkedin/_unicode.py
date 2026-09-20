@@ -39,20 +39,10 @@ _MONOSPACE_DIGIT = 0x1D7F6  # 𝟶
 # ── Translation tables ─────────────────────────────────────────────────────────
 
 
+# One str.translate table per style block, built from the codepoints of its
+# styled ``A``, ``a``, and ``0``. *digit* is None for the italic blocks, which
+# have no digits; characters absent from the table are left unchanged.
 def _build_table(upper: int, lower: int, digit: int | None = None) -> dict[int, int]:
-    """Build a :meth:`str.translate` table for one Unicode style block.
-
-    Args:
-        upper: Codepoint of the styled ``A``.
-        lower: Codepoint of the styled ``a``.
-        digit: Codepoint of the styled ``0``, or ``None`` for styles whose
-            Unicode block has no digits (the italic blocks).
-
-    Returns:
-        A mapping from ASCII codepoint to styled codepoint. Characters absent
-        from the mapping are left unchanged by :meth:`str.translate`.
-
-    """
     blocks = [(string.ascii_uppercase, upper), (string.ascii_lowercase, lower)]
     if digit is not None:
         blocks.append((string.digits, digit))
