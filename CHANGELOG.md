@@ -20,7 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from the raw indentation width, so a document indented by four spaces per
   level nests exactly like one indented by two. Output indentation is
   normalized to two spaces per level. Ordered markers (`1.`) are still kept
-  as-is, but they now open a level for bullets nested under them.
+  verbatim, but they are re-indented like bullets and they now open a level
+  for bullets nested under them.
 
 ## [0.3.0] — 2026-09-18
 

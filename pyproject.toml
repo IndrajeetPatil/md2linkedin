@@ -151,6 +151,10 @@ mutate_only_covered_lines = true
 #   equivalent to ``rest.find(fence)`` because the non-greedy regex that
 #   captured the block already trims to the shortest matching span, so
 #   no additional ``fence`` marker can appear inside ``rest``.
+# * ``pos = 0`` in ``_convert_bullets`` is equivalent to ``pos = None``
+#   because the cursor is only ever used as the lower bound of a slice, and
+#   ``text[None:i]`` is ``text[0:i]``. Every later assignment to it is an
+#   integer, so no test can tell the two initial values apart.
 #
 # ``encoding=_ENCODING`` mutations (``encoding=None`` / arg-removal) are
 # NOT excluded here — they are covered by focused tests that assert the
@@ -158,6 +162,7 @@ mutate_only_covered_lines = true
 # as real test failures rather than being silently skipped.
 do_not_mutate_patterns = [
     'closing_fence = rest\.rfind\(fence\)',
+    'pos = 0',
 ]
 
 [tool.ty.src]

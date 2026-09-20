@@ -124,8 +124,9 @@ convert("- Role\n  - Applications\n    - AI Launchpad")
 #     ◦ AI Launchpad
 ```
 
-Ordered markers (`1.`) are kept as-is, since the numbers already convey
-order, but they still open a level for any bullets nested under them.
+Ordered markers (`1.`) are kept verbatim, since the numbers already convey
+order, but they are re-indented like bullets and they open a level for any
+bullets nested under them.
 
 ### Code Is Rendered in Monospace
 

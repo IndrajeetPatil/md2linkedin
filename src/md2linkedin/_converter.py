@@ -373,11 +373,31 @@ def _strip_images(text: str) -> str:
 _BULLET_MARKERS = ("•", "‣", "◦", "▪")
 _INDENT_UNIT = 2  # spaces emitted per nesting level
 _TAB_WIDTH = 4  # spaces a tab stands for when measuring source indentation
-# Bullet (``-``/``*``/``+``) and ordered (``1.``/``1)``) list items. Ordered
-# items are matched only so that they can open a level for bullets nested
-# underneath them; their own text is left alone, so only the bullet marker is
-# captured.
-_LIST_ITEM_RE = re.compile(r"^(?P<indent>[ \t]*)(?:(?P<bullet>[-*+])|\d+[.)]) ")
+# Bullet (``-``/``*``/``+``) and ordered (``1.``/``1)``) list items. The
+# ordered marker is not captured: it is kept verbatim, and is matched only so
+# that it can open a level for the bullets nested underneath it.
+_LIST_ITEM_RE = re.compile(
+    r"^(?P<indent>[ \t]*)(?:(?P<bullet>[-*+])|\d+[.)]) ",
+    re.MULTILINE,
+)
+# A line whose first character is not whitespace, i.e. a paragraph at column
+# zero, which is where an open list ends. Blank lines and indented lines do
+# not end it (loose lists, continuation paragraphs).
+_LIST_BREAK_RE = re.compile(r"\n\S")
+_TOP_LEVEL_BULLET_RE = re.compile(r"^[-*+] ", re.MULTILINE)
+
+
+def _has_indented_line(text: str) -> bool:
+    """Report whether any line of *text* starts with a space or a tab.
+
+    Args:
+        text: Input text.
+
+    Returns:
+        ``True`` if at least one line is indented.
+
+    """
+    return text.startswith((" ", "\t")) or "\n " in text or "\n\t" in text
 
 
 def _convert_bullets(text: str) -> str:
@@ -397,8 +417,9 @@ def _convert_bullets(text: str) -> str:
     no enclosing item to count from, so its depth is derived from that
     indentation instead.
 
-    Ordered list markers (``1. ``) are left as-is (numbers already convey
-    order), but they still open a level for bullets nested under them.
+    Ordered list markers (``1. ``) are kept verbatim (numbers already convey
+    order) but are re-indented like bullets, and they open a level for the
+    bullets nested under them.
 
     Args:
         text: Input text.
@@ -407,19 +428,22 @@ def _convert_bullets(text: str) -> str:
         Text with list markers replaced.
 
     """
+    if not _has_indented_line(text):
+        # Nothing is indented, so no item can be nested and one constant
+        # substitution does the whole job.
+        return _TOP_LEVEL_BULLET_RE.sub(f"{_BULLET_MARKERS[0]} ", text)
+
     # (source indent width, output depth) for each currently open list level.
     levels: list[tuple[int, int]] = []
     out: list[str] = []
+    pos = 0
 
-    for line in text.split("\n"):
-        match = _LIST_ITEM_RE.match(line)
-        if match is None:
-            # A non-blank line at column zero ends the list; blank lines and
-            # indented lines are part of it (loose lists, continuation text).
-            if line.strip() and not line[:1].isspace():
-                levels.clear()
-            out.append(line)
-            continue
+    for match in _LIST_ITEM_RE.finditer(text):
+        # Everything since the previous item: the tail of its line, plus any
+        # lines in between. A paragraph at column zero there closes the list.
+        gap = text[pos : match.start()]
+        if _LIST_BREAK_RE.search(gap):
+            levels.clear()
 
         # Close every level this item is not nested inside, its own included,
         # then reopen its level one deeper than whatever still encloses it.
@@ -429,13 +453,18 @@ def _convert_bullets(text: str) -> str:
         depth = levels[-1][1] + 1 if levels else width // _INDENT_UNIT
         levels.append((width, depth))
 
-        if match.group("bullet") is None:
-            out.append(line)
-            continue
-        marker = _BULLET_MARKERS[min(depth, len(_BULLET_MARKERS) - 1)]
-        out.append(f"{' ' * (_INDENT_UNIT * depth)}{marker} {line[match.end() :]}")
+        indent = " " * (_INDENT_UNIT * depth)
+        bullet = match.group("bullet")
+        if bullet is None:
+            # Ordered: keep ``1. `` verbatim, drop only its indentation.
+            marker = text[match.end("indent") : match.end()]
+        else:
+            marker = f"{_BULLET_MARKERS[min(depth, len(_BULLET_MARKERS) - 1)]} "
+        out.extend((gap, indent + marker))
+        pos = match.end()
 
-    return "\n".join(out)
+    out.append(text[pos:])
+    return "".join(out)
 
 
 def _strip_blockquotes(text: str) -> str:

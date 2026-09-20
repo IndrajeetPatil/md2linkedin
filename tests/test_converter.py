@@ -595,6 +595,15 @@ class TestConvertBullets:
         text = "1. Item\n   - sub\n     - subsub"
         assert _convert_bullets(text) == "1. Item\n  ‣ sub\n    ◦ subsub"
 
+    def test_nested_ordered_item_is_reindented(self) -> None:
+        # The marker is kept verbatim, but its indentation is normalized like
+        # a bullet's, so its own children still sit one level deeper.
+        text = "- a\n    1. b\n        - c"
+        assert _convert_bullets(text) == "• a\n  1. b\n    ◦ c"
+
+    def test_ordered_marker_with_parenthesis(self) -> None:
+        assert _convert_bullets("- a\n    1) b") == "• a\n  1) b"
+
     def test_paragraph_closes_the_list(self) -> None:
         text = "- a\n  - b\n\nparagraph\n\n  - c"
         result = _convert_bullets(text)
