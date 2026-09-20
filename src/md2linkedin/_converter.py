@@ -33,12 +33,6 @@ _HTML_ENTITIES = {
 
 
 def _normalize_line_endings(text: str) -> str:
-    r"""Normalize Windows (\\r\\n) and classic Mac (\\r) line endings to \\n.
-
-    Returns:
-        Text containing only Unix-style line endings.
-
-    """
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
@@ -55,25 +49,11 @@ _PLACEHOLDER_BASE = 0xE000
 _PLACEHOLDER_RE = re.compile(r"\x00.\x00", re.DOTALL)
 
 
+# Swaps every code span and fenced block for a placeholder, so that the
+# Unicode mapping steps cannot touch code content, and returns the map needed
+# to restore them. Any \x00 already in the text is dropped first: that is what
+# keeps the sequentially numbered keys from colliding with content.
 def _protect_code(text: str) -> tuple[str, dict[str, str]]:
-    r"""Replace code spans and fenced blocks with unique placeholders.
-
-    Code content must never be transformed by the Unicode mapping steps.
-
-    Each placeholder is a Private Use Area character delimited by ``\x00``,
-    chosen so that no later pipeline step can alter it; see
-    :data:`_PLACEHOLDER_BASE`. Any ``\x00`` already in *text* is dropped,
-    which is what keeps the sequentially numbered keys from colliding with
-    content that happens to contain Private Use Area characters.
-
-    Args:
-        text: Markdown text.
-
-    Returns:
-        A ``(modified_text, placeholder_map)`` tuple where *placeholder_map*
-        maps each placeholder back to its original code string.
-
-    """
     text = text.replace("\x00", "")
     placeholders: dict[str, str] = {}
 
@@ -89,39 +69,18 @@ def _protect_code(text: str) -> tuple[str, dict[str, str]]:
     return text, placeholders
 
 
+# Inline code keeps its content without the backticks; a fenced block is kept
+# whole so its structure survives. Placeholders are expanded one pass at a
+# time until the text stops changing: _protect_code matches fenced blocks
+# before inline spans, so an inline span wrapping a fenced run swallowed the
+# fenced key into its own stored value, and expanding the outer span
+# reintroduces that inner key for the next pass to resolve.
 def _restore_code(
     text: str,
     placeholders: dict[str, str],
     *,
     monospace: bool = False,
 ) -> str:
-    """Restore code placeholders to their original content.
-
-    For inline code, the surrounding backticks are stripped (the plain text
-    content is kept). For fenced blocks, the entire original block is kept
-    intact so structure is preserved.
-
-    When *monospace* is ``True``, code content is converted to Unicode
-    Mathematical Monospace characters. Only ASCII letters and digits are
-    mapped; all other characters (including Markdown syntax) pass through
-    unchanged, so no nested processing is needed.
-
-    All placeholders are expanded in a single pass, repeated until the text
-    stops changing. :func:`_protect_code` matches fenced blocks before inline
-    spans, so an inline span that wraps a fenced run swallows the fenced
-    placeholder into its own stored value; expanding the outer span
-    reintroduces the inner key, which the next pass resolves.
-
-    Args:
-        text: Text containing placeholders.
-        placeholders: Map of placeholder → original code string.
-        monospace: When ``True``, apply monospace Unicode mapping to code.
-
-    Returns:
-        Text with all placeholders replaced by their original code content.
-
-    """
-
     def _expand(match: re.Match[str]) -> str:
         original = placeholders[match.group(0)]
         if original.startswith(("```", "~~~")):
@@ -153,19 +112,9 @@ def _restore_code(
     return text
 
 
+# Unwraps <span ...>...</span>, keeping the inner text. Iterates until no tags
+# remain, so that arbitrarily nested spans are fully unwrapped.
 def _strip_html_spans(text: str) -> str:
-    """Remove ``<span ...>...</span>`` wrappers, keeping inner text.
-
-    Iterates until no more span tags remain so that arbitrarily nested
-    spans are fully unwrapped.
-
-    Args:
-        text: Input text that may contain HTML span elements.
-
-    Returns:
-        Text with all span elements removed and their inner content preserved.
-
-    """
     while True:
         new_text = re.sub(r"<span[^>]*>(.*?)</span>", r"\1", text, flags=re.DOTALL)
         if new_text == text:
@@ -196,86 +145,28 @@ def _style_markers(
     patterns: tuple[str, ...],
     style: Callable[[str], str],
 ) -> str:
-    """Apply *style* to the text captured by each emphasis pattern in turn.
-
-    Args:
-        text: Input text.
-        patterns: Regexes whose first capture group is the text to style.
-        style: Unicode mapping function applied to each captured group.
-
-    Returns:
-        Text with every matched marker pair replaced by styled Unicode.
-
-    """
     for pattern in patterns:
         text = re.sub(pattern, lambda m: style(m.group(1)), text)
     return text
 
 
+# Must run before _convert_bold and _convert_italic, or the triple markers are
+# consumed piecemeal by them.
 def _convert_bold_italic(text: str) -> str:
-    r"""Replace ``***text***`` (or ``___text___``) with bold-italic Unicode.
-
-    Must run before :func:`_convert_bold` and :func:`_convert_italic` to
-    prevent the triple markers from being consumed piecemeal.
-
-    Backslash-escaped markers (``\\***``) are not matched.
-
-    Args:
-        text: Input text.
-
-    Returns:
-        Text with bold-italic markers replaced.
-
-    """
     return _style_markers(text, _BOLD_ITALIC_PATTERNS, to_sans_bold_italic)
 
 
 def _convert_bold(text: str) -> str:
-    r"""Replace ``**text**`` (or ``__text__``) with bold Unicode.
-
-    Backslash-escaped markers (``\\**``) are not matched.
-
-    Args:
-        text: Input text.
-
-    Returns:
-        Text with bold markers replaced.
-
-    """
     return _style_markers(text, _BOLD_PATTERNS, to_sans_bold)
 
 
 def _convert_italic(text: str) -> str:
-    r"""Replace ``*text*`` or ``_text_`` with italic Unicode.
-
-    Uses negative look-around to avoid matching asterisks that are part of
-    bold (``**``) or bold-italic (``***``) markers already consumed by
-    earlier pipeline steps. Backslash-escaped markers (``\\*``) are also
-    not matched.
-
-    Args:
-        text: Input text.
-
-    Returns:
-        Text with italic markers replaced.
-
-    """
     return _style_markers(text, _ITALIC_PATTERNS, to_sans_italic)
 
 
+# ATX (``#``) and setext headers alike: H1 gets a ``━`` border above and
+# below, H2-H6 only the bold mapping. Horizontal rules are dropped.
 def _convert_headers(text: str) -> str:
-    """Convert ATX headers (``# Heading``) and setext headers to styled text.
-
-    * H1 (``#`` or setext ``===``): bold Unicode + ``━`` border.
-    * H2–H6 (``##``–``######`` or setext ``---``): bold Unicode, no border.
-
-    Args:
-        text: Input text with Markdown headers.
-
-    Returns:
-        Text with headers replaced by styled plain text.
-
-    """
     separator = "━" * 40
 
     def _fmt_h1(title: str) -> str:
@@ -321,23 +212,9 @@ def _convert_headers(text: str) -> str:
     return "\n".join(out)
 
 
+# Links are reduced to their display text unless *preserve* keeps the syntax
+# as-is; an empty link ([](url)) is dropped along with its URL.
 def _strip_links(text: str, *, preserve: bool = False) -> str:
-    """Handle Markdown links.
-
-    By default, links are stripped to their display text only (URLs are
-    discarded). Empty links ``[](url)`` are removed entirely. Reference-style
-    links ``[text][ref]`` are reduced to their display text.
-
-    When *preserve* is ``True`` the full link syntax is retained as-is.
-
-    Args:
-        text: Input text.
-        preserve: When ``True``, leave link syntax unchanged.
-
-    Returns:
-        Text with links handled according to *preserve*.
-
-    """
     if preserve:
         return text
     # Remove empty links [](url)
@@ -351,15 +228,6 @@ def _strip_links(text: str, *, preserve: bool = False) -> str:
 
 
 def _strip_images(text: str) -> str:
-    """Replace Markdown images with their alt text (or nothing if empty).
-
-    Args:
-        text: Input text.
-
-    Returns:
-        Text with image syntax replaced by alt text.
-
-    """
     # ![alt](url) → alt  (empty alt → removed)
     return re.sub(
         r"!\[([^\]]*)\]\([^)]*\)",
@@ -384,56 +252,31 @@ _LIST_ITEM_RE = re.compile(
     r"^(?P<indent>[ \t]*)(?:(?P<bullet>[-*+])|[0-9]{1,9}[.)])[ \t]",
     re.MULTILINE,
 )
-# A line whose first character is not whitespace, i.e. a paragraph at column
-# zero, which is where an open list ends. Blank lines and indented lines do
-# not end it (loose lists, continuation paragraphs).
-_LIST_BREAK_RE = re.compile(r"\n\S")
+# A blank line followed by a paragraph at column zero, which is where an open
+# list ends. Neither half is enough on its own: a blank line alone only makes
+# the list loose, and a column-zero line that follows an item directly is a
+# lazy continuation of that item's paragraph. Indented lines are continuation
+# paragraphs and never end the list.
+_LIST_BREAK_RE = re.compile(r"\n[ \t]*\n\S")
 _TOP_LEVEL_BULLET_RE = re.compile(r"^[-*+][ \t]", re.MULTILINE)
 
 
 def _has_indented_line(text: str) -> bool:
-    """Report whether any line of *text* starts with a space or a tab.
-
-    Args:
-        text: Input text.
-
-    Returns:
-        ``True`` if at least one line is indented.
-
-    """
     return text.startswith((" ", "\t")) or "\n " in text or "\n\t" in text
 
 
+# Nesting depth is counted from the enclosing list items rather than from the
+# raw indentation, so a document indented by four spaces per level nests
+# exactly like one indented by two (fixes #68): ``- `` → ``• ``, then
+# ``  ‣ ``, ``    ◦ ``, and ``      ▪ `` two further spaces per level beyond
+# that. Output indentation is therefore normalized to two spaces per level.
+#
+# A list whose first item is already indented has no enclosing item to count
+# from, so its depth comes from that indentation instead. Ordered markers
+# (``1. ``) are kept verbatim, since the numbers already convey order, but
+# they are re-indented like bullets and they open a level for the bullets
+# nested under them.
 def _convert_bullets(text: str) -> str:
-    """Replace Markdown list markers with Unicode bullet characters.
-
-    Nesting depth is counted from the enclosing list items rather than from
-    the raw indentation, so a document indented by four spaces per level
-    nests exactly like one indented by two (fixes #68):
-
-    * First level ``- `` → ``• ``
-    * Second level → ``  ‣ ``
-    * Third level → ``    ◦ ``
-    * Fourth and deeper → ``      ▪ ``, indented two further spaces per level
-
-    Output indentation is normalized to two spaces per level regardless of
-    the source indentation. Nesting takes at least two extra spaces: an item
-    indented by only one space past its predecessor is a sibling, as Markdown
-    allows a top-level item up to three leading spaces. A list whose first
-    item is already indented has no enclosing item to count from, so its
-    depth is derived from that indentation instead.
-
-    Ordered list markers (``1. ``) are kept verbatim (numbers already convey
-    order) but are re-indented like bullets, and they open a level for the
-    bullets nested under them.
-
-    Args:
-        text: Input text.
-
-    Returns:
-        Text with list markers replaced.
-
-    """
     if not _has_indented_line(text):
         # Nothing is indented, so no item can be nested and one constant
         # substitution does the whole job.
@@ -446,7 +289,8 @@ def _convert_bullets(text: str) -> str:
 
     for match in _LIST_ITEM_RE.finditer(text):
         # Everything since the previous item: the tail of its line, plus any
-        # lines in between. A paragraph at column zero there closes the list.
+        # lines in between. A blank line and then a paragraph at column zero
+        # in there closes the list.
         gap = text[pos : match.start()]
         if _LIST_BREAK_RE.search(gap):
             levels.clear()
@@ -457,9 +301,18 @@ def _convert_bullets(text: str) -> str:
         # to three leading spaces on a top-level item, so a smaller increase
         # marks a sibling rather than a child.
         width = len(match.group("indent").expandtabs(_TAB_WIDTH))
+        depth = width // _INDENT_UNIT
+        closed: int | None = None
         while levels and width < levels[-1][0] + _INDENT_UNIT:
-            levels.pop()
-        depth = levels[-1][1] + 1 if levels else width // _INDENT_UNIT
+            closed = levels.pop()[1]
+        if levels:
+            depth = levels[-1][1] + 1
+        elif closed is not None:
+            # Nothing encloses this item, but it is a sibling of the level it
+            # just closed, so it cannot sit deeper than that level did. Its
+            # own indentation still caps it, which is what pulls a dedent back
+            # out (``    - deep`` followed by ``- top``).
+            depth = min(depth, closed)
         levels.append((width, depth))
 
         indent = " " * (_INDENT_UNIT * depth)
@@ -477,60 +330,22 @@ def _convert_bullets(text: str) -> str:
 
 
 def _strip_blockquotes(text: str) -> str:
-    """Remove leading ``>`` blockquote markers.
-
-    Args:
-        text: Input text.
-
-    Returns:
-        Text with blockquote markers stripped from line beginnings.
-
-    """
     return re.sub(r"^> ?", "", text, flags=re.MULTILINE)
 
 
 def _clean_entities(text: str) -> str:
-    """Decode common HTML entities to their literal characters.
-
-    Args:
-        text: Input text.
-
-    Returns:
-        Text with ``&gt;``, ``&lt;``, ``&amp;``, ``&nbsp;``, ``&quot;``
-        replaced by their literal equivalents.
-
-    """
     for entity, char in _HTML_ENTITIES.items():
         text = text.replace(entity, char)
     return text
 
 
 def _clean_escaped_chars(text: str) -> str:
-    r"""Remove Markdown backslash escapes (e.g. ``\\*`` → ``*``).
-
-    Args:
-        text: Input text.
-
-    Returns:
-        Text with backslash escapes resolved.
-
-    """
     return re.sub(r"\\([\\`*_{}\[\]()#+\-.!])", r"\1", text)
 
 
+# LinkedIn renders at most two consecutive blank lines meaningfully, so longer
+# runs are collapsed and the result ends in a single trailing newline.
 def _normalize_whitespace(text: str) -> str:
-    """Collapse excessive blank lines and strip leading/trailing whitespace.
-
-    LinkedIn renders at most two consecutive blank lines meaningfully, so
-    three or more consecutive newlines are collapsed to two.
-
-    Args:
-        text: Input text.
-
-    Returns:
-        Normalized text with a single trailing newline.
-
-    """
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip() + "\n"
 

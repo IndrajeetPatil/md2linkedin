@@ -598,6 +598,18 @@ class TestConvertBullets:
         # is a full indent unit deeper than ``b`` and nests under it.
         assert _convert_bullets("- a\n - b\n   - c") == "• a\n• b\n  ‣ c"
 
+    def test_consecutively_shifted_siblings_stay_at_one_depth(self) -> None:
+        # Each item is a single space farther right than the one before it,
+        # which never reaches the nesting threshold, so all four are siblings
+        # however far right the run drifts.
+        text = "- a\n - b\n  - c\n   - d"
+        assert _convert_bullets(text) == "• a\n• b\n• c\n• d"
+
+    def test_dedent_out_of_an_orphan_list(self) -> None:
+        # The closed level caps the depth of its siblings, but not of an item
+        # that is less indented than it: ``top`` is back at column zero.
+        assert _convert_bullets("    - deep\n- top") == "    ◦ deep\n• top"
+
     def test_tab_after_bullet_marker(self) -> None:
         # Once on the flat fast path, once on the nesting path.
         assert _convert_bullets("-\titem") == "• item"
@@ -644,6 +656,13 @@ class TestConvertBullets:
         result = _convert_bullets(text)
         assert result.endswith("  ‣ c")
 
+    def test_closed_list_restarts_from_its_own_indentation(self) -> None:
+        # The blank line plus column-zero paragraph closes the list, so the
+        # item after it is an orphan at the depth its four spaces imply
+        # rather than a continuation of the list above.
+        text = "- a\n    - b\n\nparagraph\n\n    - c"
+        assert _convert_bullets(text).endswith("    ◦ c")
+
     def test_blank_line_does_not_close_the_list(self) -> None:
         # A loose list keeps its levels open across the blank lines, so the
         # four-space items stay one level deep rather than restarting.
@@ -659,6 +678,12 @@ class TestConvertBullets:
         # single space of a lazily wrapped continuation.
         text = "- a\n    - b\n continuation\n    - c"
         assert _convert_bullets(text) == "• a\n  ‣ b\n continuation\n  ‣ c"
+
+    def test_unindented_lazy_continuation_keeps_the_levels_open(self) -> None:
+        # Without a blank line before it, a column-zero line is still part of
+        # the item's paragraph, so ``c`` stays a sibling of ``b``.
+        text = "- a\n    - b\ncontinued\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\ncontinued\n  ‣ c"
 
 
 # ── _strip_blockquotes ────────────────────────────────────────────────────────
