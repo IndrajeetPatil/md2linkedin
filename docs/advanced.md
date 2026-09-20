@@ -115,7 +115,9 @@ still growing by two spaces per level.
 
 Depth is counted from the enclosing list items, not from the raw indentation,
 so a document indented by four spaces per level nests exactly like one
-indented by two:
+indented by two. Nesting takes at least two extra spaces: an item indented by
+only one space past its predecessor stays its sibling, since Markdown allows
+a top-level item up to three leading spaces.
 
 ```python
 convert("- Role\n  - Applications\n    - AI Launchpad")
