@@ -461,12 +461,19 @@ def _interrupts_paragraph(text: str, start: int, fenced_keys: AbstractSet[str]) 
     all paragraph-free, so a list may start under any of them whatever its
     first number is.
     """
-    # ``start`` sits at the beginning of a line, so the text before it ends
-    # with the preceding line — unless there is no preceding line at all.
-    preceding_lines = text[:start].splitlines()
-    if not preceding_lines:
+    # ``start`` sits at the beginning of a line, so the preceding line ends at
+    # the newline just before it — unless there is no preceding line at all.
+    # Only that one line is wanted, so it is cut out with a reverse search
+    # rather than by splitting everything above: an ordered-looking line is
+    # tested here once per match, and copying the whole prefix each time made
+    # a document full of them cost quadratic time.
+    if start == 0:
         return False
-    previous = preceding_lines[-1]
+    end = start - 1
+    # The search is hoisted onto its own line so that the mutation exclusion in
+    # pyproject.toml covers only it; see the note there.
+    previous_start = text.rfind("\n", 0, end) + 1
+    previous = text[previous_start:end]
     if not previous.strip() or _BLOCK_START_RE.match(previous):
         return False
     # A fenced block stands alone on its line; an inline span sits in prose.

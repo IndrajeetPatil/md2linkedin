@@ -750,6 +750,13 @@ class TestConvertBullets:
         # the depth its four spaces would otherwise imply.
         assert _convert_bullets("2. two\n    - child") == "2. two\n  ‣ child"
 
+    def test_block_above_is_read_at_the_top_of_the_document(self) -> None:
+        # A document that opens with a blank line puts the heading on the
+        # second one. The line above ``2.`` is still that heading, so the item
+        # is real and ``child`` nests under it.
+        text = "\n# Heading\n2. item\n    - child"
+        assert _convert_bullets(text) == "\n# Heading\n2. item\n  ‣ child"
+
     def test_ordered_list_continues_through_its_own_paragraph(self) -> None:
         # ``2.`` here is the next item of an already open list rather than a
         # new one, so it is re-indented and opens a level as usual.
