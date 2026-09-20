@@ -199,10 +199,23 @@ def _convert_italic(text: str) -> str:
 # item would also fit, so the list steps below consult this too. The two halves
 # are kept apart because the emphasis markers need dropping earlier than the
 # hyphen does; see :func:`_drop_emphasis_breaks`.
-_EMPHASIS_BREAK = r"(?:_[ \t]*){3,}|(?:\*[ \t]*){3,}"
-_THEMATIC_BREAK = rf"(?:-[ \t]*){{3,}}|{_EMPHASIS_BREAK}"
+#
+# The first two markers are spelled out rather than counted with ``{3,}``. Every
+# line of a document is tested against these patterns, and a counted repeat over
+# a group drags in the engine's generic repeat machinery before it can fail,
+# whereas the unrolled form gives up at the second character of ordinary prose.
+_HYPHEN_BREAK = r"-[ \t]*-[ \t]*(?:-[ \t]*)+"
+_UNDERSCORE_BREAK = r"_[ \t]*_[ \t]*(?:_[ \t]*)+"
+_ASTERISK_BREAK = r"\*[ \t]*\*[ \t]*(?:\*[ \t]*)+"
+_EMPHASIS_BREAK = f"{_UNDERSCORE_BREAK}|{_ASTERISK_BREAK}"
+_THEMATIC_BREAK = f"{_HYPHEN_BREAK}|{_EMPHASIS_BREAK}"
 _THEMATIC_BREAK_RE = re.compile(rf"(?:{_THEMATIC_BREAK})$")
-_EMPHASIS_BREAK_LINE_RE = re.compile(rf"^(?:{_EMPHASIS_BREAK})$\n?", re.MULTILINE)
+# The break is found by the newline in front of it rather than by ``^`` under
+# :data:`re.MULTILINE`. A pattern opening with a literal character lets the
+# engine jump from one newline to the next; one opening with ``^`` is tried at
+# every character of the document, which cost this step more than the emphasis
+# conversion it guards.
+_EMPHASIS_BREAK_LINE_RE = re.compile(rf"\n(?:{_EMPHASIS_BREAK})(?=\n|\Z)")
 # The ``===`` (or ``---``) line under a setext heading. The heading is only a
 # heading because of it, so it is what marks the block for everything that
 # looks at lines one at a time.
@@ -222,7 +235,10 @@ def _drop_emphasis_breaks(text: str) -> str:
     :func:`_convert_headers`, which reads it as the underline of a setext
     heading when a line of text sits above it.
     """
-    return _EMPHASIS_BREAK_LINE_RE.sub("", text)
+    # The pattern matches the newline in front of a break, so a sentinel one
+    # goes on the front to put a break on the first line within its reach. The
+    # slice takes the sentinel back off, and leaves the empty string alone.
+    return _EMPHASIS_BREAK_LINE_RE.sub("", f"\n{text}")[1:]
 
 
 def _convert_headers(text: str) -> str:
