@@ -1,4 +1,4 @@
-.PHONY: update-deps upgrade-deps format lint typecheck audit qa hooks test-coverage mutation-test benchmark benchmark-compare build test-package check-package serve-docs help
+.PHONY: update-deps upgrade-deps format lint typecheck typecoverage audit qa hooks test-coverage mutation-test benchmark benchmark-compare build test-package check-package serve-docs help
 
 # ANSI color codes
 RED = \033[0;31m
@@ -32,10 +32,13 @@ lint:
 typecheck:
 	uv run ty check
 
+typecoverage:
+	uv run pyrefly coverage check --fail-under 100
+
 audit:
 	uv audit --no-dev --preview-features audit
 
-qa: format lint typecheck audit
+qa: format lint typecheck typecoverage audit
 
 hooks:
 	prek run --all-files
@@ -106,8 +109,9 @@ help:
 	@printf "    $(RED)format$(NC)        - Format code using add-trailing-comma and ruff\n"
 	@printf "    $(RED)lint$(NC)          - Lint code with ruff and fix issues\n"
 	@printf "    $(RED)typecheck$(NC)     - Run type checking with ty\n"
+	@printf "    $(RED)typecoverage$(NC)  - Enforce 100%% type coverage with pyrefly\n"
 	@printf "    $(RED)audit$(NC)         - Audit prod dependencies for vulnerabilities\n"
-	@printf "    $(RED)qa$(NC)            - Run all quality checks (format, lint, typecheck, audit)\n"
+	@printf "    $(RED)qa$(NC)            - Run all quality checks (format, lint, typecheck, typecoverage, audit)\n"
 	@printf "    $(RED)hooks$(NC)         - Run all prek pre-commit hooks\n\n"
 	@printf "$(GREEN) Testing and Packaging:$(NC)\n"
 	@printf "    $(RED)test-coverage$(NC) - Run tests and generate coverage report\n"

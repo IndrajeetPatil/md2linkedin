@@ -24,7 +24,7 @@ from ._unicode import (
     to_sans_italic,
 )
 
-__version__ = version("md2linkedin")
+__version__: str = version("md2linkedin")
 
 __all__ = [
     "__version__",
