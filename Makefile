@@ -33,7 +33,7 @@ typecheck:
 	uv run ty check
 
 typecoverage:
-	uv run pyrefly coverage check
+	uv run pyrefly coverage check --fail-under 100
 
 audit:
 	uv audit --no-dev --preview-features audit
