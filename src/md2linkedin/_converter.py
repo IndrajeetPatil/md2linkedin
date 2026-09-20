@@ -194,6 +194,17 @@ def _convert_italic(text: str) -> str:
     return _style_markers(text, _ITALIC_PATTERNS, to_sans_italic)
 
 
+# A thematic break: three or more of the same marker, optionally spaced out
+# (``***``, ``* * *``). Markdown reads such a line as a break even where a list
+# item would also fit, so the list steps below consult this too.
+_THEMATIC_BREAK = r"(?:-[ \t]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,}"
+_THEMATIC_BREAK_RE = re.compile(rf"(?:{_THEMATIC_BREAK})$")
+# The ``===`` (or ``---``) line under a setext heading. The heading is only a
+# heading because of it, so it is what marks the block for everything that
+# looks at lines one at a time.
+_SETEXT_UNDERLINE = r"={3,}[ \t]*$"
+
+
 def _convert_headers(text: str) -> str:
     """Convert ATX (``# Heading``) and setext headers to styled text.
 
@@ -236,8 +247,8 @@ def _convert_headers(text: str) -> str:
                 out.append(_fmt_h2(line))
                 i += 2
                 continue
-        # Standalone horizontal rules (---, ___, ***)
-        if re.match(r"^(-{3,}|_{3,}|\*{3,})\s*$", line):
+        # Standalone horizontal rules (---, ___, ***, and their spaced forms)
+        if _THEMATIC_BREAK_RE.match(line):
             i += 1
             continue
         out.append(line)
@@ -287,17 +298,28 @@ _TAB_WIDTH = 4  # spaces a tab stands for when measuring source indentation
 # nine ASCII digits, as CommonMark defines it, so that a line of prose
 # beginning with a longer number or with non-ASCII digits (``\d`` matches those
 # too) cannot push a phantom level onto the nesting stack. Either a space or a
-# tab may separate the marker from the content, as CommonMark allows.
+# tab may separate the marker from the content, as CommonMark allows. A spaced
+# thematic break (``* * *``) would otherwise read as a bullet item holding
+# ``* *``; Markdown gives the break precedence, so the lookahead rules the
+# whole line out first, at any indentation.
 _LIST_ITEM_RE = re.compile(
-    r"^(?P<indent>[ \t]*)(?:(?P<bullet>[-*+])|(?P<number>[0-9]{1,9})[.)])[ \t]",
+    r"^(?P<indent>[ \t]*)"
+    rf"(?!(?:{_THEMATIC_BREAK})$)"
+    r"(?:(?P<bullet>[-*+])|(?P<number>[0-9]{1,9})[.)])[ \t]",
     re.MULTILINE,
 )
-# A block construct at column zero: an ATX heading, a blockquote or a thematic
-# break. None of them can be the lazy continuation of a list item's paragraph,
-# so each one both ends an open list and rules out the paragraph an ordered
-# marker below it would otherwise be interrupting. Indented ones belong to the
-# item they sit under, which is why matches are anchored to column zero.
-_BLOCK_START = r"#{1,6}(?:[ \t]|$)|>|(?:[-_*][ \t]*){3,}$"
+# A block construct at column zero: an ATX heading, a blockquote, a thematic
+# break or the underline of a setext heading. None of them can be the lazy
+# continuation of a list item's paragraph, so each one both ends an open list
+# and rules out the paragraph an ordered marker below it would otherwise be
+# interrupting. Indented ones belong to the item they sit under, which is why
+# matches are anchored to column zero.
+_BLOCK_START = "|".join((
+    r"#{1,6}(?:[ \t]|$)",
+    r">",
+    _SETEXT_UNDERLINE,
+    rf"(?:{_THEMATIC_BREAK})$",
+))
 _BLOCK_START_RE = re.compile(_BLOCK_START)
 # A fenced code block is a block construct too, but :func:`_protect_code` has
 # already swapped it for a placeholder by the time lists are converted, and an
@@ -314,7 +336,10 @@ _LIST_BREAK_RE = re.compile(
     rf"\n[ \t]*\n\S|\n(?:{_BLOCK_START})|\n(?P<code>\x00.\x00)",
     re.MULTILINE,
 )
-_TOP_LEVEL_BULLET_RE = re.compile(r"^[-*+][ \t]", re.MULTILINE)
+_TOP_LEVEL_BULLET_RE = re.compile(
+    rf"^(?!(?:{_THEMATIC_BREAK})$)[-*+][ \t]",
+    re.MULTILINE,
+)
 
 
 def _has_indented_line(text: str) -> bool:

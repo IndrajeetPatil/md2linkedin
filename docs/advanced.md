@@ -127,8 +127,10 @@ convert("- Role\n  - Applications\n    - AI Launchpad")
 ```
 
 A list ends at a blank line followed by a paragraph at column zero, and at a
-heading, thematic break, blockquote or fenced code block at column zero. An
-item after one of those restarts its nesting from its own indentation.
+heading (ATX or setext), thematic break, blockquote or fenced code block at
+column zero. An item after one of those restarts its nesting from its own
+indentation. A thematic break is a break even where a list item would also
+fit, so a spaced `* * *` is dropped rather than read as a bullet.
 
 Ordered markers (`1.`) are kept verbatim, since the numbers already convey
 order, but they are re-indented like bullets and they open a level for any

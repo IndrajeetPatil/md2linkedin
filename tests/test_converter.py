@@ -461,6 +461,17 @@ class TestConvertHeaders:
     def test_standalone_horizontal_rule_removed(self) -> None:
         assert not _convert_headers("---")
 
+    def test_spaced_horizontal_rule_removed(self) -> None:
+        # A rule may be spaced out, and is dropped like the compact form.
+        assert not _convert_headers("- - -")
+        assert not _convert_headers("* * *")
+        assert not _convert_headers("_ _ _")
+
+    def test_mixed_markers_are_not_a_horizontal_rule(self) -> None:
+        # A rule is made of one repeated marker, so a mixed line is prose.
+        text = "- _ *"
+        assert _convert_headers(text) == text
+
     def test_horizontal_rule_advances_one_line(self) -> None:
         # After stripping an HR the loop MUST advance exactly one line so
         # the line after the rule is emitted (not skipped, not repeated).
@@ -727,6 +738,38 @@ class TestConvertBullets:
         text = "- a\n    - b\n---\n    - c"
         assert _convert_bullets(text) == "• a\n  ‣ b\n---\n    ◦ c"
 
+    def test_spaced_thematic_break_is_not_a_bullet(self) -> None:
+        # ``* * *`` fits the shape of a bullet item holding ``* *``, but
+        # Markdown reads it as a break, which also closes the list.
+        text = "- a\n    - b\n* * *\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n* * *\n    ◦ c"
+
+    def test_spaced_thematic_break_is_not_a_bullet_on_the_flat_path(self) -> None:
+        # The same line, but in a document with nothing indented, where a
+        # single substitution does the conversion.
+        assert _convert_bullets("- a\n* * *\n- b") == "• a\n* * *\n• b"
+
+    def test_spaced_hyphen_break_is_not_a_bullet(self) -> None:
+        text = "- a\n    - b\n- - -\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n- - -\n    ◦ c"
+
+    def test_indented_thematic_break_is_not_a_bullet(self) -> None:
+        # A break takes precedence over a list item wherever it sits, so the
+        # indented one is not an item of its own — and being indented, it is
+        # content of the list rather than a boundary.
+        text = "- a\n    * * *\n    - b"
+        assert _convert_bullets(text) == "• a\n    * * *\n  ‣ b"
+
+    def test_setext_heading_closes_the_list(self) -> None:
+        # ``Heading`` is only a heading because of the ``===`` under it, so
+        # that underline is what marks the block and ends the list.
+        text = "- a\n    - b\nHeading\n===\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\nHeading\n===\n    ◦ c"
+
+    def test_non_one_ordered_marker_after_a_setext_heading_opens_a_level(self) -> None:
+        text = "Heading\n===\n2. parent\n    - child"
+        assert _convert_bullets(text) == "Heading\n===\n2. parent\n  ‣ child"
+
     def test_blockquote_closes_the_list(self) -> None:
         text = "- a\n    - b\n> quoted\n    - c"
         assert _convert_bullets(text) == "• a\n  ‣ b\n> quoted\n    ◦ c"
@@ -889,6 +932,16 @@ class TestConvert:
         # before the heading syntax is replaced by styled text.
         result = convert("- a\n    - b\n## heading\n    - c")
         assert "  ‣ b" in result
+        assert "    ◦ c" in result
+
+    def test_setext_heading_between_items_restarts_the_nesting(self) -> None:
+        result = convert("- a\n    - b\nHeading\n===\n    - c")
+        assert "  ‣ b" in result
+        assert "    ◦ c" in result
+
+    def test_spaced_thematic_break_between_items_restarts_the_nesting(self) -> None:
+        result = convert("- a\n    - b\n- - -\n    - c")
+        assert "- - -" not in result
         assert "    ◦ c" in result
 
     def test_fenced_block_between_items_restarts_the_nesting(self) -> None:
