@@ -891,6 +891,41 @@ class TestConvert:
         assert "  ‣ b" in result
         assert "    ◦ c" in result
 
+    def test_fenced_block_between_items_restarts_the_nesting(self) -> None:
+        # The fence is a code placeholder by the time the list is converted,
+        # so the boundary only survives because the fenced keys are passed on.
+        result = convert("- a\n    - b\n```\ncode\n```\n    - c")
+        assert "  ‣ b" in result
+        assert "    ◦ c" in result
+
+    def test_tilde_fenced_block_between_items_restarts_the_nesting(self) -> None:
+        result = convert("- a\n    - b\n~~~\ncode\n~~~\n    - c")
+        assert "    ◦ c" in result
+
+    def test_indented_fenced_block_keeps_the_list_open(self) -> None:
+        # Indented, the block is content of the item above rather than a block
+        # of its own, so the list continues and ``c`` stays ``b``'s sibling.
+        result = convert("- a\n    - b\n    ```\n    code\n    ```\n    - c")
+        assert "  ‣ c" in result
+
+    def test_inline_code_keeps_the_list_open(self) -> None:
+        # An inline span leaves the same kind of placeholder as a fenced block
+        # but is ordinary prose, so it must not close the list.
+        result = convert("- a\n    - b\n`code` continues\n    - c")
+        assert "  ‣ c" in result
+
+    def test_ordered_list_after_a_fenced_block_opens_a_level(self) -> None:
+        # No paragraph above the marker, so its number does not matter.
+        result = convert("```\ncode\n```\n2. parent\n    - child")
+        assert "2. parent" in result
+        assert "  ‣ child" in result
+
+    def test_non_one_ordered_marker_after_inline_code_is_prose(self) -> None:
+        # Here the placeholder sits inside a paragraph, which the marker may
+        # not interrupt, so it opens no level for ``child``.
+        result = convert("- outer\n  `code` paragraph\n  2. prose\n    - child")
+        assert "  ‣ child" in result
+
     def test_ordered_list_after_a_heading_opens_a_level(self) -> None:
         # Same ordering: with the heading already styled, ``2.`` would look
         # like a marker interrupting a paragraph and would open no level.

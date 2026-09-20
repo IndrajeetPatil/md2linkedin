@@ -14,7 +14,8 @@ from typing import TYPE_CHECKING
 from ._unicode import to_monospace, to_sans_bold, to_sans_bold_italic, to_sans_italic
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
+    from collections.abc import Set as AbstractSet
 
 __all__ = ["convert", "convert_file"]
 
@@ -298,13 +299,21 @@ _LIST_ITEM_RE = re.compile(
 # item they sit under, which is why matches are anchored to column zero.
 _BLOCK_START = r"#{1,6}(?:[ \t]|$)|>|(?:[-_*][ \t]*){3,}$"
 _BLOCK_START_RE = re.compile(_BLOCK_START)
-# Where an open list ends. Either a blank line followed by a paragraph at
-# column zero, or one of the block constructs above. Neither half of the first
+# A fenced code block is a block construct too, but :func:`_protect_code` has
+# already swapped it for a placeholder by the time lists are converted, and an
+# inline code span leaves an identical one. The two are told apart by the key,
+# hence the capture group: the fenced keys are handed to the steps below.
+_CODE_FENCES = ("```", "~~~")
+# Where an open list ends: a blank line followed by a paragraph at column zero,
+# a block construct, or a fenced code block. Neither half of the first
 # alternative is enough on its own: a blank line alone only makes the list
 # loose, and a column-zero line that follows an item directly is a lazy
 # continuation of that item's paragraph. Indented lines are continuation
 # paragraphs and never end the list.
-_LIST_BREAK_RE = re.compile(rf"\n[ \t]*\n\S|\n(?:{_BLOCK_START})", re.MULTILINE)
+_LIST_BREAK_RE = re.compile(
+    rf"\n[ \t]*\n\S|\n(?:{_BLOCK_START})|\n(?P<code>\x00.\x00)",
+    re.MULTILINE,
+)
 _TOP_LEVEL_BULLET_RE = re.compile(r"^[-*+][ \t]", re.MULTILINE)
 
 
@@ -313,13 +322,37 @@ def _has_indented_line(text: str) -> bool:
     return text.startswith((" ", "\t")) or "\n " in text or "\n\t" in text
 
 
-def _interrupts_paragraph(text: str, start: int) -> bool:
+def _fenced_code_keys(placeholders: Mapping[str, str]) -> AbstractSet[str]:
+    """Pick out the placeholders that stand for a fenced code block.
+
+    :func:`_protect_code` gives a fenced block and an inline code span the
+    same shape of key, but only the fenced one is a block construct that ends
+    a list, so the list steps need to know which is which.
+    """
+    return {key for key, code in placeholders.items() if code.startswith(_CODE_FENCES)}
+
+
+def _closes_list(gap: str, fenced_keys: AbstractSet[str]) -> bool:
+    """Report whether anything between two list items ends the list.
+
+    Every boundary except a code placeholder speaks for itself; a placeholder
+    only counts when it is a fenced block rather than an inline span, which is
+    ordinary paragraph text.
+    """
+    return any(
+        match.group("code") is None or match.group("code") in fenced_keys
+        for match in _LIST_BREAK_RE.finditer(gap)
+    )
+
+
+def _interrupts_paragraph(text: str, start: int, fenced_keys: AbstractSet[str]) -> bool:
     """Report whether the line beginning at *start* cuts into a paragraph.
 
     It does when the line above holds prose, and Markdown only lets an ordered
     item do that when its number is ``1``. A blank line, a block construct
-    such as a heading, and the top of the document are all paragraph-free, so
-    a list may start under any of them whatever its first number is.
+    such as a heading or a fenced code block, and the top of the document are
+    all paragraph-free, so a list may start under any of them whatever its
+    first number is.
     """
     # ``start`` sits at the beginning of a line, so the text before it ends
     # with the preceding line — unless there is no preceding line at all.
@@ -327,10 +360,14 @@ def _interrupts_paragraph(text: str, start: int) -> bool:
     if not preceding_lines:
         return False
     previous = preceding_lines[-1]
-    return bool(previous.strip()) and not _BLOCK_START_RE.match(previous)
+    if not previous.strip() or _BLOCK_START_RE.match(previous):
+        return False
+    # A fenced block stands alone on its line; an inline span sits in prose.
+    placeholder = _PLACEHOLDER_RE.match(previous)
+    return placeholder is None or placeholder.group() not in fenced_keys
 
 
-def _convert_bullets(text: str) -> str:
+def _convert_bullets(text: str, fenced_keys: AbstractSet[str] = frozenset()) -> str:
     """Replace Markdown list markers with Unicode bullet characters.
 
     Nesting depth is counted from the enclosing list items rather than from
@@ -351,6 +388,10 @@ def _convert_bullets(text: str) -> str:
     middle of a paragraph opens nothing unless it is numbered ``1``, which is
     the only number Markdown lets interrupt a paragraph; anything else there
     is prose that happens to begin with a number.
+
+    *fenced_keys* are the code placeholders that stand for a fenced block, as
+    collected by :func:`_fenced_code_keys`. One of those ends a list the way a
+    heading does, while the placeholder of an inline span is prose.
     """
     if not _has_indented_line(text):
         # Nothing is indented, so no item can be nested and one constant
@@ -364,10 +405,9 @@ def _convert_bullets(text: str) -> str:
 
     for match in _LIST_ITEM_RE.finditer(text):
         # Everything since the previous item: the tail of its line, plus any
-        # lines in between. A blank line and then a paragraph at column zero
-        # in there closes the list.
+        # lines in between. A boundary in there closes the list.
         gap = text[pos : match.start()]
-        if _LIST_BREAK_RE.search(gap):
+        if _closes_list(gap, fenced_keys):
             levels.clear()
 
         # Close every level this item is not nested inside, its own included,
@@ -386,7 +426,7 @@ def _convert_bullets(text: str) -> str:
             closed is None
             and number is not None
             and int(number) != 1
-            and _interrupts_paragraph(text, match.start())
+            and _interrupts_paragraph(text, match.start(), fenced_keys)
         ):
             # An ordered marker numbered something other than one may not open
             # a list in the middle of a paragraph, so this is prose. Closing no
@@ -507,8 +547,9 @@ def convert(
     text = _strip_images(text)
     # Before the headers are styled: list nesting reads the headings, thematic
     # breaks and blockquotes around a list to know where it ends, and header
-    # conversion replaces that syntax with plain styled text.
-    text = _convert_bullets(text)
+    # conversion replaces that syntax with plain styled text. Fenced blocks are
+    # already placeholders by now, so their keys are passed along.
+    text = _convert_bullets(text, _fenced_code_keys(placeholders))
     text = _convert_bold_italic(text)
     text = _convert_bold(text)
     text = _convert_italic(text)

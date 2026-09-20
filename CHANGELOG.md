@@ -27,11 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under them — except in the middle of a paragraph, where Markdown only
   lets a list start at number one, so `2. prose` there is left as the prose
   it is instead of nesting what follows it one level too deep.
-- A heading, thematic break or blockquote at column zero ends an open list,
-  as Markdown says it does, so an item after one restarts its nesting from
-  its own indentation instead of continuing the list above. Such a line is
-  also not a paragraph, so an ordered list may start under it whatever its
-  first number is.
+- A heading, thematic break, blockquote or fenced code block at column zero
+  ends an open list, as Markdown says it does, so an item after one restarts
+  its nesting from its own indentation instead of continuing the list above.
+  None of them is a paragraph either, so an ordered list may start under one
+  whatever its first number is.
 - A tab may separate a list marker from its content (`-\titem`,
   `1.\titem`), as CommonMark allows. Only a space was recognised before, so
   a tab-formatted list was left unconverted and its ordered items did not
