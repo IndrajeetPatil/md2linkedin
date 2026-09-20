@@ -588,6 +588,26 @@ class TestConvertBullets:
     def test_orphan_nested_item_uses_its_indentation(self) -> None:
         assert _convert_bullets("    - deep") == "    ◦ deep"
 
+    def test_one_space_indented_item_is_a_sibling(self) -> None:
+        # Markdown allows up to three leading spaces on a top-level item, so
+        # a one-space increase is not enough to nest under the previous item.
+        assert _convert_bullets("- a\n - b") == "• a\n• b"
+
+    def test_nesting_is_relative_to_a_shifted_parent(self) -> None:
+        # ``b`` is a sibling of ``a`` at width one, so ``c`` at width three
+        # is a full indent unit deeper than ``b`` and nests under it.
+        assert _convert_bullets("- a\n - b\n   - c") == "• a\n• b\n  ‣ c"
+
+    def test_tab_after_bullet_marker(self) -> None:
+        # Once on the flat fast path, once on the nesting path.
+        assert _convert_bullets("-\titem") == "• item"
+        assert _convert_bullets("- a\n  -\tb") == "• a\n  ‣ b"
+
+    def test_tab_after_ordered_marker_opens_a_level(self) -> None:
+        # A tab is valid marker whitespace, so the ordered item is a parent
+        # and its child nests under it instead of being an orphan at depth two.
+        assert _convert_bullets("1.\tparent\n    - child") == "1.\tparent\n  ‣ child"
+
     def test_ordered_marker_left_as_is(self) -> None:
         assert _convert_bullets("1. item") == "1. item"
 

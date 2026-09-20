@@ -378,16 +378,17 @@ _TAB_WIDTH = 4  # spaces a tab stands for when measuring source indentation
 # that it can open a level for the bullets nested underneath it. It is spelled
 # out as one to nine ASCII digits, as CommonMark defines it, so that a line of
 # prose beginning with a longer number or with non-ASCII digits (``\d`` matches
-# those too) cannot push a phantom level onto the nesting stack.
+# those too) cannot push a phantom level onto the nesting stack. Either a space
+# or a tab may separate the marker from the content, as CommonMark allows.
 _LIST_ITEM_RE = re.compile(
-    r"^(?P<indent>[ \t]*)(?:(?P<bullet>[-*+])|[0-9]{1,9}[.)]) ",
+    r"^(?P<indent>[ \t]*)(?:(?P<bullet>[-*+])|[0-9]{1,9}[.)])[ \t]",
     re.MULTILINE,
 )
 # A line whose first character is not whitespace, i.e. a paragraph at column
 # zero, which is where an open list ends. Blank lines and indented lines do
 # not end it (loose lists, continuation paragraphs).
 _LIST_BREAK_RE = re.compile(r"\n\S")
-_TOP_LEVEL_BULLET_RE = re.compile(r"^[-*+] ", re.MULTILINE)
+_TOP_LEVEL_BULLET_RE = re.compile(r"^[-*+][ \t]", re.MULTILINE)
 
 
 def _has_indented_line(text: str) -> bool:
@@ -416,9 +417,11 @@ def _convert_bullets(text: str) -> str:
     * Fourth and deeper → ``      ▪ ``, indented two further spaces per level
 
     Output indentation is normalized to two spaces per level regardless of
-    the source indentation. A list whose first item is already indented has
-    no enclosing item to count from, so its depth is derived from that
-    indentation instead.
+    the source indentation. Nesting takes at least two extra spaces: an item
+    indented by only one space past its predecessor is a sibling, as Markdown
+    allows a top-level item up to three leading spaces. A list whose first
+    item is already indented has no enclosing item to count from, so its
+    depth is derived from that indentation instead.
 
     Ordered list markers (``1. ``) are kept verbatim (numbers already convey
     order) but are re-indented like bullets, and they open a level for the
@@ -450,8 +453,11 @@ def _convert_bullets(text: str) -> str:
 
         # Close every level this item is not nested inside, its own included,
         # then reopen its level one deeper than whatever still encloses it.
+        # Nesting under a level takes a full indent unit: Markdown permits up
+        # to three leading spaces on a top-level item, so a smaller increase
+        # marks a sibling rather than a child.
         width = len(match.group("indent").expandtabs(_TAB_WIDTH))
-        while levels and width <= levels[-1][0]:
+        while levels and width < levels[-1][0] + _INDENT_UNIT:
             levels.pop()
         depth = levels[-1][1] + 1 if levels else width // _INDENT_UNIT
         levels.append((width, depth))

@@ -19,9 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bullet nesting depth is counted from the enclosing list items instead of
   from the raw indentation width, so a document indented by four spaces per
   level nests exactly like one indented by two. Output indentation is
-  normalized to two spaces per level. Ordered markers (`1.`) are still kept
-  verbatim, but they are re-indented like bullets and they now open a level
-  for bullets nested under them.
+  normalized to two spaces per level. Nesting takes at least two extra
+  spaces, so an item indented by only one space past its predecessor stays
+  its sibling, as Markdown allows a top-level item up to three leading
+  spaces. Ordered markers (`1.`) are still kept verbatim, but they are
+  re-indented like bullets and they now open a level for bullets nested
+  under them.
+- A tab may separate a list marker from its content (`-\titem`,
+  `1.\titem`), as CommonMark allows. Only a space was recognised before, so
+  a tab-formatted list was left unconverted and its ordered items did not
+  open a level for the bullets nested under them.
 
 ## [0.3.0] — 2026-09-18
 
