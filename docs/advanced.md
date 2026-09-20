@@ -164,7 +164,15 @@ expressions:
 | `>> inner`                                | `> inner` — one level stripped | strip both levels                |
 | `[d]: https://example.com`                | left in the output verbatim   | consume the definition           |
 | `- a` then `    * * *`                    | the break is mangled to `*`   | read it as item content          |
+| `- x` then `2. y` beside it               | `2. y` keeps its source indent | start a new ordered list there   |
+| `1. x` then `2) y`                        | `2)` carries the `1.` list on | start a second list, `)` being a different type |
 | `\| a \| b \|` table rows                 | passed through as pipe syntax | render the table                 |
+
+The last two are the same shortcoming twice over: a list marker is read on
+its own, while a parser reads it against the kind of list it lands next to.
+A marker that changes the kind of list ends the one above it and opens
+another, whatever its number, because it is no longer interrupting that
+list's paragraph.
 
 List nesting is also measured in indentation width rather than in each item's
 content column, so a document that mixes marker widths inside one list can
