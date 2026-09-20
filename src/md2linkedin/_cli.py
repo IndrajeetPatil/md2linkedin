@@ -111,7 +111,10 @@ def main(
         click.echo(result, nl=False)
 
 
-# Its own function so tests can mock it cleanly, without fighting Click's own
-# stdin-swapping inside CliRunner.invoke.
 def _stdin_is_tty() -> bool:
+    """Report whether stdin is an interactive terminal.
+
+    Extracted into its own function so tests can mock it cleanly, without
+    fighting Click's own stdin-swapping inside ``CliRunner.invoke``.
+    """
     return bool(sys.stdin.isatty())

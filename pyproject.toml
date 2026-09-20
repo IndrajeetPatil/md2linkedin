@@ -82,6 +82,14 @@ ignore = [
     # docstring examples and block-comment separators is intentional.
     "ambiguous-unicode-character-docstring",
     "ambiguous-unicode-character-comment",
+    # Internal (underscore-prefixed) functions carry a description-only
+    # docstring: no Args/Returns/Raises sections, which would only restate a
+    # signature the reader is already looking at. See AGENTS.md. The public
+    # API still documents its returns, raises and yields in full; these rules
+    # cannot distinguish the two, so that part is upheld in review.
+    "docstring-missing-returns",
+    "docstring-missing-yields",
+    "docstring-missing-exception",
 ]
 
 [tool.ruff.lint.per-file-ignores]

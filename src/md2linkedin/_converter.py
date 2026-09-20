@@ -33,6 +33,7 @@ _HTML_ENTITIES = {
 
 
 def _normalize_line_endings(text: str) -> str:
+    r"""Normalize Windows (``\r\n``) and classic Mac (``\r``) endings to ``\n``."""
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
@@ -49,11 +50,16 @@ _PLACEHOLDER_BASE = 0xE000
 _PLACEHOLDER_RE = re.compile(r"\x00.\x00", re.DOTALL)
 
 
-# Swaps every code span and fenced block for a placeholder, so that the
-# Unicode mapping steps cannot touch code content, and returns the map needed
-# to restore them. Any \x00 already in the text is dropped first: that is what
-# keeps the sequentially numbered keys from colliding with content.
 def _protect_code(text: str) -> tuple[str, dict[str, str]]:
+    r"""Swap every code span and fenced block for a placeholder.
+
+    Code content must never be transformed by the Unicode mapping steps, so
+    it is set aside here and restored once they have run. Each placeholder is
+    a Private Use Area character delimited by ``\x00``, chosen so that no
+    later pipeline step can alter it; see :data:`_PLACEHOLDER_BASE`. Any
+    ``\x00`` already in the text is dropped first, which is what keeps the
+    sequentially numbered keys from colliding with content.
+    """
     text = text.replace("\x00", "")
     placeholders: dict[str, str] = {}
 
@@ -69,18 +75,27 @@ def _protect_code(text: str) -> tuple[str, dict[str, str]]:
     return text, placeholders
 
 
-# Inline code keeps its content without the backticks; a fenced block is kept
-# whole so its structure survives. Placeholders are expanded one pass at a
-# time until the text stops changing: _protect_code matches fenced blocks
-# before inline spans, so an inline span wrapping a fenced run swallowed the
-# fenced key into its own stored value, and expanding the outer span
-# reintroduces that inner key for the next pass to resolve.
 def _restore_code(
     text: str,
     placeholders: dict[str, str],
     *,
     monospace: bool = False,
 ) -> str:
+    """Restore code placeholders to their original content.
+
+    Inline code keeps its content without the surrounding backticks; a fenced
+    block is kept whole so its structure survives. Under *monospace*, code is
+    mapped to Unicode Mathematical Monospace: only ASCII letters and digits
+    are mapped and everything else (including Markdown syntax) passes through,
+    so no nested processing is needed.
+
+    Placeholders are expanded one pass at a time until the text stops
+    changing. :func:`_protect_code` matches fenced blocks before inline spans,
+    so an inline span wrapping a fenced run swallowed the fenced key into its
+    own stored value; expanding the outer span reintroduces that inner key for
+    the next pass to resolve.
+    """
+
     def _expand(match: re.Match[str]) -> str:
         original = placeholders[match.group(0)]
         if original.startswith(("```", "~~~")):
@@ -112,9 +127,12 @@ def _restore_code(
     return text
 
 
-# Unwraps <span ...>...</span>, keeping the inner text. Iterates until no tags
-# remain, so that arbitrarily nested spans are fully unwrapped.
 def _strip_html_spans(text: str) -> str:
+    """Remove ``<span ...>...</span>`` wrappers, keeping inner text.
+
+    Iterates until no span tags remain, so that arbitrarily nested spans are
+    fully unwrapped.
+    """
     while True:
         new_text = re.sub(r"<span[^>]*>(.*?)</span>", r"\1", text, flags=re.DOTALL)
         if new_text == text:
@@ -145,28 +163,42 @@ def _style_markers(
     patterns: tuple[str, ...],
     style: Callable[[str], str],
 ) -> str:
+    """Apply *style* to the text captured by each emphasis pattern in turn."""
     for pattern in patterns:
         text = re.sub(pattern, lambda m: style(m.group(1)), text)
     return text
 
 
-# Must run before _convert_bold and _convert_italic, or the triple markers are
-# consumed piecemeal by them.
 def _convert_bold_italic(text: str) -> str:
+    r"""Replace ``***text***`` (or ``___text___``) with bold-italic Unicode.
+
+    Must run before :func:`_convert_bold` and :func:`_convert_italic`, or the
+    triple markers are consumed piecemeal by them. Backslash-escaped markers
+    (``\***``) are not matched.
+    """
     return _style_markers(text, _BOLD_ITALIC_PATTERNS, to_sans_bold_italic)
 
 
 def _convert_bold(text: str) -> str:
+    r"""Replace ``**text**`` (or ``__text__``) with bold Unicode."""
     return _style_markers(text, _BOLD_PATTERNS, to_sans_bold)
 
 
 def _convert_italic(text: str) -> str:
+    r"""Replace ``*text*`` or ``_text_`` with italic Unicode.
+
+    Negative look-around keeps the asterisks of bold (``**``) and bold-italic
+    (``***``) markers, already consumed by earlier steps, from matching here.
+    """
     return _style_markers(text, _ITALIC_PATTERNS, to_sans_italic)
 
 
-# ATX (``#``) and setext headers alike: H1 gets a ``━`` border above and
-# below, H2-H6 only the bold mapping. Horizontal rules are dropped.
 def _convert_headers(text: str) -> str:
+    """Convert ATX (``# Heading``) and setext headers to styled text.
+
+    H1 gets bold Unicode framed by a ``━`` border; H2–H6 get the bold mapping
+    alone. Standalone horizontal rules are dropped.
+    """
     separator = "━" * 40
 
     def _fmt_h1(title: str) -> str:
@@ -212,9 +244,13 @@ def _convert_headers(text: str) -> str:
     return "\n".join(out)
 
 
-# Links are reduced to their display text unless *preserve* keeps the syntax
-# as-is; an empty link ([](url)) is dropped along with its URL.
 def _strip_links(text: str, *, preserve: bool = False) -> str:
+    """Reduce Markdown links to their display text.
+
+    Inline, reference-style and autolink syntax all lose their URL. An empty
+    link (``[](url)``) is dropped entirely. Under *preserve*, the link syntax
+    is left exactly as it was.
+    """
     if preserve:
         return text
     # Remove empty links [](url)
@@ -228,6 +264,7 @@ def _strip_links(text: str, *, preserve: bool = False) -> str:
 
 
 def _strip_images(text: str) -> str:
+    """Replace Markdown images with their alt text (or nothing if empty)."""
     # ![alt](url) → alt  (empty alt → removed)
     return re.sub(
         r"!\[([^\]]*)\]\([^)]*\)",
@@ -262,21 +299,29 @@ _TOP_LEVEL_BULLET_RE = re.compile(r"^[-*+][ \t]", re.MULTILINE)
 
 
 def _has_indented_line(text: str) -> bool:
+    """Report whether any line of *text* starts with a space or a tab."""
     return text.startswith((" ", "\t")) or "\n " in text or "\n\t" in text
 
 
-# Nesting depth is counted from the enclosing list items rather than from the
-# raw indentation, so a document indented by four spaces per level nests
-# exactly like one indented by two (fixes #68): ``- `` → ``• ``, then
-# ``  ‣ ``, ``    ◦ ``, and ``      ▪ `` two further spaces per level beyond
-# that. Output indentation is therefore normalized to two spaces per level.
-#
-# A list whose first item is already indented has no enclosing item to count
-# from, so its depth comes from that indentation instead. Ordered markers
-# (``1. ``) are kept verbatim, since the numbers already convey order, but
-# they are re-indented like bullets and they open a level for the bullets
-# nested under them.
 def _convert_bullets(text: str) -> str:
+    """Replace Markdown list markers with Unicode bullet characters.
+
+    Nesting depth is counted from the enclosing list items rather than from
+    the raw indentation, so a document indented by four spaces per level
+    nests exactly like one indented by two (fixes #68): ``- `` → ``• ``, then
+    ``  ‣ ``, ``    ◦ ``, and ``      ▪ `` two further spaces per level beyond
+    that. Output indentation is therefore normalized to two spaces per level.
+
+    Nesting takes at least two extra spaces, because Markdown allows a
+    top-level item up to three leading spaces; a smaller increase makes the
+    item a sibling of its predecessor. A list whose first item is already
+    indented has no enclosing item to count from, so its depth comes from
+    that indentation instead.
+
+    Ordered markers (``1. ``) are kept verbatim, since the numbers already
+    convey order, but they are re-indented like bullets and they open a level
+    for the bullets nested under them.
+    """
     if not _has_indented_line(text):
         # Nothing is indented, so no item can be nested and one constant
         # substitution does the whole job.
@@ -330,22 +375,28 @@ def _convert_bullets(text: str) -> str:
 
 
 def _strip_blockquotes(text: str) -> str:
+    """Remove leading ``>`` blockquote markers."""
     return re.sub(r"^> ?", "", text, flags=re.MULTILINE)
 
 
 def _clean_entities(text: str) -> str:
+    """Decode common HTML entities to their literal characters."""
     for entity, char in _HTML_ENTITIES.items():
         text = text.replace(entity, char)
     return text
 
 
 def _clean_escaped_chars(text: str) -> str:
+    r"""Resolve Markdown backslash escapes (``\*`` → ``*``)."""
     return re.sub(r"\\([\\`*_{}\[\]()#+\-.!])", r"\1", text)
 
 
-# LinkedIn renders at most two consecutive blank lines meaningfully, so longer
-# runs are collapsed and the result ends in a single trailing newline.
 def _normalize_whitespace(text: str) -> str:
+    """Collapse excessive blank lines and trim the edges.
+
+    LinkedIn renders at most two consecutive blank lines meaningfully, so
+    longer runs are collapsed and the result ends in a single newline.
+    """
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip() + "\n"
 
