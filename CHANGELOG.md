@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Bullets nested three or more levels deep keep their nesting. Every item
+  indented by at least two spaces was rendered as `  ‣ `, so a grandchild
+  item collapsed onto its parent's level. Each level now gets its own marker
+  (`•`, `‣`, `◦`, `▪`) and two spaces of indentation (fixes #68).
+
+### Changed
+
+- Bullet nesting depth is counted from the enclosing list items instead of
+  from the raw indentation width, so a document indented by four spaces per
+  level nests exactly like one indented by two. Output indentation is
+  normalized to two spaces per level. Nesting takes at least two extra
+  spaces, so an item indented by only one space past its predecessor stays
+  its sibling, as Markdown allows a top-level item up to three leading
+  spaces. Ordered markers (`1.`) are still kept verbatim, but they are
+  re-indented like bullets and they now open a level for bullets nested
+  under them — except in the middle of a paragraph, where Markdown only
+  lets a list start at number one, so `2. prose` there is left as the prose
+  it is instead of nesting what follows it one level too deep.
+- A heading (ATX or setext), thematic break, blockquote or fenced code block
+  at column zero ends an open list, as Markdown says it does, so an item
+  after one restarts its nesting from its own indentation instead of
+  continuing the list above. None of them is a paragraph either, so an
+  ordered list may start under one whatever its first number is.
+- A spaced thematic break (`* * *`, `- - -`) is no longer converted into a
+  bullet holding the remaining markers. Markdown reads such a line as a
+  break wherever a list item would also fit, so it is now dropped like the
+  compact `***` form. The `*` and `_` spellings are dropped before the
+  emphasis steps run, which used to pair up the first two markers of
+  `* * *` and leave a stray one behind.
+- A paragraph after a blank line now ends only the list levels it is not
+  indented inside, instead of leaving every level open unless the paragraph
+  starts at column zero. A second paragraph of an outer item therefore ends
+  the list nested in that item, and the next item there nests one level deep
+  rather than two.
+- A numbered item only carries on a list that is itself numbered. A `2.`
+  standing where a bullet item stands is prose interrupting that item's
+  paragraph, as Markdown says, and no longer opens a phantom level that
+  pushed the items under it one level too deep.
+- A tab may separate a list marker from its content (`-\titem`,
+  `1.\titem`), as CommonMark allows. Only a space was recognised before, so
+  a tab-formatted list was left unconverted and its ordered items did not
+  open a level for the bullets nested under them.
+
 ## [0.3.0] — 2026-09-18
 
 ### Fixed

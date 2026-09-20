@@ -82,6 +82,14 @@ ignore = [
     # docstring examples and block-comment separators is intentional.
     "ambiguous-unicode-character-docstring",
     "ambiguous-unicode-character-comment",
+    # Internal (underscore-prefixed) functions carry a description-only
+    # docstring: no Args/Returns/Raises sections, which would only restate a
+    # signature the reader is already looking at. See AGENTS.md. The public
+    # API still documents its returns, raises and yields in full; these rules
+    # cannot distinguish the two, so that part is upheld in review.
+    "docstring-missing-returns",
+    "docstring-missing-yields",
+    "docstring-missing-exception",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -151,6 +159,17 @@ mutate_only_covered_lines = true
 #   equivalent to ``rest.find(fence)`` because the non-greedy regex that
 #   captured the block already trims to the shortest matching span, so
 #   no additional ``fence`` marker can appear inside ``rest``.
+# * ``pos = 0`` in ``_convert_bullets`` is equivalent to ``pos = None``
+#   because the cursor is only ever used as the lower bound of a slice, and
+#   ``text[None:i]`` is ``text[0:i]``. Every later assignment to it is an
+#   integer, so no test can tell the two initial values apart.
+# * ``previous_start = text.rfind("\n", 0, end) + 1`` in
+#   ``_interrupts_paragraph`` is equivalent to the same call with ``None`` as
+#   the lower bound, which is how ``str.rfind`` spells "from the beginning".
+#   The line also carries a ``0`` → ``1`` mutation that is *not* equivalent;
+#   ``test_block_above_is_read_at_the_top_of_the_document`` is the test that
+#   catches it, so the behaviour stays pinned even though this exclusion
+#   stops mutmut from generating that mutant.
 #
 # ``encoding=_ENCODING`` mutations (``encoding=None`` / arg-removal) are
 # NOT excluded here — they are covered by focused tests that assert the
@@ -158,6 +177,8 @@ mutate_only_covered_lines = true
 # as real test failures rather than being silently skipped.
 do_not_mutate_patterns = [
     'closing_fence = rest\.rfind\(fence\)',
+    'pos = 0',
+    'previous_start = text\.rfind',
 ]
 
 [tool.ty.src]

@@ -25,6 +25,31 @@ This is a Python package repository following standard development practices.
 - Run `make check-package` to run the full validation suite (QA + Tests + Build).
 - **Do not** bypass the `Makefile`; rely on its targets for standardized workflows.
 
+## Docstrings & Comments
+- The public API — `convert()`, `convert_file()`, the `_unicode` mapping
+  functions, and the CLI `main()` (whose docstring *is* the `--help` text) —
+  carries full Google-style docstrings with `Args:`, `Returns:`, `Raises:`,
+  and `Examples:` sections. These are what `mkdocstrings` renders on the
+  documentation site and what `help()` shows, so they are written for someone
+  who cannot see the implementation.
+- Internal functions — anything with a leading underscore, such as
+  `_has_indented_line()` or `_convert_bullets()` — get a **description only**:
+  a summary line, plus as many paragraphs as the behaviour genuinely warrants.
+  Say what the step does and why it exists; ordering constraints, non-obvious
+  algorithms and workarounds belong here and are worth spelling out.
+- **Do not** give an internal function `Args:`, `Returns:`, or `Raises:`
+  sections. They restate a signature the reader is already looking at, and
+  they go stale. Module docstrings stay as they are.
+- Step-by-step notes about individual lines stay as inline comments in the
+  body rather than migrating into the docstring.
+- Ruff's pydoclint rules would demand the very sections this convention drops,
+  so `docstring-missing-returns` (`DOC201`), `docstring-missing-yields`
+  (`DOC402`) and `docstring-missing-exception` (`DOC501`) are ignored in
+  `pyproject.toml`. They cannot tell a public function from an internal one,
+  so the public API's `Returns:`/`Raises:` sections are upheld in review
+  instead. If another rule starts flagging a description-only docstring,
+  relax that rule rather than padding the docstring back out.
+
 ## Mutation Testing
 - We use [`mutmut`](https://mutmut.readthedocs.io/) to check whether the test
   suite actually catches semantic changes to the source, not just line coverage.

@@ -71,26 +71,27 @@ apply_style("Hiring!", "bold")
 
 ## What Gets Transformed (and What Doesn't)
 
-| Markdown construct | Output |
-|--------------------|--------|
-| `**bold**` / `__bold__` | Unicode 𝗯𝗼𝗹𝗱 |
-| `*italic*` / `_italic_` | Unicode 𝘪𝘵𝘢𝘭𝘪𝘤 |
-| `***bold-italic***` / `___bold-italic___` | Unicode 𝙗𝙤𝙡𝙙-𝙞𝙩𝙖𝙡𝙞𝙘 |
-| `` `inline code` `` | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (backticks stripped) |
-| ` ```fenced block``` ` | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (fences stripped) |
-| `# H1` | Bold Unicode + `━` border |
-| `## H2`–`###### H6` | Bold Unicode, no border |
-| `[text](url)` | `text` (URL discarded) |
-| `![alt](url)` | `alt` text (URL discarded) |
-| `- item` | `• item` |
-| `  - nested` | `  ‣ nested` |
-| `> blockquote` | `> ` prefix removed |
-| `<span>...</span>` | Tags removed, text kept |
-| `&amp;` / `&gt;` etc. | Decoded to `&` / `>` |
-| `\*` backslash escapes | Resolved to literal `*` |
-| Emojis, accented chars | Passed through unchanged |
-| Digits inside bold | Also converted (`**123**` → `𝟭𝟮𝟯`) |
-| `_snake_case_` in middle of word | **Not** italicised |
+| Markdown construct                        | Output                                 |
+|-------------------------------------------|----------------------------------------|
+| `**bold**` / `__bold__`                   | Unicode 𝗯𝗼𝗹𝗱                           |
+| `*italic*` / `_italic_`                   | Unicode 𝘪𝘵𝘢𝘭𝘪𝘤                         |
+| `***bold-italic***` / `___bold-italic___` | Unicode 𝙗𝙤𝙡𝙙-𝙞𝙩𝙖𝙡𝙞𝙘                    |
+| `` `inline code` ``                       | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (backticks stripped) |
+| ` ```fenced block``` `                    | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (fences stripped)    |
+| `# H1`                                    | Bold Unicode + `━` border              |
+| `## H2`–`###### H6`                       | Bold Unicode, no border                |
+| `[text](url)`                             | `text` (URL discarded)                 |
+| `![alt](url)`                             | `alt` text (URL discarded)             |
+| `- item`                                  | `• item`                               |
+| `  - nested`                              | `  ‣ nested`                           |
+| `    - nested twice`                      | `    ◦ nested twice`                   |
+| `> blockquote`                            | `> ` prefix removed                    |
+| `<span>...</span>`                        | Tags removed, text kept                |
+| `&amp;` / `&gt;` etc.                     | Decoded to `&` / `>`                   |
+| `\*` backslash escapes                    | Resolved to literal `*`                |
+| Emojis, accented chars                    | Passed through unchanged               |
+| Digits inside bold                        | Also converted (`**123**` → `𝟭𝟮𝟯`)     |
+| `_snake_case_` in middle of word          | **Not** italicised                     |
 
 ---
 
@@ -105,6 +106,82 @@ ensuring it is not accidentally consumed piecemeal:
 convert("***very important***")  # → bold-italic Unicode
 convert("**bold and *italic* inside**")  # → bold wrapping italic
 ```
+
+### Nested Bullet Lists
+
+Each nesting level gets its own marker — `•`, `‣`, `◦`, `▪` — and two spaces
+of indentation. Levels deeper than the fourth reuse `▪`, with the indentation
+still growing by two spaces per level.
+
+Depth is counted from the enclosing list items, not from the raw indentation,
+so a document indented by four spaces per level nests exactly like one
+indented by two. Nesting takes at least two extra spaces: an item indented by
+only one space past its predecessor stays its sibling, since Markdown allows
+a top-level item up to three leading spaces.
+
+```python
+convert("- Role\n  - Applications\n    - AI Launchpad")
+# • Role
+#   ‣ Applications
+#     ◦ AI Launchpad
+```
+
+A list ends at a heading (ATX or setext), thematic break, blockquote or fenced
+code block at column zero. An item after one of those restarts its nesting from
+its own indentation. A thematic break is a break even where a list item would
+also fit, so a spaced `* * *` is dropped rather than read as a bullet.
+
+A blank line followed by a paragraph ends the levels that paragraph is not
+indented inside: one at column zero closes the whole list, while an indented
+one is a second paragraph of some enclosing item and closes only the list
+nested within that item.
+
+Ordered markers (`1.`) are kept verbatim, since the numbers already convey
+order, but they are re-indented like bullets and they open a level for any
+bullets nested under them. In the middle of a paragraph, only `1.` may start
+a list, so a line such as `2. prose` there is treated as the prose it is and
+opens no level. Under a heading or a blank line there is no paragraph to
+interrupt, so any number starts a list. Carrying on a list that is already
+numbered interrupts nothing either, so `2.` under `1.` stays an item however
+much text the first item holds — but `2.` standing where a *bullet* item
+stands is starting a new list, and so is prose.
+
+### Markdown Parsing Fidelity
+
+`md2linkedin` is a pipeline of regular expressions, not a CommonMark parser.
+That keeps it fast and dependency-free, and it converts the Markdown people
+actually write for LinkedIn — headings, emphasis, code, links, lists — exactly
+as expected. What it cannot do is resolve constructs whose meaning depends on
+their surroundings the way a real parser does, because it never builds a
+document tree to resolve them against.
+
+The known gaps, none of which is on the roadmap to fix with more regular
+expressions:
+
+| Input                                    | Output                        | A CommonMark parser would        |
+|------------------------------------------|-------------------------------|----------------------------------|
+| `    print(1)` (four-space indent)        | passed through as plain text  | render it as a code block        |
+| `>> inner`                                | `> inner` — one level stripped | strip both levels                |
+| `[d]: https://example.com`                | left in the output verbatim   | consume the definition           |
+| `- a` then `    * * *`                    | the break is mangled to `*`   | read it as item content          |
+| `- x` then `2. y` beside it               | `2. y` keeps its source indent | start a new ordered list there   |
+| `1. x` then `2) y`                        | `2)` carries the `1.` list on | start a second list, `)` being a different type |
+| `\| a \| b \|` table rows                 | passed through as pipe syntax | render the table                 |
+
+The last two are the same shortcoming twice over: a list marker is read on
+its own, while a parser reads it against the kind of list it lands next to.
+A marker that changes the kind of list ends the one above it and opens
+another, whatever its number, because it is no longer interrupting that
+list's paragraph.
+
+List nesting is also measured in indentation width rather than in each item's
+content column, so a document that mixes marker widths inside one list can
+nest a level differently from a parser. Depth is counted from the enclosing
+items, which handles every uniform style (two-space, four-space, tabs).
+
+Fixing these properly means parsing Markdown properly. If that becomes worth
+the dependency, the conversion would be better expressed as a renderer over a
+parsed syntax tree than as more passes over the text.
 
 ### Code Is Rendered in Monospace
 

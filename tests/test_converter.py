@@ -18,6 +18,7 @@ from md2linkedin._converter import (
     _convert_bullets,
     _convert_headers,
     _convert_italic,
+    _drop_emphasis_breaks,
     _normalize_line_endings,
     _normalize_whitespace,
     _protect_code,
@@ -461,6 +462,17 @@ class TestConvertHeaders:
     def test_standalone_horizontal_rule_removed(self) -> None:
         assert not _convert_headers("---")
 
+    def test_spaced_horizontal_rule_removed(self) -> None:
+        # A rule may be spaced out, and is dropped like the compact form.
+        assert not _convert_headers("- - -")
+        assert not _convert_headers("* * *")
+        assert not _convert_headers("_ _ _")
+
+    def test_mixed_markers_are_not_a_horizontal_rule(self) -> None:
+        # A rule is made of one repeated marker, so a mixed line is prose.
+        text = "- _ *"
+        assert _convert_headers(text) == text
+
     def test_horizontal_rule_advances_one_line(self) -> None:
         # After stripping an HR the loop MUST advance exactly one line so
         # the line after the rule is emitted (not skipped, not repeated).
@@ -485,6 +497,64 @@ class TestConvertHeaders:
     def test_h2_trailing_whitespace_stripped(self) -> None:
         # rstrip on ATX title applies to H2 as well.
         assert _convert_headers("## Section   ") == "𝗦𝗲𝗰𝘁𝗶𝗼𝗻"
+
+
+# ── _drop_emphasis_breaks ─────────────────────────────────────────────────────
+
+
+class TestDropEmphasisBreaks:
+    @pytest.mark.parametrize(
+        "rule",
+        ["***", "* * *", "*  *  *", "___", "_ _ _", "*****", "* * * *"],
+        ids=[
+            "compact",
+            "spaced",
+            "wide",
+            "underscores",
+            "spaced-underscores",
+            "longer",
+            "longer-spaced",
+        ],
+    )
+    def test_break_dropped(self, rule: str) -> None:
+        assert _drop_emphasis_breaks(f"before\n{rule}\nafter") == "before\nafter"
+
+    def test_hyphen_break_left_for_the_headers_step(self) -> None:
+        # A hyphen run may be the underline of a setext heading, which only
+        # ``_convert_headers`` can tell apart, so it is not touched here.
+        for rule in ("---", "- - -"):
+            assert _drop_emphasis_breaks(f"before\n{rule}\nafter") == (
+                f"before\n{rule}\nafter"
+            )
+
+    def test_mixed_markers_are_not_a_break(self) -> None:
+        text = "_ * _"
+        assert _drop_emphasis_breaks(text) == text
+
+    def test_two_markers_are_not_a_break(self) -> None:
+        text = "* *"
+        assert _drop_emphasis_breaks(text) == text
+
+    def test_indented_break_left_alone(self) -> None:
+        # Indented, the line is content of the list item it sits under.
+        text = "- a\n    * * *"
+        assert _drop_emphasis_breaks(text) == text
+
+    def test_markers_inside_a_line_left_alone(self) -> None:
+        text = "price * * * discount"
+        assert _drop_emphasis_breaks(text) == text
+
+    def test_emphasis_left_alone(self) -> None:
+        text = "*italic* and ***both***"
+        assert _drop_emphasis_breaks(text) == text
+
+    def test_only_the_break_line_is_removed(self) -> None:
+        # The lines around the rule are kept verbatim, and exactly one newline
+        # goes with the rule.
+        assert _drop_emphasis_breaks("aaa\nbbb\n* * *\nccc") == "aaa\nbbb\nccc"
+
+    def test_break_without_a_trailing_newline(self) -> None:
+        assert not _drop_emphasis_breaks("* * *")
 
 
 # ── _strip_links ──────────────────────────────────────────────────────────────
@@ -559,6 +629,280 @@ class TestConvertBullets:
         assert result.startswith("some text\n\n\n• first")
         assert "  ‣ sub" in result
         assert result.endswith("• second")
+
+    def test_third_level_keeps_its_own_marker(self) -> None:
+        text = "- Role\n  - Applications\n    - AI Launchpad"
+        assert _convert_bullets(text) == "• Role\n  ‣ Applications\n    ◦ AI Launchpad"
+
+    def test_four_space_indent_nests_like_two(self) -> None:
+        text = "- Role\n    - Applications\n        - AI Launchpad"
+        assert _convert_bullets(text) == "• Role\n  ‣ Applications\n    ◦ AI Launchpad"
+
+    def test_tab_indent_nests(self) -> None:
+        text = "- Role\n\t- Applications\n\t\t- AI Launchpad"
+        assert _convert_bullets(text) == "• Role\n  ‣ Applications\n    ◦ AI Launchpad"
+
+    def test_depth_beyond_last_marker_keeps_indenting(self) -> None:
+        text = "- a\n  - b\n    - c\n      - d\n        - e"
+        assert _convert_bullets(text) == ("• a\n  ‣ b\n    ◦ c\n      ▪ d\n        ▪ e")
+
+    def test_return_to_shallower_level(self) -> None:
+        text = "- a\n  - b\n    - c\n  - d\n- e"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n    ◦ c\n  ‣ d\n• e"
+
+    def test_tab_counts_as_four_spaces(self) -> None:
+        # Two tabs put an unparented item at depth four; any other tab width
+        # would land it on a different depth.
+        assert _convert_bullets("\t\t- x") == "        ▪ x"
+
+    def test_orphan_nested_item_uses_its_indentation(self) -> None:
+        assert _convert_bullets("    - deep") == "    ◦ deep"
+
+    def test_one_space_indented_item_is_a_sibling(self) -> None:
+        # Markdown allows up to three leading spaces on a top-level item, so
+        # a one-space increase is not enough to nest under the previous item.
+        assert _convert_bullets("- a\n - b") == "• a\n• b"
+
+    def test_nesting_is_relative_to_a_shifted_parent(self) -> None:
+        # ``b`` is a sibling of ``a`` at width one, so ``c`` at width three
+        # is a full indent unit deeper than ``b`` and nests under it.
+        assert _convert_bullets("- a\n - b\n   - c") == "• a\n• b\n  ‣ c"
+
+    def test_consecutively_shifted_siblings_stay_at_one_depth(self) -> None:
+        # Each item is a single space farther right than the one before it,
+        # which never reaches the nesting threshold, so all four are siblings
+        # however far right the run drifts.
+        text = "- a\n - b\n  - c\n   - d"
+        assert _convert_bullets(text) == "• a\n• b\n• c\n• d"
+
+    def test_dedent_out_of_an_orphan_list(self) -> None:
+        # The closed level caps the depth of its siblings, but not of an item
+        # that is less indented than it: ``top`` is back at column zero.
+        assert _convert_bullets("    - deep\n- top") == "    ◦ deep\n• top"
+
+    def test_tab_after_bullet_marker(self) -> None:
+        # Once on the flat fast path, once on the nesting path.
+        assert _convert_bullets("-\titem") == "• item"
+        assert _convert_bullets("- a\n  -\tb") == "• a\n  ‣ b"
+
+    def test_tab_after_ordered_marker_opens_a_level(self) -> None:
+        # A tab is valid marker whitespace, so the ordered item is a parent
+        # and its child nests under it instead of being an orphan at depth two.
+        assert _convert_bullets("1.\tparent\n    - child") == "1.\tparent\n  ‣ child"
+
+    def test_ordered_marker_left_as_is(self) -> None:
+        assert _convert_bullets("1. item") == "1. item"
+
+    def test_bullet_nested_under_ordered_item(self) -> None:
+        text = "1. Item\n   - sub\n     - subsub"
+        assert _convert_bullets(text) == "1. Item\n  ‣ sub\n    ◦ subsub"
+
+    def test_nested_ordered_item_is_reindented(self) -> None:
+        # The marker is kept verbatim, but its indentation is normalized like
+        # a bullet's, so its own children still sit one level deeper.
+        text = "- a\n    1. b\n        - c"
+        assert _convert_bullets(text) == "• a\n  1. b\n    ◦ c"
+
+    def test_ordered_marker_with_parenthesis(self) -> None:
+        assert _convert_bullets("- a\n    1) b") == "• a\n  1) b"
+
+    def test_nine_digit_ordered_marker_opens_a_level(self) -> None:
+        # The blank line keeps the marker from interrupting ``a``'s paragraph,
+        # which is the only thing that would stop a number other than one.
+        text = "- a\n\n    123456789. b\n        - c"
+        assert _convert_bullets(text) == "• a\n\n  123456789. b\n    ◦ c"
+
+    def test_longer_number_is_not_an_ordered_marker(self) -> None:
+        # CommonMark caps an ordered marker at nine digits, so prose starting
+        # with a longer number must not push a level onto the nesting stack.
+        text = "- contact\n\n  1234567890. phone\n    - note"
+        assert _convert_bullets(text) == "• contact\n\n  1234567890. phone\n  ‣ note"
+
+    def test_non_ascii_digits_are_not_ordered_markers(self) -> None:
+        # ``\d`` matches Arabic-Indic digits, but Markdown markers are ASCII.
+        text = "- a\n\n  ١. b\n    - c"
+        assert _convert_bullets(text) == "• a\n\n  ١. b\n  ‣ c"
+
+    def test_non_one_ordered_marker_cannot_interrupt_a_paragraph(self) -> None:
+        # ``2.`` sits inside ``outer``'s paragraph, where Markdown only lets a
+        # list start at number one, so it opens no level and ``child`` stays a
+        # second-level item under ``outer``.
+        text = "- outer\n  paragraph\n  2. prose\n    - child"
+        assert _convert_bullets(text) == "• outer\n  paragraph\n  2. prose\n  ‣ child"
+
+    def test_one_ordered_marker_may_interrupt_a_paragraph(self) -> None:
+        # Numbered one, the very same item does open a level for its child.
+        text = "- outer\n  paragraph\n  1. prose\n    - child"
+        assert _convert_bullets(text) == (
+            "• outer\n  paragraph\n  1. prose\n    ◦ child"
+        )
+
+    def test_non_one_ordered_marker_starts_a_list_after_a_blank_line(self) -> None:
+        # With the paragraph closed, the number no longer matters.
+        text = "- outer\n  paragraph\n\n  2. prose\n    - child"
+        assert _convert_bullets(text) == (
+            "• outer\n  paragraph\n\n  2. prose\n    ◦ child"
+        )
+
+    def test_non_one_ordered_marker_at_the_start_of_the_text(self) -> None:
+        # There is no paragraph above the first line to interrupt, so the item
+        # is real and ``child`` nests under it instead of being an orphan at
+        # the depth its four spaces would otherwise imply.
+        assert _convert_bullets("2. two\n    - child") == "2. two\n  ‣ child"
+
+    def test_block_above_is_read_at_the_top_of_the_document(self) -> None:
+        # A document that opens with a blank line puts the heading on the
+        # second one. The line above ``2.`` is still that heading, so the item
+        # is real and ``child`` nests under it.
+        text = "\n# Heading\n2. item\n    - child"
+        assert _convert_bullets(text) == "\n# Heading\n2. item\n  ‣ child"
+
+    def test_ordered_list_continues_through_its_own_paragraph(self) -> None:
+        # ``2.`` here is the next item of an already open list rather than a
+        # new one, so it is re-indented and opens a level as usual.
+        text = "- a\n    1. x\n       text\n    2. y\n        - child"
+        assert _convert_bullets(text) == (
+            "• a\n  1. x\n       text\n  2. y\n    ◦ child"
+        )
+
+    def test_paragraph_closes_the_list(self) -> None:
+        text = "- a\n  - b\n\nparagraph\n\n  - c"
+        result = _convert_bullets(text)
+        assert result.endswith("  ‣ c")
+
+    def test_closed_list_restarts_from_its_own_indentation(self) -> None:
+        # The blank line plus column-zero paragraph closes the list, so the
+        # item after it is an orphan at the depth its four spaces imply
+        # rather than a continuation of the list above.
+        text = "- a\n    - b\n\nparagraph\n\n    - c"
+        assert _convert_bullets(text).endswith("    ◦ c")
+
+    def test_blank_line_does_not_close_the_list(self) -> None:
+        # A loose list keeps its levels open across the blank lines, so the
+        # four-space items stay one level deep rather than restarting.
+        text = "- a\n\n    - b\n\n    - c"
+        assert _convert_bullets(text) == "• a\n\n  ‣ b\n\n  ‣ c"
+
+    def test_continuation_line_does_not_close_the_list(self) -> None:
+        text = "- a\n    - b\n      continuation\n    - c"
+        assert _convert_bullets(text) == ("• a\n  ‣ b\n      continuation\n  ‣ c")
+
+    def test_lazy_continuation_line_does_not_close_the_list(self) -> None:
+        # Any indentation at all marks the line as part of the list, even the
+        # single space of a lazily wrapped continuation.
+        text = "- a\n    - b\n continuation\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n continuation\n  ‣ c"
+
+    def test_heading_closes_the_list(self) -> None:
+        # A heading cannot be a lazy continuation of ``b``'s paragraph, so it
+        # ends the list even without a blank line and ``c`` restarts from its
+        # own indentation instead of staying a sibling of ``b``.
+        text = "- a\n    - b\n## heading\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n## heading\n    ◦ c"
+
+    def test_thematic_break_closes_the_list(self) -> None:
+        text = "- a\n    - b\n---\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n---\n    ◦ c"
+
+    def test_spaced_thematic_break_is_not_a_bullet(self) -> None:
+        # ``* * *`` fits the shape of a bullet item holding ``* *``, but
+        # Markdown reads it as a break, which also closes the list.
+        text = "- a\n    - b\n* * *\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n* * *\n    ◦ c"
+
+    def test_spaced_thematic_break_is_not_a_bullet_on_the_flat_path(self) -> None:
+        # The same line, but in a document with nothing indented, where a
+        # single substitution does the conversion.
+        assert _convert_bullets("- a\n* * *\n- b") == "• a\n* * *\n• b"
+
+    def test_spaced_hyphen_break_is_not_a_bullet(self) -> None:
+        text = "- a\n    - b\n- - -\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n- - -\n    ◦ c"
+
+    def test_indented_thematic_break_is_not_a_bullet(self) -> None:
+        # A break takes precedence over a list item wherever it sits, so the
+        # indented one is not an item of its own — and being indented, it is
+        # content of the list rather than a boundary.
+        text = "- a\n    * * *\n    - b"
+        assert _convert_bullets(text) == "• a\n    * * *\n  ‣ b"
+
+    def test_setext_heading_closes_the_list(self) -> None:
+        # ``Heading`` is only a heading because of the ``===`` under it, so
+        # that underline is what marks the block and ends the list.
+        text = "- a\n    - b\nHeading\n===\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\nHeading\n===\n    ◦ c"
+
+    def test_non_one_ordered_marker_after_a_setext_heading_opens_a_level(self) -> None:
+        text = "Heading\n===\n2. parent\n    - child"
+        assert _convert_bullets(text) == "Heading\n===\n2. parent\n  ‣ child"
+
+    def test_blockquote_closes_the_list(self) -> None:
+        text = "- a\n    - b\n> quoted\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n> quoted\n    ◦ c"
+
+    def test_indented_heading_does_not_close_the_list(self) -> None:
+        # Indented, the heading is content of item ``a`` rather than a block
+        # of its own, so the list stays open and ``c`` remains ``b``'s sibling.
+        text = "- a\n    - b\n  ## not a block\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n  ## not a block\n  ‣ c"
+
+    def test_item_content_starting_with_a_hash_does_not_close_the_list(self) -> None:
+        # The heading syntax has to start a line of its own; here it is the
+        # first thing *inside* an item, which leaves the list untouched.
+        text = "- # tag\n    - b"
+        assert _convert_bullets(text) == "• # tag\n  ‣ b"
+
+    def test_non_one_ordered_marker_after_a_heading_opens_a_level(self) -> None:
+        # A heading is not a paragraph, so there is nothing for the marker to
+        # interrupt and its number does not matter.
+        text = "## Heading\n2. parent\n    - child"
+        assert _convert_bullets(text) == "## Heading\n2. parent\n  ‣ child"
+
+    def test_ordered_marker_does_not_carry_on_a_bullet_level(self) -> None:
+        # ``2.`` stands exactly where ``b`` stands, but ``b``'s list is a
+        # bullet list, so the number cannot be carrying that list on: it is
+        # prose inside ``b``'s paragraph and is left exactly as written,
+        # rather than being re-indented as an item of its own.
+        text = "- a\n    - b\n    2. c\n        - d"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n    2. c\n    ◦ d"
+
+    def test_ordered_marker_looks_at_the_level_it_stands_beside(self) -> None:
+        # ``2.`` stands beside ``b``, not beside the numbered list one level
+        # out: the list it could carry on is the innermost one it closes, and
+        # that one is a bullet list, so the marker is prose and keeps the six
+        # spaces it was written with instead of being re-indented to four.
+        text = "- top\n    1. a\n      - b\n      2. c"
+        assert _convert_bullets(text) == "• top\n  1. a\n    ◦ b\n      2. c"
+
+    def test_indented_paragraph_closes_the_levels_nested_inside_it(self) -> None:
+        # ``prose`` is a second paragraph of ``outer``'s item, so it ends the
+        # list nested in that item: ``2.`` is then prose interrupting it, and
+        # ``bullet`` opens a fresh level under ``outer`` rather than a third
+        # one under a phantom item.
+        text = "- outer\n  - child\n\n  prose\n  2. not-list\n    - bullet"
+        assert _convert_bullets(text) == (
+            "• outer\n  ‣ child\n\n  prose\n  2. not-list\n  ‣ bullet"
+        )
+
+    def test_indented_paragraph_keeps_the_item_it_belongs_to_open(self) -> None:
+        # Indented to ``b``'s content, the paragraph is ``b``'s own, so it
+        # closes nothing and ``c`` nests inside ``b`` as it would have without
+        # the paragraph.
+        text = "- a\n    - b\n\n      still b\n\n        - c"
+        assert _convert_bullets(text) == ("• a\n  ‣ b\n\n      still b\n\n    ◦ c")
+
+    def test_tab_indented_paragraph_closes_by_its_expanded_width(self) -> None:
+        # The tab stands for four spaces, which reaches ``b``'s content and so
+        # leaves ``b``'s level open; measured as the single character it is,
+        # the paragraph would close that level and flatten ``c``.
+        text = "- a\n  - b\n\n\tstill b\n\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n\n\tstill b\n\n    ◦ c"
+
+    def test_unindented_lazy_continuation_keeps_the_levels_open(self) -> None:
+        # Without a blank line before it, a column-zero line is still part of
+        # the item's paragraph, so ``c`` stays a sibling of ``b``.
+        text = "- a\n    - b\ncontinued\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\ncontinued\n  ‣ c"
 
 
 # ── _strip_blockquotes ────────────────────────────────────────────────────────
@@ -689,6 +1033,88 @@ class TestConvert:
         assert "•" in result
         assert "- " not in result
 
+    def test_heading_between_items_restarts_the_nesting(self) -> None:
+        # End to end, because it only works while the bullets are converted
+        # before the heading syntax is replaced by styled text.
+        result = convert("- a\n    - b\n## heading\n    - c")
+        assert "  ‣ b" in result
+        assert "    ◦ c" in result
+
+    def test_setext_heading_between_items_restarts_the_nesting(self) -> None:
+        result = convert("- a\n    - b\nHeading\n===\n    - c")
+        assert "  ‣ b" in result
+        assert "    ◦ c" in result
+
+    def test_spaced_thematic_break_between_items_restarts_the_nesting(self) -> None:
+        result = convert("- a\n    - b\n- - -\n    - c")
+        assert "- - -" not in result
+        assert "    ◦ c" in result
+
+    def test_spaced_asterisk_rule_is_dropped(self) -> None:
+        # End to end, because the rule has to survive the list step, which
+        # reads it as a boundary, and go before the emphasis steps, which
+        # would pair up its first two asterisks and leave the third behind.
+        assert convert("before\n\n* * *\n\nafter") == "before\n\nafter\n"
+
+    def test_spaced_underscore_rule_is_dropped(self) -> None:
+        assert convert("before\n\n_ _ _\n\nafter") == "before\n\nafter\n"
+
+    def test_lone_spaced_rule_converts_to_nothing(self) -> None:
+        assert convert("* * *") == "\n"
+        assert convert("_ _ _") == "\n"
+
+    def test_spaced_asterisk_rule_between_items_restarts_the_nesting(self) -> None:
+        result = convert("- a\n    - b\n* * *\n    - c")
+        assert "*" not in result
+        assert "  ‣ b" in result
+        assert "    ◦ c" in result
+
+    def test_emphasis_after_a_rule_still_converts(self) -> None:
+        # Dropping the rule must not disturb the emphasis around it.
+        assert convert("* * *\n\n**bold**") == "𝗯𝗼𝗹𝗱\n"
+
+    def test_fenced_block_between_items_restarts_the_nesting(self) -> None:
+        # The fence is a code placeholder by the time the list is converted,
+        # so the boundary only survives because the fenced keys are passed on.
+        result = convert("- a\n    - b\n```\ncode\n```\n    - c")
+        assert "  ‣ b" in result
+        assert "    ◦ c" in result
+
+    def test_tilde_fenced_block_between_items_restarts_the_nesting(self) -> None:
+        result = convert("- a\n    - b\n~~~\ncode\n~~~\n    - c")
+        assert "    ◦ c" in result
+
+    def test_indented_fenced_block_keeps_the_list_open(self) -> None:
+        # Indented, the block is content of the item above rather than a block
+        # of its own, so the list continues and ``c`` stays ``b``'s sibling.
+        result = convert("- a\n    - b\n    ```\n    code\n    ```\n    - c")
+        assert "  ‣ c" in result
+
+    def test_inline_code_keeps_the_list_open(self) -> None:
+        # An inline span leaves the same kind of placeholder as a fenced block
+        # but is ordinary prose, so it must not close the list.
+        result = convert("- a\n    - b\n`code` continues\n    - c")
+        assert "  ‣ c" in result
+
+    def test_ordered_list_after_a_fenced_block_opens_a_level(self) -> None:
+        # No paragraph above the marker, so its number does not matter.
+        result = convert("```\ncode\n```\n2. parent\n    - child")
+        assert "2. parent" in result
+        assert "  ‣ child" in result
+
+    def test_non_one_ordered_marker_after_inline_code_is_prose(self) -> None:
+        # Here the placeholder sits inside a paragraph, which the marker may
+        # not interrupt, so it opens no level for ``child``.
+        result = convert("- outer\n  `code` paragraph\n  2. prose\n    - child")
+        assert "  ‣ child" in result
+
+    def test_ordered_list_after_a_heading_opens_a_level(self) -> None:
+        # Same ordering: with the heading already styled, ``2.`` would look
+        # like a marker interrupting a paragraph and would open no level.
+        result = convert("## Heading\n2. parent\n    - child")
+        assert "2. parent" in result
+        assert "  ‣ child" in result
+
     def test_code_not_transformed(self) -> None:
         result = convert("use `**bold**` here", monospace_code=False)
         # The **bold** inside code backticks must NOT be unicode-transformed
@@ -791,6 +1217,10 @@ class TestConvert:
     def test_autolink(self) -> None:
         result = convert("<https://example.com>")
         assert result.strip() == "https://example.com"
+
+    def test_third_level_bullet_stays_nested(self) -> None:
+        result = convert("- Role\n  - Applications\n    - AI Launchpad\n")
+        assert result == "• Role\n  ‣ Applications\n    ◦ AI Launchpad\n"
 
     def test_bullet_list_after_heading(self) -> None:
         result = convert("# Heading\n\n- first\n  - sub\n- second")
