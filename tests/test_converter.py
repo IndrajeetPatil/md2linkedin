@@ -716,6 +716,39 @@ class TestConvertBullets:
         text = "- a\n    - b\n continuation\n    - c"
         assert _convert_bullets(text) == "• a\n  ‣ b\n continuation\n  ‣ c"
 
+    def test_heading_closes_the_list(self) -> None:
+        # A heading cannot be a lazy continuation of ``b``'s paragraph, so it
+        # ends the list even without a blank line and ``c`` restarts from its
+        # own indentation instead of staying a sibling of ``b``.
+        text = "- a\n    - b\n## heading\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n## heading\n    ◦ c"
+
+    def test_thematic_break_closes_the_list(self) -> None:
+        text = "- a\n    - b\n---\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n---\n    ◦ c"
+
+    def test_blockquote_closes_the_list(self) -> None:
+        text = "- a\n    - b\n> quoted\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n> quoted\n    ◦ c"
+
+    def test_indented_heading_does_not_close_the_list(self) -> None:
+        # Indented, the heading is content of item ``a`` rather than a block
+        # of its own, so the list stays open and ``c`` remains ``b``'s sibling.
+        text = "- a\n    - b\n  ## not a block\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n  ## not a block\n  ‣ c"
+
+    def test_item_content_starting_with_a_hash_does_not_close_the_list(self) -> None:
+        # The heading syntax has to start a line of its own; here it is the
+        # first thing *inside* an item, which leaves the list untouched.
+        text = "- # tag\n    - b"
+        assert _convert_bullets(text) == "• # tag\n  ‣ b"
+
+    def test_non_one_ordered_marker_after_a_heading_opens_a_level(self) -> None:
+        # A heading is not a paragraph, so there is nothing for the marker to
+        # interrupt and its number does not matter.
+        text = "## Heading\n2. parent\n    - child"
+        assert _convert_bullets(text) == "## Heading\n2. parent\n  ‣ child"
+
     def test_unindented_lazy_continuation_keeps_the_levels_open(self) -> None:
         # Without a blank line before it, a column-zero line is still part of
         # the item's paragraph, so ``c`` stays a sibling of ``b``.
@@ -850,6 +883,20 @@ class TestConvert:
         result = convert("- item one\n- item two")
         assert "•" in result
         assert "- " not in result
+
+    def test_heading_between_items_restarts_the_nesting(self) -> None:
+        # End to end, because it only works while the bullets are converted
+        # before the heading syntax is replaced by styled text.
+        result = convert("- a\n    - b\n## heading\n    - c")
+        assert "  ‣ b" in result
+        assert "    ◦ c" in result
+
+    def test_ordered_list_after_a_heading_opens_a_level(self) -> None:
+        # Same ordering: with the heading already styled, ``2.`` would look
+        # like a marker interrupting a paragraph and would open no level.
+        result = convert("## Heading\n2. parent\n    - child")
+        assert "2. parent" in result
+        assert "  ‣ child" in result
 
     def test_code_not_transformed(self) -> None:
         result = convert("use `**bold**` here", monospace_code=False)

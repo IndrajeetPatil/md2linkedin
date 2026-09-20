@@ -291,12 +291,20 @@ _LIST_ITEM_RE = re.compile(
     r"^(?P<indent>[ \t]*)(?:(?P<bullet>[-*+])|(?P<number>[0-9]{1,9})[.)])[ \t]",
     re.MULTILINE,
 )
-# A blank line followed by a paragraph at column zero, which is where an open
-# list ends. Neither half is enough on its own: a blank line alone only makes
-# the list loose, and a column-zero line that follows an item directly is a
-# lazy continuation of that item's paragraph. Indented lines are continuation
+# A block construct at column zero: an ATX heading, a blockquote or a thematic
+# break. None of them can be the lazy continuation of a list item's paragraph,
+# so each one both ends an open list and rules out the paragraph an ordered
+# marker below it would otherwise be interrupting. Indented ones belong to the
+# item they sit under, which is why matches are anchored to column zero.
+_BLOCK_START = r"#{1,6}(?:[ \t]|$)|>|(?:[-_*][ \t]*){3,}$"
+_BLOCK_START_RE = re.compile(_BLOCK_START)
+# Where an open list ends. Either a blank line followed by a paragraph at
+# column zero, or one of the block constructs above. Neither half of the first
+# alternative is enough on its own: a blank line alone only makes the list
+# loose, and a column-zero line that follows an item directly is a lazy
+# continuation of that item's paragraph. Indented lines are continuation
 # paragraphs and never end the list.
-_LIST_BREAK_RE = re.compile(r"\n[ \t]*\n\S")
+_LIST_BREAK_RE = re.compile(rf"\n[ \t]*\n\S|\n(?:{_BLOCK_START})", re.MULTILINE)
 _TOP_LEVEL_BULLET_RE = re.compile(r"^[-*+][ \t]", re.MULTILINE)
 
 
@@ -306,16 +314,20 @@ def _has_indented_line(text: str) -> bool:
 
 
 def _interrupts_paragraph(text: str, start: int) -> bool:
-    """Report whether the line beginning at *start* follows a non-blank line.
+    """Report whether the line beginning at *start* cuts into a paragraph.
 
-    A line in that position is interrupting a paragraph, and Markdown only
-    lets an ordered item do that when its number is ``1``. The first line of
-    the document interrupts nothing.
+    It does when the line above holds prose, and Markdown only lets an ordered
+    item do that when its number is ``1``. A blank line, a block construct
+    such as a heading, and the top of the document are all paragraph-free, so
+    a list may start under any of them whatever its first number is.
     """
     # ``start`` sits at the beginning of a line, so the text before it ends
     # with the preceding line — unless there is no preceding line at all.
     preceding_lines = text[:start].splitlines()
-    return bool(preceding_lines and preceding_lines[-1].strip())
+    if not preceding_lines:
+        return False
+    previous = preceding_lines[-1]
+    return bool(previous.strip()) and not _BLOCK_START_RE.match(previous)
 
 
 def _convert_bullets(text: str) -> str:
@@ -493,12 +505,15 @@ def convert(
     text, placeholders = _protect_code(text)
     text = _strip_html_spans(text)
     text = _strip_images(text)
+    # Before the headers are styled: list nesting reads the headings, thematic
+    # breaks and blockquotes around a list to know where it ends, and header
+    # conversion replaces that syntax with plain styled text.
+    text = _convert_bullets(text)
     text = _convert_bold_italic(text)
     text = _convert_bold(text)
     text = _convert_italic(text)
     text = _convert_headers(text)
     text = _strip_links(text, preserve=preserve_links)
-    text = _convert_bullets(text)
     text = _strip_blockquotes(text)
     text = _restore_code(text, placeholders, monospace=monospace_code)
     text = _clean_entities(text)

@@ -126,11 +126,16 @@ convert("- Role\n  - Applications\n    - AI Launchpad")
 #     ◦ AI Launchpad
 ```
 
+A list ends at a blank line followed by a paragraph at column zero, and at a
+heading, thematic break or blockquote at column zero. An item after one of
+those restarts its nesting from its own indentation.
+
 Ordered markers (`1.`) are kept verbatim, since the numbers already convey
 order, but they are re-indented like bullets and they open a level for any
 bullets nested under them. In the middle of a paragraph, only `1.` may start
 a list, so a line such as `2. prose` there is treated as the prose it is and
-opens no level.
+opens no level. Under a heading or a blank line there is no paragraph to
+interrupt, so any number starts a list.
 
 ### Code Is Rendered in Monospace
 
