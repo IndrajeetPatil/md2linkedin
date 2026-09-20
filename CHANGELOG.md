@@ -24,7 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its sibling, as Markdown allows a top-level item up to three leading
   spaces. Ordered markers (`1.`) are still kept verbatim, but they are
   re-indented like bullets and they now open a level for bullets nested
-  under them.
+  under them — except in the middle of a paragraph, where Markdown only
+  lets a list start at number one, so `2. prose` there is left as the prose
+  it is instead of nesting what follows it one level too deep.
 - A tab may separate a list marker from its content (`-\titem`,
   `1.\titem`), as CommonMark allows. Only a space was recognised before, so
   a tab-formatted list was left unconverted and its ordered items did not

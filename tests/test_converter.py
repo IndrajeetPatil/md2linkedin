@@ -637,19 +637,56 @@ class TestConvertBullets:
         assert _convert_bullets("- a\n    1) b") == "• a\n  1) b"
 
     def test_nine_digit_ordered_marker_opens_a_level(self) -> None:
-        text = "- a\n    123456789. b\n        - c"
-        assert _convert_bullets(text) == "• a\n  123456789. b\n    ◦ c"
+        # The blank line keeps the marker from interrupting ``a``'s paragraph,
+        # which is the only thing that would stop a number other than one.
+        text = "- a\n\n    123456789. b\n        - c"
+        assert _convert_bullets(text) == "• a\n\n  123456789. b\n    ◦ c"
 
     def test_longer_number_is_not_an_ordered_marker(self) -> None:
         # CommonMark caps an ordered marker at nine digits, so prose starting
         # with a longer number must not push a level onto the nesting stack.
-        text = "- contact\n  1234567890. phone\n    - note"
-        assert _convert_bullets(text) == "• contact\n  1234567890. phone\n  ‣ note"
+        text = "- contact\n\n  1234567890. phone\n    - note"
+        assert _convert_bullets(text) == "• contact\n\n  1234567890. phone\n  ‣ note"
 
     def test_non_ascii_digits_are_not_ordered_markers(self) -> None:
         # ``\d`` matches Arabic-Indic digits, but Markdown markers are ASCII.
-        text = "- a\n  ١. b\n    - c"
-        assert _convert_bullets(text) == "• a\n  ١. b\n  ‣ c"
+        text = "- a\n\n  ١. b\n    - c"
+        assert _convert_bullets(text) == "• a\n\n  ١. b\n  ‣ c"
+
+    def test_non_one_ordered_marker_cannot_interrupt_a_paragraph(self) -> None:
+        # ``2.`` sits inside ``outer``'s paragraph, where Markdown only lets a
+        # list start at number one, so it opens no level and ``child`` stays a
+        # second-level item under ``outer``.
+        text = "- outer\n  paragraph\n  2. prose\n    - child"
+        assert _convert_bullets(text) == "• outer\n  paragraph\n  2. prose\n  ‣ child"
+
+    def test_one_ordered_marker_may_interrupt_a_paragraph(self) -> None:
+        # Numbered one, the very same item does open a level for its child.
+        text = "- outer\n  paragraph\n  1. prose\n    - child"
+        assert _convert_bullets(text) == (
+            "• outer\n  paragraph\n  1. prose\n    ◦ child"
+        )
+
+    def test_non_one_ordered_marker_starts_a_list_after_a_blank_line(self) -> None:
+        # With the paragraph closed, the number no longer matters.
+        text = "- outer\n  paragraph\n\n  2. prose\n    - child"
+        assert _convert_bullets(text) == (
+            "• outer\n  paragraph\n\n  2. prose\n    ◦ child"
+        )
+
+    def test_non_one_ordered_marker_at_the_start_of_the_text(self) -> None:
+        # There is no paragraph above the first line to interrupt, so the item
+        # is real and ``child`` nests under it instead of being an orphan at
+        # the depth its four spaces would otherwise imply.
+        assert _convert_bullets("2. two\n    - child") == "2. two\n  ‣ child"
+
+    def test_ordered_list_continues_through_its_own_paragraph(self) -> None:
+        # ``2.`` here is the next item of an already open list rather than a
+        # new one, so it is re-indented and opens a level as usual.
+        text = "- a\n    1. x\n       text\n    2. y\n        - child"
+        assert _convert_bullets(text) == (
+            "• a\n  1. x\n       text\n  2. y\n    ◦ child"
+        )
 
     def test_paragraph_closes_the_list(self) -> None:
         text = "- a\n  - b\n\nparagraph\n\n  - c"

@@ -128,7 +128,9 @@ convert("- Role\n  - Applications\n    - AI Launchpad")
 
 Ordered markers (`1.`) are kept verbatim, since the numbers already convey
 order, but they are re-indented like bullets and they open a level for any
-bullets nested under them.
+bullets nested under them. In the middle of a paragraph, only `1.` may start
+a list, so a line such as `2. prose` there is treated as the prose it is and
+opens no level.
 
 ### Code Is Rendered in Monospace
 

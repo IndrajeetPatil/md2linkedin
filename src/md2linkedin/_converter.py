@@ -278,15 +278,17 @@ def _strip_images(text: str) -> str:
 _BULLET_MARKERS = ("•", "‣", "◦", "▪")
 _INDENT_UNIT = 2  # spaces emitted per nesting level
 _TAB_WIDTH = 4  # spaces a tab stands for when measuring source indentation
-# Bullet (``-``/``*``/``+``) and ordered (``1.``/``1)``) list items. The
-# ordered marker is not captured: it is kept verbatim, and is matched only so
-# that it can open a level for the bullets nested underneath it. It is spelled
-# out as one to nine ASCII digits, as CommonMark defines it, so that a line of
-# prose beginning with a longer number or with non-ASCII digits (``\d`` matches
-# those too) cannot push a phantom level onto the nesting stack. Either a space
-# or a tab may separate the marker from the content, as CommonMark allows.
+# Bullet (``-``/``*``/``+``) and ordered (``1.``/``1)``) list items. An ordered
+# marker is kept verbatim in the output and is matched only so that it can open
+# a level for the bullets nested underneath it; its number is captured all the
+# same, because CommonMark lets a number other than ``1`` start a list only
+# where no paragraph is being interrupted. The number is spelled out as one to
+# nine ASCII digits, as CommonMark defines it, so that a line of prose
+# beginning with a longer number or with non-ASCII digits (``\d`` matches those
+# too) cannot push a phantom level onto the nesting stack. Either a space or a
+# tab may separate the marker from the content, as CommonMark allows.
 _LIST_ITEM_RE = re.compile(
-    r"^(?P<indent>[ \t]*)(?:(?P<bullet>[-*+])|[0-9]{1,9}[.)])[ \t]",
+    r"^(?P<indent>[ \t]*)(?:(?P<bullet>[-*+])|(?P<number>[0-9]{1,9})[.)])[ \t]",
     re.MULTILINE,
 )
 # A blank line followed by a paragraph at column zero, which is where an open
@@ -301,6 +303,19 @@ _TOP_LEVEL_BULLET_RE = re.compile(r"^[-*+][ \t]", re.MULTILINE)
 def _has_indented_line(text: str) -> bool:
     """Report whether any line of *text* starts with a space or a tab."""
     return text.startswith((" ", "\t")) or "\n " in text or "\n\t" in text
+
+
+def _interrupts_paragraph(text: str, start: int) -> bool:
+    """Report whether the line beginning at *start* follows a non-blank line.
+
+    A line in that position is interrupting a paragraph, and Markdown only
+    lets an ordered item do that when its number is ``1``. The first line of
+    the document interrupts nothing.
+    """
+    # ``start`` sits at the beginning of a line, so the text before it ends
+    # with the preceding line — unless there is no preceding line at all.
+    preceding_lines = text[:start].splitlines()
+    return bool(preceding_lines and preceding_lines[-1].strip())
 
 
 def _convert_bullets(text: str) -> str:
@@ -320,7 +335,10 @@ def _convert_bullets(text: str) -> str:
 
     Ordered markers (``1. ``) are kept verbatim, since the numbers already
     convey order, but they are re-indented like bullets and they open a level
-    for the bullets nested under them.
+    for the bullets nested under them. One that would start a list in the
+    middle of a paragraph opens nothing unless it is numbered ``1``, which is
+    the only number Markdown lets interrupt a paragraph; anything else there
+    is prose that happens to begin with a number.
     """
     if not _has_indented_line(text):
         # Nothing is indented, so no item can be nested and one constant
@@ -350,6 +368,20 @@ def _convert_bullets(text: str) -> str:
         closed: int | None = None
         while levels and width < levels[-1][0] + _INDENT_UNIT:
             closed = levels.pop()[1]
+
+        number = match.group("number")
+        if (
+            closed is None
+            and number is not None
+            and int(number) != 1
+            and _interrupts_paragraph(text, match.start())
+        ):
+            # An ordered marker numbered something other than one may not open
+            # a list in the middle of a paragraph, so this is prose. Closing no
+            # level above means nothing was popped, so the stack is untouched
+            # and the line can simply be left to the next item's gap.
+            continue
+
         if levels:
             depth = levels[-1][1] + 1
         elif closed is not None:
