@@ -35,7 +35,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A spaced thematic break (`* * *`, `- - -`) is no longer converted into a
   bullet holding the remaining markers. Markdown reads such a line as a
   break wherever a list item would also fit, so it is now dropped like the
-  compact `***` form.
+  compact `***` form. The `*` and `_` spellings are dropped before the
+  emphasis steps run, which used to pair up the first two markers of
+  `* * *` and leave a stray one behind.
+- A paragraph after a blank line now ends only the list levels it is not
+  indented inside, instead of leaving every level open unless the paragraph
+  starts at column zero. A second paragraph of an outer item therefore ends
+  the list nested in that item, and the next item there nests one level deep
+  rather than two.
+- A numbered item only carries on a list that is itself numbered. A `2.`
+  standing where a bullet item stands is prose interrupting that item's
+  paragraph, as Markdown says, and no longer opens a phantom level that
+  pushed the items under it one level too deep.
 - A tab may separate a list marker from its content (`-\titem`,
   `1.\titem`), as CommonMark allows. Only a space was recognised before, so
   a tab-formatted list was left unconverted and its ordered items did not

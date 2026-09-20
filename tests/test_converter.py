@@ -18,6 +18,7 @@ from md2linkedin._converter import (
     _convert_bullets,
     _convert_headers,
     _convert_italic,
+    _drop_emphasis_breaks,
     _normalize_line_endings,
     _normalize_whitespace,
     _protect_code,
@@ -498,6 +499,64 @@ class TestConvertHeaders:
         assert _convert_headers("## Section   ") == "𝗦𝗲𝗰𝘁𝗶𝗼𝗻"
 
 
+# ── _drop_emphasis_breaks ─────────────────────────────────────────────────────
+
+
+class TestDropEmphasisBreaks:
+    @pytest.mark.parametrize(
+        "rule",
+        ["***", "* * *", "*  *  *", "___", "_ _ _", "*****", "* * * *"],
+        ids=[
+            "compact",
+            "spaced",
+            "wide",
+            "underscores",
+            "spaced-underscores",
+            "longer",
+            "longer-spaced",
+        ],
+    )
+    def test_break_dropped(self, rule: str) -> None:
+        assert _drop_emphasis_breaks(f"before\n{rule}\nafter") == "before\nafter"
+
+    def test_hyphen_break_left_for_the_headers_step(self) -> None:
+        # A hyphen run may be the underline of a setext heading, which only
+        # ``_convert_headers`` can tell apart, so it is not touched here.
+        for rule in ("---", "- - -"):
+            assert _drop_emphasis_breaks(f"before\n{rule}\nafter") == (
+                f"before\n{rule}\nafter"
+            )
+
+    def test_mixed_markers_are_not_a_break(self) -> None:
+        text = "_ * _"
+        assert _drop_emphasis_breaks(text) == text
+
+    def test_two_markers_are_not_a_break(self) -> None:
+        text = "* *"
+        assert _drop_emphasis_breaks(text) == text
+
+    def test_indented_break_left_alone(self) -> None:
+        # Indented, the line is content of the list item it sits under.
+        text = "- a\n    * * *"
+        assert _drop_emphasis_breaks(text) == text
+
+    def test_markers_inside_a_line_left_alone(self) -> None:
+        text = "price * * * discount"
+        assert _drop_emphasis_breaks(text) == text
+
+    def test_emphasis_left_alone(self) -> None:
+        text = "*italic* and ***both***"
+        assert _drop_emphasis_breaks(text) == text
+
+    def test_only_the_break_line_is_removed(self) -> None:
+        # The lines around the rule are kept verbatim, and exactly one newline
+        # goes with the rule.
+        assert _drop_emphasis_breaks("aaa\nbbb\n* * *\nccc") == "aaa\nbbb\nccc"
+
+    def test_break_without_a_trailing_newline(self) -> None:
+        assert not _drop_emphasis_breaks("* * *")
+
+
 # ── _strip_links ──────────────────────────────────────────────────────────────
 
 
@@ -792,6 +851,46 @@ class TestConvertBullets:
         text = "## Heading\n2. parent\n    - child"
         assert _convert_bullets(text) == "## Heading\n2. parent\n  ‣ child"
 
+    def test_ordered_marker_does_not_carry_on_a_bullet_level(self) -> None:
+        # ``2.`` stands exactly where ``b`` stands, but ``b``'s list is a
+        # bullet list, so the number cannot be carrying that list on: it is
+        # prose inside ``b``'s paragraph and is left exactly as written,
+        # rather than being re-indented as an item of its own.
+        text = "- a\n    - b\n    2. c\n        - d"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n    2. c\n    ◦ d"
+
+    def test_ordered_marker_looks_at_the_level_it_stands_beside(self) -> None:
+        # ``2.`` stands beside ``b``, not beside the numbered list one level
+        # out: the list it could carry on is the innermost one it closes, and
+        # that one is a bullet list, so the marker is prose and keeps the six
+        # spaces it was written with instead of being re-indented to four.
+        text = "- top\n    1. a\n      - b\n      2. c"
+        assert _convert_bullets(text) == "• top\n  1. a\n    ◦ b\n      2. c"
+
+    def test_indented_paragraph_closes_the_levels_nested_inside_it(self) -> None:
+        # ``prose`` is a second paragraph of ``outer``'s item, so it ends the
+        # list nested in that item: ``2.`` is then prose interrupting it, and
+        # ``bullet`` opens a fresh level under ``outer`` rather than a third
+        # one under a phantom item.
+        text = "- outer\n  - child\n\n  prose\n  2. not-list\n    - bullet"
+        assert _convert_bullets(text) == (
+            "• outer\n  ‣ child\n\n  prose\n  2. not-list\n  ‣ bullet"
+        )
+
+    def test_indented_paragraph_keeps_the_item_it_belongs_to_open(self) -> None:
+        # Indented to ``b``'s content, the paragraph is ``b``'s own, so it
+        # closes nothing and ``c`` nests inside ``b`` as it would have without
+        # the paragraph.
+        text = "- a\n    - b\n\n      still b\n\n        - c"
+        assert _convert_bullets(text) == ("• a\n  ‣ b\n\n      still b\n\n    ◦ c")
+
+    def test_tab_indented_paragraph_closes_by_its_expanded_width(self) -> None:
+        # The tab stands for four spaces, which reaches ``b``'s content and so
+        # leaves ``b``'s level open; measured as the single character it is,
+        # the paragraph would close that level and flatten ``c``.
+        text = "- a\n  - b\n\n\tstill b\n\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n\n\tstill b\n\n    ◦ c"
+
     def test_unindented_lazy_continuation_keeps_the_levels_open(self) -> None:
         # Without a blank line before it, a column-zero line is still part of
         # the item's paragraph, so ``c`` stays a sibling of ``b``.
@@ -943,6 +1042,29 @@ class TestConvert:
         result = convert("- a\n    - b\n- - -\n    - c")
         assert "- - -" not in result
         assert "    ◦ c" in result
+
+    def test_spaced_asterisk_rule_is_dropped(self) -> None:
+        # End to end, because the rule has to survive the list step, which
+        # reads it as a boundary, and go before the emphasis steps, which
+        # would pair up its first two asterisks and leave the third behind.
+        assert convert("before\n\n* * *\n\nafter") == "before\n\nafter\n"
+
+    def test_spaced_underscore_rule_is_dropped(self) -> None:
+        assert convert("before\n\n_ _ _\n\nafter") == "before\n\nafter\n"
+
+    def test_lone_spaced_rule_converts_to_nothing(self) -> None:
+        assert convert("* * *") == "\n"
+        assert convert("_ _ _") == "\n"
+
+    def test_spaced_asterisk_rule_between_items_restarts_the_nesting(self) -> None:
+        result = convert("- a\n    - b\n* * *\n    - c")
+        assert "*" not in result
+        assert "  ‣ b" in result
+        assert "    ◦ c" in result
+
+    def test_emphasis_after_a_rule_still_converts(self) -> None:
+        # Dropping the rule must not disturb the emphasis around it.
+        assert convert("* * *\n\n**bold**") == "𝗯𝗼𝗹𝗱\n"
 
     def test_fenced_block_between_items_restarts_the_nesting(self) -> None:
         # The fence is a code placeholder by the time the list is converted,

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 from ._unicode import to_monospace, to_sans_bold, to_sans_bold_italic, to_sans_italic
 
@@ -196,13 +196,33 @@ def _convert_italic(text: str) -> str:
 
 # A thematic break: three or more of the same marker, optionally spaced out
 # (``***``, ``* * *``). Markdown reads such a line as a break even where a list
-# item would also fit, so the list steps below consult this too.
-_THEMATIC_BREAK = r"(?:-[ \t]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,}"
+# item would also fit, so the list steps below consult this too. The two halves
+# are kept apart because the emphasis markers need dropping earlier than the
+# hyphen does; see :func:`_drop_emphasis_breaks`.
+_EMPHASIS_BREAK = r"(?:_[ \t]*){3,}|(?:\*[ \t]*){3,}"
+_THEMATIC_BREAK = rf"(?:-[ \t]*){{3,}}|{_EMPHASIS_BREAK}"
 _THEMATIC_BREAK_RE = re.compile(rf"(?:{_THEMATIC_BREAK})$")
+_EMPHASIS_BREAK_LINE_RE = re.compile(rf"^(?:{_EMPHASIS_BREAK})$\n?", re.MULTILINE)
 # The ``===`` (or ``---``) line under a setext heading. The heading is only a
 # heading because of it, so it is what marks the block for everything that
 # looks at lines one at a time.
 _SETEXT_UNDERLINE = r"={3,}[ \t]*$"
+
+
+def _drop_emphasis_breaks(text: str) -> str:
+    """Remove the thematic breaks written with ``*`` or ``_``.
+
+    Those markers are the emphasis markers too, so the line has to go before
+    any emphasis is applied: :func:`_convert_italic` would otherwise pair up
+    the first two asterisks of ``* * *`` and leave the third behind as stray
+    punctuation. The compact ``***`` form survives emphasis untouched, but it
+    is dropped here as well to keep one rule for both spellings.
+
+    Only the emphasis spellings are handled here. A run of hyphens is left to
+    :func:`_convert_headers`, which reads it as the underline of a setext
+    heading when a line of text sits above it.
+    """
+    return _EMPHASIS_BREAK_LINE_RE.sub("", text)
 
 
 def _convert_headers(text: str) -> str:
@@ -326,14 +346,14 @@ _BLOCK_START_RE = re.compile(_BLOCK_START)
 # inline code span leaves an identical one. The two are told apart by the key,
 # hence the capture group: the fenced keys are handed to the steps below.
 _CODE_FENCES = ("```", "~~~")
-# Where an open list ends: a blank line followed by a paragraph at column zero,
-# a block construct, or a fenced code block. Neither half of the first
-# alternative is enough on its own: a blank line alone only makes the list
-# loose, and a column-zero line that follows an item directly is a lazy
-# continuation of that item's paragraph. Indented lines are continuation
-# paragraphs and never end the list.
+# Where an open list ends: a blank line followed by a paragraph, a block
+# construct, or a fenced code block. Neither half of the first alternative is
+# enough on its own: a blank line alone only makes the list loose, and a line
+# that follows an item directly is a lazy continuation of that item's
+# paragraph. How far the paragraph is indented says how much of the list it
+# ends, so its indentation is captured.
 _LIST_BREAK_RE = re.compile(
-    rf"\n[ \t]*\n\S|\n(?:{_BLOCK_START})|\n(?P<code>\x00.\x00)",
+    rf"\n[ \t]*\n(?P<paragraph>[ \t]*)\S|\n(?:{_BLOCK_START})|\n(?P<code>\x00.\x00)",
     re.MULTILINE,
 )
 _TOP_LEVEL_BULLET_RE = re.compile(
@@ -357,17 +377,63 @@ def _fenced_code_keys(placeholders: Mapping[str, str]) -> AbstractSet[str]:
     return {key for key, code in placeholders.items() if code.startswith(_CODE_FENCES)}
 
 
-def _closes_list(gap: str, fenced_keys: AbstractSet[str]) -> bool:
-    """Report whether anything between two list items ends the list.
+class _Level(NamedTuple):
+    """One open list level.
 
-    Every boundary except a code placeholder speaks for itself; a placeholder
-    only counts when it is a fenced block rather than an inline span, which is
-    ordinary paragraph text.
+    *width* is how far the level's markers are indented in the source and
+    *depth* is how deep they print. *ordered* records whether the level is a
+    numbered list, which is what tells a later ``2.`` whether it carries that
+    list on or starts a new one.
     """
-    return any(
-        match.group("code") is None or match.group("code") in fenced_keys
-        for match in _LIST_BREAK_RE.finditer(gap)
-    )
+
+    width: int
+    depth: int
+    ordered: bool
+
+
+def _close_levels_outside(levels: list[_Level], width: int) -> None:
+    """Close every level a line indented by *width* does not sit inside.
+
+    Nesting under a level takes a full indent unit, because Markdown allows a
+    top-level item up to three leading spaces; a smaller increase leaves the
+    line beside the level rather than inside it.
+    """
+    while levels and width < levels[-1].width + _INDENT_UNIT:
+        levels.pop()
+
+
+def _enclosing_sibling(levels: list[_Level], width: int) -> _Level | None:
+    """Find the outermost level a line indented by *width* would close.
+
+    That is the level the line ends up beside — the list it carries on, if it
+    carries on any. Looking it up costs nothing extra: the levels are indented
+    in increasing order, so the ones a line closes are always the innermost
+    run of them, and the outermost of that run is the first one that matches.
+    """
+    return next((level for level in levels if width < level.width + _INDENT_UNIT), None)
+
+
+def _close_levels_in_gap(
+    levels: list[_Level],
+    gap: str,
+    fenced_keys: AbstractSet[str],
+) -> None:
+    """Close the levels that the text between two list items has ended.
+
+    A block construct ends the whole list. A paragraph after a blank line ends
+    only what it is not inside: one at column zero closes everything, while an
+    indented one belongs to some enclosing item and closes the levels nested
+    within that item. A code placeholder counts as a block construct only when
+    it stands for a fenced block; an inline span is ordinary prose.
+    """
+    for match in _LIST_BREAK_RE.finditer(gap):
+        paragraph = match.group("paragraph")
+        if paragraph is None:
+            code = match.group("code")
+            if code is None or code in fenced_keys:
+                levels.clear()
+        else:
+            _close_levels_outside(levels, len(paragraph.expandtabs(_TAB_WIDTH)))
 
 
 def _interrupts_paragraph(text: str, start: int, fenced_keys: AbstractSet[str]) -> bool:
@@ -412,7 +478,9 @@ def _convert_bullets(text: str, fenced_keys: AbstractSet[str] = frozenset()) -> 
     for the bullets nested under them. One that would start a list in the
     middle of a paragraph opens nothing unless it is numbered ``1``, which is
     the only number Markdown lets interrupt a paragraph; anything else there
-    is prose that happens to begin with a number.
+    is prose that happens to begin with a number. Carrying on a numbered list
+    that is already open is not interrupting anything, so ``2.`` under its own
+    list's first item stays an item however much text the item holds.
 
     *fenced_keys* are the code placeholders that stand for a fenced block, as
     collected by :func:`_fenced_code_keys`. One of those ends a list the way a
@@ -423,51 +491,51 @@ def _convert_bullets(text: str, fenced_keys: AbstractSet[str] = frozenset()) -> 
         # substitution does the whole job.
         return _TOP_LEVEL_BULLET_RE.sub(f"{_BULLET_MARKERS[0]} ", text)
 
-    # (source indent width, output depth) for each currently open list level.
-    levels: list[tuple[int, int]] = []
+    levels: list[_Level] = []
     out: list[str] = []
     pos = 0
 
     for match in _LIST_ITEM_RE.finditer(text):
         # Everything since the previous item: the tail of its line, plus any
-        # lines in between. A boundary in there closes the list.
+        # lines in between. A boundary in there closes levels.
         gap = text[pos : match.start()]
-        if _closes_list(gap, fenced_keys):
-            levels.clear()
+        _close_levels_in_gap(levels, gap, fenced_keys)
 
-        # Close every level this item is not nested inside, its own included,
-        # then reopen its level one deeper than whatever still encloses it.
-        # Nesting under a level takes a full indent unit: Markdown permits up
-        # to three leading spaces on a top-level item, so a smaller increase
-        # marks a sibling rather than a child.
         width = len(match.group("indent").expandtabs(_TAB_WIDTH))
-        depth = width // _INDENT_UNIT
-        closed: int | None = None
-        while levels and width < levels[-1][0] + _INDENT_UNIT:
-            closed = levels.pop()[1]
+        # The level this item would close and stand beside, read before
+        # anything is popped: whether the line is a list item at all depends
+        # on it, and one that turns out to be prose must leave the stack as it
+        # found it.
+        sibling = _enclosing_sibling(levels, width)
 
         number = match.group("number")
         if (
-            closed is None
-            and number is not None
+            number is not None
             and int(number) != 1
+            and not (sibling is not None and sibling.ordered)
             and _interrupts_paragraph(text, match.start(), fenced_keys)
         ):
             # An ordered marker numbered something other than one may not open
-            # a list in the middle of a paragraph, so this is prose. Closing no
-            # level above means nothing was popped, so the stack is untouched
-            # and the line can simply be left to the next item's gap.
+            # a list in the middle of a paragraph, so this is prose — unless it
+            # carries on a numbered list that is already open, where the item
+            # above it is the list's, not a paragraph's. Nothing has been
+            # popped yet, so the line can simply be left to the next item's
+            # gap, which reads it as the paragraph text it is.
             continue
 
+        # Close every level this item is not nested inside, its own included,
+        # then reopen its level one deeper than whatever still encloses it.
+        depth = width // _INDENT_UNIT
+        _close_levels_outside(levels, width)
         if levels:
-            depth = levels[-1][1] + 1
-        elif closed is not None:
+            depth = levels[-1].depth + 1
+        elif sibling is not None:
             # Nothing encloses this item, but it is a sibling of the level it
             # just closed, so it cannot sit deeper than that level did. Its
             # own indentation still caps it, which is what pulls a dedent back
             # out (``    - deep`` followed by ``- top``).
-            depth = min(depth, closed)
-        levels.append((width, depth))
+            depth = min(depth, sibling.depth)
+        levels.append(_Level(width, depth, ordered=number is not None))
 
         indent = " " * (_INDENT_UNIT * depth)
         bullet = match.group("bullet")
@@ -575,6 +643,10 @@ def convert(
     # conversion replaces that syntax with plain styled text. Fenced blocks are
     # already placeholders by now, so their keys are passed along.
     text = _convert_bullets(text, _fenced_code_keys(placeholders))
+    # After the lists, which read a thematic break as one of their boundaries,
+    # and before the emphasis steps, which would pair up the markers of a
+    # spaced ``* * *`` and leave punctuation behind.
+    text = _drop_emphasis_breaks(text)
     text = _convert_bold_italic(text)
     text = _convert_bold(text)
     text = _convert_italic(text)
