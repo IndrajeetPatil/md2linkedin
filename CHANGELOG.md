@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] — 2026-09-20
 
 ### Fixed
 
@@ -44,13 +44,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the list nested in that item, and the next item there nests one level deep
   rather than two.
 - A numbered item only carries on a list that is itself numbered. A `2.`
-  standing where a bullet item stands is prose interrupting that item's
-  paragraph, as Markdown says, and no longer opens a phantom level that
-  pushed the items under it one level too deep.
+  standing where a bullet item stands no longer opens a phantom level that
+  pushed the items under it one level too deep; it is left as the text it
+  is. CommonMark would start a second list there instead, which is a known
+  gap rather than the intended reading (see #70).
 - A tab may separate a list marker from its content (`-\titem`,
   `1.\titem`), as CommonMark allows. Only a space was recognised before, so
   a tab-formatted list was left unconverted and its ordered items did not
   open a level for the bullets nested under them.
+- Documents holding many lines that begin with a number convert in linear
+  rather than quadratic time. Deciding whether such a line interrupts a
+  paragraph re-read everything above it, so a paragraph followed by 1,600
+  `2. prose` lines took about 0.29 seconds and doubling the count roughly
+  quadrupled that; the same document now converts in a few milliseconds.
+
+### Documentation
+
+- Added a `Markdown parsing fidelity` section to the documentation, and a
+  matching `Limitations` entry in the README, recording the constructs a
+  pipeline of regular expressions reads more loosely than a CommonMark
+  parser: indented code blocks, nested blockquotes, link reference
+  definitions, a thematic break indented inside a list item, tables, and
+  list markers that change the kind of list. Each was checked against a
+  reference parser, and #70 tracks the rework that would fix them.
 
 ## [0.3.0] — 2026-09-18
 
