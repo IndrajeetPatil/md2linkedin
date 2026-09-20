@@ -127,6 +127,14 @@ notable limitations:
 - **Searchability**: Text styled with these Unicode characters may not
   be indexed properly by LinkedIn’s search algorithm, meaning people
   searching for your keywords might not find your post.
+- **Markdown parsing**: The converter is a pipeline of regular
+  expressions, not a CommonMark parser. Ordinary posts convert
+  faithfully, but constructs whose meaning depends on their surroundings
+  — indented code blocks, nested blockquotes, link reference
+  definitions, a thematic break indented inside a list item — are read
+  more loosely than a real parser would read them. See [Markdown parsing
+  fidelity](https://www.indrapatil.com/md2linkedin/advanced/#markdown-parsing-fidelity)
+  for the specifics.
 
 For more examples, check out the package documentation at:
 <https://www.indrapatil.com/md2linkedin/>
