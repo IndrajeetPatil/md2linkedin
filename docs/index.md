@@ -97,7 +97,8 @@ md2linkedin post.md --no-monospace-code
 - **Links**: stripped to display text by default; `--preserve-links`
   retains URLs
 - **Images**: replaced by alt text
-- **Bullet lists**: `-`/`*`/`+` → `•`; nested items → `‣`
+- **Bullet lists**: `-`/`*`/`+` → `•`; nested items get one marker per
+  level (`‣`, `◦`, `▪`)
 - **Blockquotes**: leading `>` stripped
 - **HTML spans**: unwrapped, inner text preserved
 - **HTML entities**: decoded (`&amp;` → `&`, etc.)

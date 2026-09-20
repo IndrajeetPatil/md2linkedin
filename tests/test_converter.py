@@ -560,6 +560,62 @@ class TestConvertBullets:
         assert "  ‣ sub" in result
         assert result.endswith("• second")
 
+    def test_third_level_keeps_its_own_marker(self) -> None:
+        text = "- Role\n  - Applications\n    - AI Launchpad"
+        assert _convert_bullets(text) == "• Role\n  ‣ Applications\n    ◦ AI Launchpad"
+
+    def test_four_space_indent_nests_like_two(self) -> None:
+        text = "- Role\n    - Applications\n        - AI Launchpad"
+        assert _convert_bullets(text) == "• Role\n  ‣ Applications\n    ◦ AI Launchpad"
+
+    def test_tab_indent_nests(self) -> None:
+        text = "- Role\n\t- Applications\n\t\t- AI Launchpad"
+        assert _convert_bullets(text) == "• Role\n  ‣ Applications\n    ◦ AI Launchpad"
+
+    def test_depth_beyond_last_marker_keeps_indenting(self) -> None:
+        text = "- a\n  - b\n    - c\n      - d\n        - e"
+        assert _convert_bullets(text) == ("• a\n  ‣ b\n    ◦ c\n      ▪ d\n        ▪ e")
+
+    def test_return_to_shallower_level(self) -> None:
+        text = "- a\n  - b\n    - c\n  - d\n- e"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n    ◦ c\n  ‣ d\n• e"
+
+    def test_tab_counts_as_four_spaces(self) -> None:
+        # Two tabs put an unparented item at depth four; any other tab width
+        # would land it on a different depth.
+        assert _convert_bullets("\t\t- x") == "        ▪ x"
+
+    def test_orphan_nested_item_uses_its_indentation(self) -> None:
+        assert _convert_bullets("    - deep") == "    ◦ deep"
+
+    def test_ordered_marker_left_as_is(self) -> None:
+        assert _convert_bullets("1. item") == "1. item"
+
+    def test_bullet_nested_under_ordered_item(self) -> None:
+        text = "1. Item\n   - sub\n     - subsub"
+        assert _convert_bullets(text) == "1. Item\n  ‣ sub\n    ◦ subsub"
+
+    def test_paragraph_closes_the_list(self) -> None:
+        text = "- a\n  - b\n\nparagraph\n\n  - c"
+        result = _convert_bullets(text)
+        assert result.endswith("  ‣ c")
+
+    def test_blank_line_does_not_close_the_list(self) -> None:
+        # A loose list keeps its levels open across the blank lines, so the
+        # four-space items stay one level deep rather than restarting.
+        text = "- a\n\n    - b\n\n    - c"
+        assert _convert_bullets(text) == "• a\n\n  ‣ b\n\n  ‣ c"
+
+    def test_continuation_line_does_not_close_the_list(self) -> None:
+        text = "- a\n    - b\n      continuation\n    - c"
+        assert _convert_bullets(text) == ("• a\n  ‣ b\n      continuation\n  ‣ c")
+
+    def test_lazy_continuation_line_does_not_close_the_list(self) -> None:
+        # Any indentation at all marks the line as part of the list, even the
+        # single space of a lazily wrapped continuation.
+        text = "- a\n    - b\n continuation\n    - c"
+        assert _convert_bullets(text) == "• a\n  ‣ b\n continuation\n  ‣ c"
+
 
 # ── _strip_blockquotes ────────────────────────────────────────────────────────
 
@@ -791,6 +847,10 @@ class TestConvert:
     def test_autolink(self) -> None:
         result = convert("<https://example.com>")
         assert result.strip() == "https://example.com"
+
+    def test_third_level_bullet_stays_nested(self) -> None:
+        result = convert("- Role\n  - Applications\n    - AI Launchpad\n")
+        assert result == "• Role\n  ‣ Applications\n    ◦ AI Launchpad\n"
 
     def test_bullet_list_after_heading(self) -> None:
         result = convert("# Heading\n\n- first\n  - sub\n- second")

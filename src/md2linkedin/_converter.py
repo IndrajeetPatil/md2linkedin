@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 
 __all__ = ["convert", "convert_file"]
 
-_NESTED_BULLET_MIN_INDENT = 2  # spaces of indentation that triggers a nested bullet (‣)
 _ENCODING = "utf-8"
 
 _HTML_ENTITIES = {
@@ -369,12 +368,37 @@ def _strip_images(text: str) -> str:
     )
 
 
+# One marker per nesting level, outermost first. Depths beyond the last entry
+# reuse it; their indentation keeps conveying how deep they are.
+_BULLET_MARKERS = ("•", "‣", "◦", "▪")
+_INDENT_UNIT = 2  # spaces emitted per nesting level
+_TAB_WIDTH = 4  # spaces a tab stands for when measuring source indentation
+# Bullet (``-``/``*``/``+``) and ordered (``1.``/``1)``) list items. Ordered
+# items are matched only so that they can open a level for bullets nested
+# underneath them; their own text is left alone, so only the bullet marker is
+# captured.
+_LIST_ITEM_RE = re.compile(r"^(?P<indent>[ \t]*)(?:(?P<bullet>[-*+])|\d+[.)]) ")
+
+
 def _convert_bullets(text: str) -> str:
     """Replace Markdown list markers with Unicode bullet characters.
 
-    * First-level ``- `` → ``• ``
-    * Second-level ``  - `` (2+ leading spaces) → ``  ‣ ``
-    * Ordered list markers (``1. ``) are left as-is (numbers already convey order).
+    Nesting depth is counted from the enclosing list items rather than from
+    the raw indentation, so a document indented by four spaces per level
+    nests exactly like one indented by two (fixes #68):
+
+    * First level ``- `` → ``• ``
+    * Second level → ``  ‣ ``
+    * Third level → ``    ◦ ``
+    * Fourth and deeper → ``      ▪ ``, indented two further spaces per level
+
+    Output indentation is normalized to two spaces per level regardless of
+    the source indentation. A list whose first item is already indented has
+    no enclosing item to count from, so its depth is derived from that
+    indentation instead.
+
+    Ordered list markers (``1. ``) are left as-is (numbers already convey
+    order), but they still open a level for bullets nested under them.
 
     Args:
         text: Input text.
@@ -383,12 +407,35 @@ def _convert_bullets(text: str) -> str:
         Text with list markers replaced.
 
     """
+    # (source indent width, output depth) for each currently open list level.
+    levels: list[tuple[int, int]] = []
+    out: list[str] = []
 
-    def _bullet(m: re.Match[str]) -> str:
-        indent = m.group(1)
-        return "  ‣ " if len(indent) >= _NESTED_BULLET_MIN_INDENT else "• "
+    for line in text.split("\n"):
+        match = _LIST_ITEM_RE.match(line)
+        if match is None:
+            # A non-blank line at column zero ends the list; blank lines and
+            # indented lines are part of it (loose lists, continuation text).
+            if line.strip() and not line[:1].isspace():
+                levels.clear()
+            out.append(line)
+            continue
 
-    return re.sub(r"^([ \t]*)[-*+] ", _bullet, text, flags=re.MULTILINE)
+        # Close every level this item is not nested inside, its own included,
+        # then reopen its level one deeper than whatever still encloses it.
+        width = len(match.group("indent").expandtabs(_TAB_WIDTH))
+        while levels and width <= levels[-1][0]:
+            levels.pop()
+        depth = levels[-1][1] + 1 if levels else width // _INDENT_UNIT
+        levels.append((width, depth))
+
+        if match.group("bullet") is None:
+            out.append(line)
+            continue
+        marker = _BULLET_MARKERS[min(depth, len(_BULLET_MARKERS) - 1)]
+        out.append(f"{' ' * (_INDENT_UNIT * depth)}{marker} {line[match.end() :]}")
+
+    return "\n".join(out)
 
 
 def _strip_blockquotes(text: str) -> str:
@@ -475,7 +522,8 @@ def convert(
       Unicode Monospace by default (see *monospace_code*).
     * **Links** — stripped to display text by default (see *preserve_links*).
     * **Images** — replaced by alt text.
-    * **Bullet lists** — ``-`` / ``*`` / ``+`` → ``•`` / ``‣`` (nested).
+    * **Bullet lists** — ``-`` / ``*`` / ``+`` → ``•``, with one marker per
+      nesting level (``‣``, ``◦``, ``▪``) and two spaces of indent per level.
     * **Blockquotes** — leading ``>`` stripped.
     * **HTML spans** — unwrapped, inner text kept.
     * **HTML entities** — decoded to literal characters.

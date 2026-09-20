@@ -84,6 +84,7 @@ apply_style("Hiring!", "bold")
 | `![alt](url)` | `alt` text (URL discarded) |
 | `- item` | `• item` |
 | `  - nested` | `  ‣ nested` |
+| `    - nested twice` | `    ◦ nested twice` |
 | `> blockquote` | `> ` prefix removed |
 | `<span>...</span>` | Tags removed, text kept |
 | `&amp;` / `&gt;` etc. | Decoded to `&` / `>` |
@@ -105,6 +106,26 @@ ensuring it is not accidentally consumed piecemeal:
 convert("***very important***")  # → bold-italic Unicode
 convert("**bold and *italic* inside**")  # → bold wrapping italic
 ```
+
+### Nested Bullet Lists
+
+Each nesting level gets its own marker — `•`, `‣`, `◦`, `▪` — and two spaces
+of indentation. Levels deeper than the fourth reuse `▪`, with the indentation
+still growing by two spaces per level.
+
+Depth is counted from the enclosing list items, not from the raw indentation,
+so a document indented by four spaces per level nests exactly like one
+indented by two:
+
+```python
+convert("- Role\n  - Applications\n    - AI Launchpad")
+# • Role
+#   ‣ Applications
+#     ◦ AI Launchpad
+```
+
+Ordered markers (`1.`) are kept as-is, since the numbers already convey
+order, but they still open a level for any bullets nested under them.
 
 ### Code Is Rendered in Monospace
 

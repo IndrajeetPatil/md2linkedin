@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Bullets nested three or more levels deep keep their nesting. Every item
+  indented by at least two spaces was rendered as `  ‣ `, so a grandchild
+  item collapsed onto its parent's level. Each level now gets its own marker
+  (`•`, `‣`, `◦`, `▪`) and two spaces of indentation (fixes #68).
+
+### Changed
+
+- Bullet nesting depth is counted from the enclosing list items instead of
+  from the raw indentation width, so a document indented by four spaces per
+  level nests exactly like one indented by two. Output indentation is
+  normalized to two spaces per level. Ordered markers (`1.`) are still kept
+  as-is, but they now open a level for bullets nested under them.
+
 ## [0.3.0] — 2026-09-18
 
 ### Fixed
