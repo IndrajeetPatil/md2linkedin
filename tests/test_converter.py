@@ -604,6 +604,21 @@ class TestConvertBullets:
     def test_ordered_marker_with_parenthesis(self) -> None:
         assert _convert_bullets("- a\n    1) b") == "• a\n  1) b"
 
+    def test_nine_digit_ordered_marker_opens_a_level(self) -> None:
+        text = "- a\n    123456789. b\n        - c"
+        assert _convert_bullets(text) == "• a\n  123456789. b\n    ◦ c"
+
+    def test_longer_number_is_not_an_ordered_marker(self) -> None:
+        # CommonMark caps an ordered marker at nine digits, so prose starting
+        # with a longer number must not push a level onto the nesting stack.
+        text = "- contact\n  1234567890. phone\n    - note"
+        assert _convert_bullets(text) == "• contact\n  1234567890. phone\n  ‣ note"
+
+    def test_non_ascii_digits_are_not_ordered_markers(self) -> None:
+        # ``\d`` matches Arabic-Indic digits, but Markdown markers are ASCII.
+        text = "- a\n  ١. b\n    - c"
+        assert _convert_bullets(text) == "• a\n  ١. b\n  ‣ c"
+
     def test_paragraph_closes_the_list(self) -> None:
         text = "- a\n  - b\n\nparagraph\n\n  - c"
         result = _convert_bullets(text)

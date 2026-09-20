@@ -375,9 +375,12 @@ _INDENT_UNIT = 2  # spaces emitted per nesting level
 _TAB_WIDTH = 4  # spaces a tab stands for when measuring source indentation
 # Bullet (``-``/``*``/``+``) and ordered (``1.``/``1)``) list items. The
 # ordered marker is not captured: it is kept verbatim, and is matched only so
-# that it can open a level for the bullets nested underneath it.
+# that it can open a level for the bullets nested underneath it. It is spelled
+# out as one to nine ASCII digits, as CommonMark defines it, so that a line of
+# prose beginning with a longer number or with non-ASCII digits (``\d`` matches
+# those too) cannot push a phantom level onto the nesting stack.
 _LIST_ITEM_RE = re.compile(
-    r"^(?P<indent>[ \t]*)(?:(?P<bullet>[-*+])|\d+[.)]) ",
+    r"^(?P<indent>[ \t]*)(?:(?P<bullet>[-*+])|[0-9]{1,9}[.)]) ",
     re.MULTILINE,
 )
 # A line whose first character is not whitespace, i.e. a paragraph at column
