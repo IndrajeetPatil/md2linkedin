@@ -71,27 +71,27 @@ apply_style("Hiring!", "bold")
 
 ## What Gets Transformed (and What Doesn't)
 
-| Markdown construct | Output |
-|--------------------|--------|
-| `**bold**` / `__bold__` | Unicode 𝗯𝗼𝗹𝗱 |
-| `*italic*` / `_italic_` | Unicode 𝘪𝘵𝘢𝘭𝘪𝘤 |
-| `***bold-italic***` / `___bold-italic___` | Unicode 𝙗𝙤𝙡𝙙-𝙞𝙩𝙖𝙡𝙞𝙘 |
-| `` `inline code` `` | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (backticks stripped) |
-| ` ```fenced block``` ` | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (fences stripped) |
-| `# H1` | Bold Unicode + `━` border |
-| `## H2`–`###### H6` | Bold Unicode, no border |
-| `[text](url)` | `text` (URL discarded) |
-| `![alt](url)` | `alt` text (URL discarded) |
-| `- item` | `• item` |
-| `  - nested` | `  ‣ nested` |
-| `    - nested twice` | `    ◦ nested twice` |
-| `> blockquote` | `> ` prefix removed |
-| `<span>...</span>` | Tags removed, text kept |
-| `&amp;` / `&gt;` etc. | Decoded to `&` / `>` |
-| `\*` backslash escapes | Resolved to literal `*` |
-| Emojis, accented chars | Passed through unchanged |
-| Digits inside bold | Also converted (`**123**` → `𝟭𝟮𝟯`) |
-| `_snake_case_` in middle of word | **Not** italicised |
+| Markdown construct                        | Output                                 |
+|-------------------------------------------|----------------------------------------|
+| `**bold**` / `__bold__`                   | Unicode 𝗯𝗼𝗹𝗱                           |
+| `*italic*` / `_italic_`                   | Unicode 𝘪𝘵𝘢𝘭𝘪𝘤                         |
+| `***bold-italic***` / `___bold-italic___` | Unicode 𝙗𝙤𝙡𝙙-𝙞𝙩𝙖𝙡𝙞𝙘                    |
+| `` `inline code` ``                       | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (backticks stripped) |
+| ` ```fenced block``` `                    | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (fences stripped)    |
+| `# H1`                                    | Bold Unicode + `━` border              |
+| `## H2`–`###### H6`                       | Bold Unicode, no border                |
+| `[text](url)`                             | `text` (URL discarded)                 |
+| `![alt](url)`                             | `alt` text (URL discarded)             |
+| `- item`                                  | `• item`                               |
+| `  - nested`                              | `  ‣ nested`                           |
+| `    - nested twice`                      | `    ◦ nested twice`                   |
+| `> blockquote`                            | `> ` prefix removed                    |
+| `<span>...</span>`                        | Tags removed, text kept                |
+| `&amp;` / `&gt;` etc.                     | Decoded to `&` / `>`                   |
+| `\*` backslash escapes                    | Resolved to literal `*`                |
+| Emojis, accented chars                    | Passed through unchanged               |
+| Digits inside bold                        | Also converted (`**123**` → `𝟭𝟮𝟯`)     |
+| `_snake_case_` in middle of word          | **Not** italicised                     |
 
 ---
 
