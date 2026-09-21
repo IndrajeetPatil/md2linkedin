@@ -40,6 +40,10 @@ from md2linkedin._converter import convert, convert_file
         (r"\*literal\*", "*literal*\n"),
         ("some_variable_name", "some_variable_name\n"),
         ("a\n\nb", "a\n\nb\n"),
+        ("first  \nsecond", "first  \nsecond\n"),
+        ("first\\\nsecond", "first\nsecond\n"),
+        ("first  \n\nsecond", "first  \n\nsecond\n"),
+        ("**first\nsecond**  \n\nthird", "𝗳𝗶𝗿𝘀𝘁\n𝘀𝗲𝗰𝗼𝗻𝗱  \n\nthird\n"),
         ("a\rb", "a\nb\n"),
         ("a\x00b", "ab\n"),
         ("a\n\n* * *\n\nb", "a\n\nb\n"),
@@ -120,8 +124,18 @@ def test_thematic_break_inside_list_item_does_not_emit_marker() -> None:
 
 def test_mixed_marker_widths_follow_item_content_columns() -> None:
     assert convert("- outer\n\n  10. middle\n       - child") == (
-        "• outer\n  10. middle\n    ◦ child\n"
+        "• outer\n\n  10. middle\n    ◦ child\n"
     )
+
+
+def test_loose_nested_lists_preserve_blank_lines() -> None:
+    assert convert("- role\n\n  - task\n\n    - project\n\n  - next\n\n- other") == (
+        "• role\n\n  ‣ task\n\n    ◦ project\n\n  ‣ next\n\n• other\n"
+    )
+
+
+def test_terminal_hard_break_ignores_newline_from_html_entity() -> None:
+    assert convert("a &#10; b  \n\nnext").endswith("b  \n\nnext\n")
 
 
 def test_unicode_and_line_endings() -> None:

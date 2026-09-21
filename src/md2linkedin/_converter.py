@@ -42,12 +42,22 @@ __all__ = ["convert", "convert_file"]
 _ENCODING = "utf-8"
 _BULLET_MARKERS = ("•", "‣", "◦", "▪")
 _H1_BORDER = "━" * 40
+_HARD_BREAK_SPACES = 2
 _BOLD = 1
 _ITALIC = 2
 _BOLD_ITALIC = _BOLD | _ITALIC
 
 
-class _LinkedInRenderer(BaseRenderer):
+def _count_line_breaks(token: Token) -> int:
+    """Count parsed source line breaks, excluding decoded text newlines."""
+    return sum(
+        isinstance(child, LineBreak) + _count_line_breaks(child)
+        for child in token.children or ()
+    )
+
+
+# mistletoe dispatches through public render_* methods, one per token type.
+class _LinkedInRenderer(BaseRenderer):  # ruff: ignore[too-many-public-methods]
     """Turn syntax tree nodes into plain text while tracking inline and list context."""
 
     def __init__(
@@ -81,6 +91,15 @@ class _LinkedInRenderer(BaseRenderer):
         return "\n\n".join(
             filter(None, (self.render(child) for child in token.children or ())),
         )
+
+    @override
+    def render_paragraph(self, token: Paragraph) -> str:
+        """Restore terminal hard-break spaces stripped by mistletoe's parser."""
+        content = self.render_inner(token)
+        start = cast("int", vars(token)["line_number"]) - 1
+        source_line = self._source_lines[start + _count_line_breaks(token)].rstrip("\n")
+        spaces = source_line[len(source_line.rstrip(" ")) :]
+        return content + spaces if len(spaces) >= _HARD_BREAK_SPACES else content
 
     @override
     def render_raw_text(self, token: RawText) -> str:
@@ -147,9 +166,8 @@ class _LinkedInRenderer(BaseRenderer):
 
     @override
     def render_line_break(self, token: LineBreak) -> str:
-        """Retain line boundaries in pasted plain text."""
-        del token
-        return "\n"
+        """Keep source spaces for hard breaks and discard backslash markers."""
+        return "\n" if token.content.startswith("\\") else f"{token.content}\n"
 
     @override
     def render_heading(self, token: Heading) -> str:
@@ -185,10 +203,11 @@ class _LinkedInRenderer(BaseRenderer):
 
     @override
     def render_list(self, token: List) -> str:
-        """Use the parser's nesting tree to choose item indentation and markers."""
+        """Use the nesting tree for markers and retain loose-list spacing."""
         self._list_depth += 1
         try:
-            return "\n".join(self.render(child) for child in token.children or ())
+            separator = "\n\n" if token.loose else "\n"
+            return separator.join(self.render(child) for child in token.children or ())
         finally:
             self._list_depth -= 1
 
@@ -209,7 +228,9 @@ class _LinkedInRenderer(BaseRenderer):
         for child in rest:
             rendered = self.render(child)
             if rendered:
-                separator = "\n\n" if isinstance(child, Paragraph) else "\n"
+                separator = (
+                    "\n\n" if token.loose or isinstance(child, Paragraph) else "\n"
+                )
                 result += separator + rendered
         return result
 
