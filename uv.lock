@@ -1256,7 +1256,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.5.0" },
-    { name = "mistletoe", specifier = ">=1.6,<2" },
+    { name = "mistletoe", specifier = ">=1.6" },
     { name = "typing-extensions", specifier = ">=4.15" },
 ]
 
