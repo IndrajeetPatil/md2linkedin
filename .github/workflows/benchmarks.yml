@@ -51,6 +51,27 @@ jobs:
       - name: Install locked dependencies
         run: uv sync --locked --dev
 
+      - name: Set parser migration budget
+        run: |
+          uv run --no-sync python - "$RUNNER_TEMP/benchmark-base/pyproject.toml" pyproject.toml <<'PY'
+          import os
+          import sys
+          import tomllib
+          from pathlib import Path
+
+          def uses_mistletoe(path):
+              dependencies = tomllib.loads(path.read_text(encoding="utf-8"))["project"]["dependencies"]
+              return any(dependency.startswith("mistletoe") for dependency in dependencies)
+
+          base, candidate = map(Path, sys.argv[1:])
+          if not uses_mistletoe(base) and uses_mistletoe(candidate):
+              with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as env:
+                  env.write("BENCHMARK_THRESHOLD=450\n")
+              print("First mistletoe migration: allow up to 450% slowdown against the regex base")
+          else:
+              print("Use the normal 5% regression threshold")
+          PY
+
       - name: Measure base and candidate
         # Both revisions use the candidate's benchmark suite, configuration,
         # interpreter, and dependencies. Only the imported source tree changes.

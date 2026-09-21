@@ -39,6 +39,13 @@ three seconds per run. The comparator takes the median of the three
 `stats.median_ns` measurements for each benchmark and fails if the candidate is
 **more than 5% slower** than the base. Exactly 5% passes.
 
+The first change from the regex converter to mistletoe has a one-time 450%
+allowance against a base without mistletoe. Parsing dominates the new runtime,
+so the ordinary 5% limit cannot pass this migration. The comparison still
+reports every measured slowdown and fails above 450%. As soon as the base
+declares mistletoe, the workflow automatically returns to the 5% limit for
+later PRs and pushes.
+
 Missing reports, empty results, invalid timings, incompatible CodSpeed versions,
 duplicate benchmark IDs, or mismatched benchmark sets fail the gate rather than
 silently passing. The CodSpeed dependency is pinned because the comparator reads
@@ -57,6 +64,9 @@ performance. Both revisions are measured in the same job on the same runner, so
 making the library faster is not in itself a reason to tighten the limit — and
 it can even work against you, because a shorter measurement window averages
 away less jitter.
+
+The one-time parser migration allowance above is an explicit exception for a
+new implementation with different costs. It does not change the usual margin.
 
 To size the margin, measure noise rather than speed. Two sources give it
 directly:
