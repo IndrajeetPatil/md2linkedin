@@ -146,43 +146,6 @@ numbered interrupts nothing either, so `2.` under `1.` stays an item however
 much text the first item holds — but `2.` standing where a *bullet* item
 stands is starting a new list, and so is prose.
 
-### Markdown Parsing Fidelity
-
-`md2linkedin` is a pipeline of regular expressions, not a CommonMark parser.
-That keeps it fast and dependency-free, and it converts the Markdown people
-actually write for LinkedIn — headings, emphasis, code, links, lists — exactly
-as expected. What it cannot do is resolve constructs whose meaning depends on
-their surroundings the way a real parser does, because it never builds a
-document tree to resolve them against.
-
-The known gaps, none of which is on the roadmap to fix with more regular
-expressions:
-
-| Input                                    | Output                        | A CommonMark parser would        |
-|------------------------------------------|-------------------------------|----------------------------------|
-| `    print(1)` (four-space indent)        | passed through as plain text  | render it as a code block        |
-| `>> inner`                                | `> inner` — one level stripped | strip both levels                |
-| `[d]: https://example.com`                | left in the output verbatim   | consume the definition           |
-| `- a` then `    * * *`                    | the break is mangled to `*`   | read it as item content          |
-| `- x` then `2. y` beside it               | `2. y` keeps its source indent | start a new ordered list there   |
-| `1. x` then `2) y`                        | `2)` carries the `1.` list on | start a second list, `)` being a different type |
-| `\| a \| b \|` table rows                 | passed through as pipe syntax | render the table                 |
-
-The last two are the same shortcoming twice over: a list marker is read on
-its own, while a parser reads it against the kind of list it lands next to.
-A marker that changes the kind of list ends the one above it and opens
-another, whatever its number, because it is no longer interrupting that
-list's paragraph.
-
-List nesting is also measured in indentation width rather than in each item's
-content column, so a document that mixes marker widths inside one list can
-nest a level differently from a parser. Depth is counted from the enclosing
-items, which handles every uniform style (two-space, four-space, tabs).
-
-Fixing these properly means parsing Markdown properly. If that becomes worth
-the dependency, the conversion would be better expressed as a renderer over a
-parsed syntax tree than as more passes over the text.
-
 ### Code Is Rendered in Monospace
 
 By default, inline code and fenced code blocks are converted to Unicode

@@ -428,6 +428,44 @@ wheels = [
 ]
 
 [[package]]
+name = "comrak"
+version = "0.0.16"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8f/32/72e4c506737a8a9eb040a6234e2b2e62fbaf1e2ce93ff93a17b9492811cd/comrak-0.0.16.tar.gz", hash = "sha256:a3a27e1f34c66572aa25c9df3d4e658b953e3d1c5113bfa7094ced53520bf9db", size = 56064, upload-time = "2026-07-27T10:12:38.095Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/88/1b/ee3500701727a5e9be23a389c17646b92874518ae92c8b79927f729be962/comrak-0.0.16-cp311-abi3-macosx_10_12_x86_64.whl", hash = "sha256:6e527206db1dc313a807471a1c721575d3072fc11f3d02274b5b647b278b1cef", size = 552275, upload-time = "2026-07-27T10:12:18.359Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/54/c14d3ffb7cc63fc27304a9b847f596f4d045cc526f8c7276269a134f7347/comrak-0.0.16-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:a4439723a646898ce2f723bd62ef12b84a2fdf2b74f99c76721a9dda8398a1dc", size = 544155, upload-time = "2026-07-27T10:12:16.872Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/dd/c1993bcebcc5963ce87da88a57860eb064e392032fabb7b87c899368b2c6/comrak-0.0.16-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6a4f3dabc0e0242c5f8be9b33824b4020e894e0930ea16c2b6cb8ac4e8230274", size = 618338, upload-time = "2026-07-27T10:12:06.371Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/16/f9fb5dedaa410919e1839d2ede7f2d8b9e2b177c8447cf24eb41f23dfbf9/comrak-0.0.16-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:a3c59ac1edbd7b34addd4f35a352f0e4608bc851f552f9d48df1ba68a8be251d", size = 642691, upload-time = "2026-07-27T10:11:43.342Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/3b/13f318ca81b7300c065e87e21ae29ddfdf47af64a022fbb8af96353f6584/comrak-0.0.16-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5e2e960b2188efcc58f34034906e2eacadea67780b6edc4d501c522835b3d15a", size = 618043, upload-time = "2026-07-27T10:12:08.042Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/d1/90ee9534ef45409416a04beb166ea84c49c4506e409523070d0c352e766d/comrak-0.0.16-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:34873dac10e07fdd5befae53ed95be947611224b6be60efa9e9e2aa0b5c99a5a", size = 642724, upload-time = "2026-07-27T10:11:44.828Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/f9/126bae8228c7ee561ee904e9211d816c10de638e825d6558d67eb48255e6/comrak-0.0.16-cp314-abi3-win32.whl", hash = "sha256:fc4c4845dc32ee3998401740e0ed4af1ec9254a086387b070d3a68d9830795cb", size = 418435, upload-time = "2026-07-27T10:12:40.659Z" },
+    { url = "https://files.pythonhosted.org/packages/00/b0/f945f08d1fc65e9f34496e8d6e452bf0811e82e790f365340fe519dc27d2/comrak-0.0.16-cp314-abi3-win_amd64.whl", hash = "sha256:48c73528cb5b0fbc46951cb72a6b7bf782ee50e5b8d58fa8195ea8b4d1d2f113", size = 430871, upload-time = "2026-07-27T10:12:39.38Z" },
+    { url = "https://files.pythonhosted.org/packages/b0/2b/ec2a600fc5dc934a1659a5cb4a3b76bce1ae2849869b63b8ba3a44edc8a2/comrak-0.0.16-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:98bed85aef13efa1f95c51a1284ef45b0902d2409bdb9d153f9f4b1f519a4007", size = 618135, upload-time = "2026-07-27T10:12:09.596Z" },
+    { url = "https://files.pythonhosted.org/packages/26/44/285b4aa60cfc0182e862b1d1bf463aa8fec74a83feda9d02b232e7a3dc1f/comrak-0.0.16-cp314-cp314-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:c86c286387352ea6d3449961ca9674063d1ef07b048e5a234e0023f1b40a221b", size = 642508, upload-time = "2026-07-27T10:11:46.317Z" },
+    { url = "https://files.pythonhosted.org/packages/da/b0/34369f2153440aeb9bb461f8ecd75a601f7cb6882440b52890043a565998/comrak-0.0.16-cp314-cp314t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9790558f62dee76336258f86bcb5ff953d03e0fe7180480980774be950ebd6c1", size = 692721, upload-time = "2026-07-27T10:11:31.65Z" },
+    { url = "https://files.pythonhosted.org/packages/05/49/1aaeab553b877292e3e1bc165c6c7e88f374f6e7ea7633ad760bf6d275a2/comrak-0.0.16-cp314-cp314t-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:d296dfc3f655b376d24dd70532a91bf6921da9cddd473cc622b2082c05a408b8", size = 649232, upload-time = "2026-07-27T10:11:36.219Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/5c/3b7afc8e448cd7b4a1251e82bbd4d75f1fb3892522e59555cafc1d96ec66/comrak-0.0.16-cp314-cp314t-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:e778d26814fa537be2138b3e4613d0e93d0ca38fa1f8d23e3897bea3c7f52823", size = 715467, upload-time = "2026-07-27T10:11:53.885Z" },
+    { url = "https://files.pythonhosted.org/packages/ea/c2/971badab285813271b19886c5a8ad9723df035b4522538e4fdbf00d062aa/comrak-0.0.16-cp314-cp314t-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:28c7387e337d9ac047744a2ea69cc2e1f154ccebaa1404b55d43cddf309be2dc", size = 758283, upload-time = "2026-07-27T10:11:58.335Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/9d/8aeda708ca64864fc9185e476c5f2836e0e756eaa096044a78d011d9f6c8/comrak-0.0.16-cp314-cp314t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8bbe78fd008dc14a8e846d97043fe588d08fa05833ef6d9076e5b2b668710de0", size = 618627, upload-time = "2026-07-27T10:12:11.091Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/4f/eabad4867b792f65af6c1ee052f504b0c7907c15e4e80f2d364df1d52e07/comrak-0.0.16-cp314-cp314t-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:984cd36a060adbb7796e14675e26136d5cb9d29740e5e70ee269de91b419d3f3", size = 642613, upload-time = "2026-07-27T10:11:47.725Z" },
+    { url = "https://files.pythonhosted.org/packages/67/b6/4a4af10b0b104e3d3f5d3d287e967ff05e23b759add2ec7c51a66f754ffa/comrak-0.0.16-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:8bbf5572b2e963e0c535653bd7250bde91c08dd66a8487ac18c8bd01a06af37a", size = 871830, upload-time = "2026-07-27T10:12:19.778Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/8f/65862ed664bca8778966e13c9c3599b5703bed0413dcc091b069a0ea3f50/comrak-0.0.16-cp314-cp314t-musllinux_1_2_armv7l.whl", hash = "sha256:921d306b5d42cb05831b857bd67bc49176ba2391b0df2ec5060d79be9b332d45", size = 920488, upload-time = "2026-07-27T10:12:24.555Z" },
+    { url = "https://files.pythonhosted.org/packages/8e/83/e636642bf9bc94292991f3c3551462ef072beb94920879cdf926a5a8ead0/comrak-0.0.16-cp314-cp314t-musllinux_1_2_i686.whl", hash = "sha256:814ca7670771a9f17b062a4b25b7a86637ce2fc662eded75966d70850c0c644b", size = 853682, upload-time = "2026-07-27T10:12:29.313Z" },
+    { url = "https://files.pythonhosted.org/packages/85/16/5405057818bacab4a00068106136fb92663786674b166e0420f535fc3cd9/comrak-0.0.16-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:2d843c90a7ade87408fbf8b6d6a8bdd9a855b784086ecbce9d968e61d0208a32", size = 879105, upload-time = "2026-07-27T10:12:33.759Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/ff/07d345568060d2763b85715b68b045e33d4df2965b41e3d7a8743b5e0ea0/comrak-0.0.16-cp315-abi3.abi3t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:53ce74a0052810be0ceb78ed2f0c7cdb92d66c6fd6d56c007ff7f6aab80daf32", size = 622935, upload-time = "2026-07-27T10:12:12.674Z" },
+    { url = "https://files.pythonhosted.org/packages/60/6b/40fad6386d20690959f161fdc526bb99fcdf898ce8217349de7758656589/comrak-0.0.16-cp315-abi3.abi3t-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:aa3d73ce79522a14893f640be088d033e7b949c5dd959cf92b303e7e8b8dba3d", size = 646372, upload-time = "2026-07-27T10:11:49.155Z" },
+    { url = "https://files.pythonhosted.org/packages/98/fc/b784c553f00013d0a31c7a2a6c12f0367dd31ad8f36be16be30ebae1f7fc/comrak-0.0.16-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:768faa7b1912b62ea454b89c5a3e22ccbe23f10d8662c53400ee1b3b7fa5c0bc", size = 700253, upload-time = "2026-07-27T10:11:33.302Z" },
+    { url = "https://files.pythonhosted.org/packages/89/53/4c2cb44824fb6b662f4f40c947c2a57cd2474c01dc3e164777d28431602f/comrak-0.0.16-cp39-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:87e4d62ef35a2073ae97d225895028c051c7ee573405b5fe5b99709f67b97eb4", size = 656018, upload-time = "2026-07-27T10:11:37.555Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/66/b2fbf6c82033add1ccab7413416ad19c7b879f4cac3963776d6e933308e1/comrak-0.0.16-cp39-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:f61b86065916cabd8b003133b79b11cfc634bf8cf947aaa7f7972e87d2fa5ec7", size = 720218, upload-time = "2026-07-27T10:11:55.45Z" },
+    { url = "https://files.pythonhosted.org/packages/59/c5/6bc10b3bdfe270ceaa8ea6f3334a4d74f403bd0f5a0db7051d2383c24e9d/comrak-0.0.16-cp39-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:ee371ee417020dc53d7b1a57e191793710e1693605223cf9f38c0943275625cf", size = 765476, upload-time = "2026-07-27T10:11:59.851Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/42/6a34cefdb4ee6a3c90e7017c2d438304b1bd2bb0d262a412042eccb44210/comrak-0.0.16-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:0142dbc052d15b60d144999c60683e8dae2490f1cdaab5f2f08a59028b550568", size = 879396, upload-time = "2026-07-27T10:12:21.244Z" },
+    { url = "https://files.pythonhosted.org/packages/82/67/0a87eae34bfd082106eb388b7708444ac51672016167d83268d0a2ec1ce0/comrak-0.0.16-cp39-abi3-musllinux_1_2_armv7l.whl", hash = "sha256:065d31040abe7544f77a36709c75d7764255be5917eda108f1c930bf807777aa", size = 930683, upload-time = "2026-07-27T10:12:26.083Z" },
+    { url = "https://files.pythonhosted.org/packages/45/6e/f8b5dfc3f891c74ae2028f0edbf5b5bd4a9c48fe4c57db7c1cb69263aa3e/comrak-0.0.16-cp39-abi3-musllinux_1_2_i686.whl", hash = "sha256:d1a17fb510f6c82bba3daf6f24e259ceb73b3abf989b9b1d10546bfd0d1baa14", size = 859933, upload-time = "2026-07-27T10:12:30.917Z" },
+    { url = "https://files.pythonhosted.org/packages/90/69/69be44f0f986d3021a84ba363426c2f33e2b5c53e952b6acbd46ab2fdb97/comrak-0.0.16-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:187770273c74749746f7fda91313620851552fe6afd96c8601efac5e52563926", size = 885735, upload-time = "2026-07-27T10:12:35.39Z" },
+]
+
+[[package]]
 name = "coverage"
 version = "7.16.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1230,6 +1268,7 @@ version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
+    { name = "comrak" },
 ]
 
 [package.dev-dependencies]
@@ -1252,7 +1291,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "click", specifier = ">=8.5.0" }]
+requires-dist = [
+    { name = "click", specifier = ">=8.5.0" },
+    { name = "comrak", specifier = ">=0.0.16" },
+]
 
 [package.metadata.requires-dev]
 dev = [
