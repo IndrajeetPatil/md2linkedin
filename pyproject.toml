@@ -27,6 +27,7 @@ classifiers = [
 dependencies = [
     "click>=8.5.0",
     "comrak>=0.0.16",
+    "selectolax>=0.4.12",
 ]
 
 [project.scripts]

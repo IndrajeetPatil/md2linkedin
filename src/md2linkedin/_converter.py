@@ -1,34 +1,24 @@
-"""Markdown-to-LinkedIn conversion pipeline using comrak."""
-
-from __future__ import annotations
-
 import re
-from html.parser import HTMLParser
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import cast
 
 import comrak
+from selectolax.parser import HTMLParser, Node
 
-from ._unicode import to_monospace, to_sans_bold, to_sans_bold_italic, to_sans_italic
-
-if TYPE_CHECKING:
-    from typing import override
-else:
-
-    def override(x: Any) -> Any:  # ruff: ignore[any-type]
-        return x
-
-
-__all__ = ["convert", "convert_file"]
+from md2linkedin._unicode import (
+    to_monospace,
+    to_sans_bold,
+    to_sans_bold_italic,
+    to_sans_italic,
+)
 
 _ENCODING = "utf-8"
 
 
-class LinkedInHTMLParser(HTMLParser):
-    """HTML Parser that translates HTML tags to LinkedIn styled text."""
+class SelectolaxVisitor:
+    """Tree visitor that translates HTML nodes to LinkedIn styled text."""
 
     def __init__(self, *, preserve_links: bool, monospace_code: bool) -> None:
-        super().__init__()
         self.preserve_links: bool = preserve_links
         self.monospace_code: bool = monospace_code
         self.out: list[str] = []
@@ -65,9 +55,18 @@ class LinkedInHTMLParser(HTMLParser):
         else:
             self.out.append(styled)
 
-    @override
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:  # ruff: ignore[complex-structure, too-many-branches, too-many-statements]
-        attrs_dict = dict(attrs)
+    def visit(self, node: Node) -> None:  # ruff: ignore[complex-structure, too-many-branches, too-many-statements]
+        """Recursively visit the DOM tree and emit styled text."""
+        if node.tag == "-text":
+            data = node.text_content or ""
+            if data.strip():
+                self.after_li = False
+            self._emit_text(data)
+            return
+
+        tag = node.tag
+        attrs_dict = node.attributes or {}
+
         if tag in {"p", "pre", "blockquote"}:
             if self.out and not getattr(self, "after_li", False):
                 self._emit_newlines(2)
@@ -79,7 +78,6 @@ class LinkedInHTMLParser(HTMLParser):
             self.styles.append("bold")
             if tag == "h1":
                 self.styles.append("upper")
-            if tag == "h1":
                 self.out.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
         elif tag in {"strong", "b"}:
             self.styles.append("bold")
@@ -119,13 +117,15 @@ class LinkedInHTMLParser(HTMLParser):
         elif tag == "br":
             self._emit_newlines(1)
 
-    @override
-    def handle_endtag(self, tag: str) -> None:  # ruff: ignore[complex-structure, too-many-branches]
+        child = node.child
+        while child:
+            self.visit(child)
+            child = child.next
+
         if tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             self.styles.remove("bold")
             if tag == "h1":
                 self.styles.remove("upper")
-            if tag == "h1":
                 self.out.append("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             self._emit_newlines(2)
         elif tag in {"p", "pre", "blockquote"}:
@@ -142,7 +142,7 @@ class LinkedInHTMLParser(HTMLParser):
             if not self.lists:
                 self._emit_newlines(2)
         elif tag == "a":
-            self.in_link: bool = False
+            self.in_link = False
             text = "".join(self.link_text)
             if self.preserve_links:
                 if text == self.link_url:
@@ -152,12 +152,6 @@ class LinkedInHTMLParser(HTMLParser):
                     self.out.append(f"[{text}]({self.link_url}{title_part})")
             else:
                 self.out.append(text)
-
-    @override
-    def handle_data(self, data: str) -> None:
-        if data.strip():
-            self.after_li = False
-        self._emit_text(data)
 
 
 def convert(
@@ -195,13 +189,14 @@ def convert(
 
     html = comrak.render_markdown(text, extension_options=exts, render_options=opts)
 
-    parser = LinkedInHTMLParser(
+    tree = HTMLParser(html)
+    visitor = SelectolaxVisitor(
         preserve_links=preserve_links,
         monospace_code=monospace_code,
     )
-    parser.feed(html)
+    visitor.visit(cast("Node", tree.root))
 
-    out = "".join(parser.out)
+    out = "".join(visitor.out)
     return re.sub(r"\n{3,}", "\n\n", out).strip() + "\n"
 
 
