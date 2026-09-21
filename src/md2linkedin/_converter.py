@@ -5,7 +5,7 @@ from __future__ import annotations
 import html
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, override
 
 from mistletoe import Document
 from mistletoe.base_renderer import BaseRenderer
@@ -31,7 +31,6 @@ from mistletoe.span_token import (
     RawText,
     Strong,
 )
-from typing_extensions import override
 
 from ._unicode import to_monospace, to_sans_bold, to_sans_bold_italic, to_sans_italic
 
