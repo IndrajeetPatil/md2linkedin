@@ -24,6 +24,8 @@ from md2linkedin._converter import convert, convert_file
         ("- a\n  - b\n    - c", "• a\n  ‣ b\n    ◦ c\n"),
         ("1. first\n2. second", "1. first\n2. second\n"),
         ("> outer\n>> inner", "outer\ninner\n"),
+        ("> first\n>\n> second", "first\n\nsecond\n"),
+        ("> first\n>\n> ---\n>\n> second", "first\n\nsecond\n"),
         ("[name](https://example.com)", "name\n"),
         ("![logo](logo.png)", "logo\n"),
         ("[name][d]\n\n[d]: https://example.com", "name\n"),
@@ -31,12 +33,16 @@ from md2linkedin._converter import convert, convert_file
         ("    print(1)", f"{to_monospace('print(1)')}\n"),
         ("```python\nprint(1)\n```", f"{to_monospace('print(1)')}\n"),
         ("<span>hello</span>", "hello\n"),
+        ("<span>\nhello\n</span>", "hello\n"),
+        ("<span class='note'>\nhello\n</span>", "hello\n"),
         ("a <br> b", "a <br> b\n"),
         ("<div>\nhello\n</div>", "<div>\nhello\n</div>\n"),
         ("<div>\n**bold**\n</div>", "<div>\n**bold**\n</div>\n"),
         ("- ", "•\n"),
         ("~~old~~", "old\n"),
         ("a &gt; b", "a > b\n"),
+        ("AT&amp T and &copy notice", "AT&amp T and &copy notice\n"),
+        ("AT&amp; T and &copy; notice", "AT& T and © notice\n"),
         (r"\*literal\*", "*literal*\n"),
         ("some_variable_name", "some_variable_name\n"),
         ("a\n\nb", "a\n\nb\n"),
@@ -75,6 +81,19 @@ def test_plain_code_option_keeps_fences_and_literal_inline_content() -> None:
         "```python\na\n````\n"
     )
     assert convert("```python\na\n", monospace_code=False) == ("```python\na\n")
+    assert convert("- ```py\n  print(1)\n  ```", monospace_code=False) == (
+        "• ```py\nprint(1)\n```\n"
+    )
+    assert convert("> ```py\n> print(1)\n> ````", monospace_code=False) == (
+        "```py\nprint(1)\n````\n"
+    )
+    assert convert("- outer\n  - ```py\n    x\n    ```", monospace_code=False) == (
+        "• outer\n  ‣ ```py\nx\n```\n"
+    )
+    assert convert("- ```\n  a\n- next", monospace_code=False) == ("• ```\na\n• next\n")
+    assert convert("before ```py\n\n- ```py\n  x\n  ```", monospace_code=False) == (
+        "before ```py\n\n• ```py\nx\n```\n"
+    )
 
 
 def test_excessive_blank_lines_inside_code_are_collapsed_for_linkedin() -> None:
@@ -91,10 +110,17 @@ def test_links_option_preserves_link_syntax() -> None:
         "<https://example.com>\n"
     )
     assert convert("[name][d]\n\n[d]: https://example.com", preserve_links=True) == (
-        "[name][d]\n"
+        "[name](https://example.com)\n"
     )
-    assert convert("[name][]\n\n[name]: /page", preserve_links=True) == ("[name][]\n")
-    assert convert("[name]\n\n[name]: /page", preserve_links=True) == ("[name]\n")
+    assert convert("[name][]\n\n[name]: /page", preserve_links=True) == (
+        "[name](/page)\n"
+    )
+    assert convert("[name]\n\n[name]: /page", preserve_links=True) == (
+        "[name](/page)\n"
+    )
+    assert convert("[name][d]\n\n[d]: /page 'title'", preserve_links=True) == (
+        '[name](/page "title")\n'
+    )
     assert convert("[name](url 'title')", preserve_links=True) == (
         "[name](url 'title')\n"
     )
@@ -132,6 +158,15 @@ def test_loose_nested_lists_preserve_blank_lines() -> None:
     assert convert("- role\n\n  - task\n\n    - project\n\n  - next\n\n- other") == (
         "• role\n\n  ‣ task\n\n    ◦ project\n\n  ‣ next\n\n• other\n"
     )
+
+
+def test_list_item_continuations_keep_their_hierarchy() -> None:
+    assert convert("- first\n\n  second") == "• first\n\n  second\n"
+    assert convert("- outer\n  - first\n\n    second") == (
+        "• outer\n  ‣ first\n\n    second\n"
+    )
+    assert convert("-\n  - child") == "•\n  ‣ child\n"
+    assert convert("10. first\n\n    second") == "10. first\n\n    second\n"
 
 
 def test_terminal_hard_break_ignores_newline_from_html_entity() -> None:

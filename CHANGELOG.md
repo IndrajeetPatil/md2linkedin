@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   list items. Some edge-case output changes as a result.
 - Keep the public `convert()` and `convert_file()` options, Unicode styles,
   CLI behavior, and two-space nested-list indentation.
+- Preserve paragraph breaks inside quotes and indent later blocks within list
+  items. Keep empty parent items and their nested lists on separate lines.
+- Resolve reference links to inline links when preserving URLs. Strip list and
+  quote prefixes from preserved code fences and unwrap multiline HTML spans.
+- Decode only complete Markdown entity references so semicolonless text stays
+  literal.
 
 ## [0.4.0] — 2026-09-20
 

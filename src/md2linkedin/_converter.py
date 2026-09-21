@@ -24,7 +24,6 @@ from mistletoe.block_token import (
 from mistletoe.span_token import (
     AutoLink,
     Emphasis,
-    HtmlSpan,
     InlineCode,
     LineBreak,
     Link,
@@ -46,6 +45,9 @@ _HARD_BREAK_SPACES = 2
 _BOLD = 1
 _ITALIC = 2
 _BOLD_ITALIC = _BOLD | _ITALIC
+_ENTITY = re.compile(r"&(?:#[0-9]+|#[xX][0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]+);")
+_SPAN_TAG = re.compile(r"</?span(?:\s[^<>]*?)?\s*/?>", re.IGNORECASE)
+_FENCE_SOURCE_PREFIX = re.compile(r"(?:\s*(?:>|[-+*]|\d+[.)])\s*)*\s*")
 
 
 def _count_line_breaks(token: Token) -> int:
@@ -57,7 +59,7 @@ def _count_line_breaks(token: Token) -> int:
 
 
 # mistletoe dispatches through public render_* methods, one per token type.
-class _LinkedInRenderer(BaseRenderer):  # ruff: ignore[too-many-public-methods]
+class _LinkedInRenderer(BaseRenderer):
     """Turn syntax tree nodes into plain text while tracking inline and list context."""
 
     def __init__(
@@ -67,8 +69,9 @@ class _LinkedInRenderer(BaseRenderer):  # ruff: ignore[too-many-public-methods]
         preserve_links: bool,
         monospace_code: bool,
     ) -> None:
-        super().__init__(HtmlBlock, HtmlSpan)
-        self._source_lines = source.splitlines(keepends=True)
+        super().__init__(HtmlBlock)
+        self._source_lines = source.splitlines()
+        self._fence_cursor = 0
         self.preserve_links = preserve_links
         self.monospace_code = monospace_code
         self._style = 0
@@ -104,7 +107,8 @@ class _LinkedInRenderer(BaseRenderer):  # ruff: ignore[too-many-public-methods]
     @override
     def render_raw_text(self, token: RawText) -> str:
         """Decode entities and apply the active Unicode text style."""
-        content = html.unescape(str(token.content))
+        content = _SPAN_TAG.sub("", str(token.content))
+        content = _ENTITY.sub(lambda match: html.unescape(match.group()), content)
         if self._heading_level == 1:
             content = content.upper()
         style = self._style or (_BOLD if self._heading_level else 0)
@@ -147,12 +151,6 @@ class _LinkedInRenderer(BaseRenderer):  # ruff: ignore[too-many-public-methods]
         label = self.render_inner(token)
         if not self.preserve_links:
             return label
-        if token.label is not None:
-            return f"[{label}][{token.label}]"
-        if token.dest_type == "collapsed":
-            return f"[{label}][]"
-        if token.dest_type == "shortcut":
-            return f"[{label}]"
         delimiter = token.title_delimiter or '"'
         closing = ")" if delimiter == "(" else delimiter
         title = f" {delimiter}{token.title}{closing}" if token.title else ""
@@ -183,10 +181,15 @@ class _LinkedInRenderer(BaseRenderer):  # ruff: ignore[too-many-public-methods]
 
     @override
     def render_quote(self, token: Quote) -> str:
-        """Render every nested quote level without its source prefix."""
-        return "\n".join(
-            filter(None, (self.render(child) for child in token.children or ())),
-        )
+        """Remove quote prefixes while retaining paragraph boundaries."""
+        parts: list[str] = []
+        for child in token.children or ():
+            rendered = self.render(child)
+            if rendered:
+                if parts:
+                    parts.append("\n\n" if isinstance(child, Paragraph) else "\n")
+                parts.append(rendered)
+        return "".join(parts)
 
     @override
     def render_block_code(self, token: BlockCode | CodeFence) -> str:
@@ -194,11 +197,31 @@ class _LinkedInRenderer(BaseRenderer):  # ruff: ignore[too-many-public-methods]
         if self.monospace_code:
             return to_monospace(token.content).rstrip("\n")
         if isinstance(token, CodeFence):
-            # The AST does not retain the exact closing delimiter or whether
-            # the fence was left open, so use its source lines for plain code.
-            start = cast("int", vars(token)["line_number"]) - 1
-            end = start + token.content.count("\n") + 2
-            return "".join(self._source_lines[start:end]).rstrip("\n")
+            # The AST strips enclosing list/quote prefixes and retains the
+            # opening fence, but not the exact closing fence or open status.
+            opening = f"{' ' * token.indentation}{token.delimiter}{token.info_string}"
+            suffix = f"{token.delimiter}{token.info_string}"
+            index = next(
+                index
+                for index in range(self._fence_cursor, len(self._source_lines))
+                if (line := self._source_lines[index].rstrip("\n")).endswith(suffix)
+                and _FENCE_SOURCE_PREFIX.fullmatch(line[: -len(suffix)])
+            )
+            closing_index = index + token.content.count("\n") + 1
+            self._fence_cursor = closing_index + 1
+            closing = ""
+            if closing_index < len(self._source_lines):
+                candidate = self._source_lines[closing_index].rstrip("\n")
+                match = re.search(r"([`~]+)\s*$", candidate)
+                if (
+                    match
+                    and match.group(1)[0] == token.delimiter[0]
+                    and len(match.group(1)) >= len(token.delimiter)
+                ):
+                    closing = match.group(1)
+            return "\n".join(
+                part for part in (opening, token.content.rstrip("\n"), closing) if part
+            )
         return str(token.content).rstrip("\n")
 
     @override
@@ -224,13 +247,23 @@ class _LinkedInRenderer(BaseRenderer):  # ruff: ignore[too-many-public-methods]
         if not token.children:
             return prefix
         first, *rest = token.children
-        result = f"{prefix} {self.render(first)}"
+        first_rendered = self.render(first)
+        result = (
+            f"{prefix}\n{first_rendered}"
+            if isinstance(first, List)
+            else f"{prefix} {first_rendered}"
+        )
         for child in rest:
             rendered = self.render(child)
             if rendered:
                 separator = (
                     "\n\n" if token.loose or isinstance(child, Paragraph) else "\n"
                 )
+                if not isinstance(child, List):
+                    rendered = "\n".join(
+                        f"{' ' * (len(prefix) + 1)}{line}" if line else line
+                        for line in rendered.split("\n")
+                    )
                 result += separator + rendered
         return result
 
@@ -258,17 +291,9 @@ class _LinkedInRenderer(BaseRenderer):  # ruff: ignore[too-many-public-methods]
         return ""
 
     @staticmethod
-    def render_html_span(token: HtmlSpan) -> str:
-        """Unwrap HTML spans while leaving other inline HTML unchanged."""
-        content = token.content
-        if content.lower().startswith(("<span", "</span")):
-            return ""
-        return str(content)
-
-    @staticmethod
     def render_html_block(token: HtmlBlock) -> str:
-        """Retain HTML blocks as literal text."""
-        return str(token.content)
+        """Retain HTML blocks while unwrapping span tags."""
+        return _SPAN_TAG.sub("", str(token.content))
 
 
 def convert(

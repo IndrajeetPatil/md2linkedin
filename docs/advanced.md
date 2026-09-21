@@ -44,6 +44,10 @@ result = convert("[GitHub](https://github.com)", preserve_links=True)
 result = convert_file("post.md", preserve_links=True)
 ```
 
+Reference links are rendered with their resolved destination, so
+`[GitHub][site]` and `[site]: https://github.com` become
+`[GitHub](https://github.com)` instead of losing the URL.
+
 ### Direct Unicode Mapping
 
 The Unicode mapping functions are public and useful for applying a specific
