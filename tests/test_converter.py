@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 import re
-import unicodedata
 from pathlib import Path
 
 import pytest
 
-from md2linkedin import to_monospace, to_sans_bold, to_sans_italic
 from md2linkedin._converter import convert, convert_file
 
-class TestConvert:
 
-    def test_bold_italic(self) -> None:
+class TestConvert:
+    def test_br_hard_break(self) -> None:
+        result = convert("Line 1  \nLine 2")
+        assert "Line 1\nLine 2" in result
+
+    def test_bold_italic_unicode(self) -> None:
         assert "***bold italic***" not in convert("***bold italic***")
         assert "𝙗𝙤𝙡𝙙" in convert("***bold italic***")
 
@@ -38,6 +40,7 @@ class TestConvert:
     def test_preserve_autolink(self) -> None:
         res = convert("<https://example.com>", preserve_links=True)
         assert "<https://example.com>" in res
+
     def test_empty_string(self) -> None:
         assert not convert("")
 

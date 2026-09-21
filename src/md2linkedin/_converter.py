@@ -66,7 +66,7 @@ class LinkedInHTMLParser(HTMLParser):
             self.out.append(styled)
 
     @override
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:  # ruff: ignore[complex-structure, too-many-branches]
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:  # ruff: ignore[complex-structure, too-many-branches, too-many-statements]
         attrs_dict = dict(attrs)
         if tag in {"p", "pre", "blockquote"}:
             if self.out and not getattr(self, "after_li", False):
@@ -83,8 +83,6 @@ class LinkedInHTMLParser(HTMLParser):
                 self.out.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
         elif tag in {"strong", "b"}:
             self.styles.append("bold")
-            if tag == "h1":
-                self.styles.append("upper")
         elif tag in {"em", "i"}:
             self.styles.append("italic")
         elif tag == "code":
@@ -124,8 +122,7 @@ class LinkedInHTMLParser(HTMLParser):
     @override
     def handle_endtag(self, tag: str) -> None:  # ruff: ignore[complex-structure, too-many-branches]
         if tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
-            if "bold" in self.styles:
-                self.styles.remove("bold")
+            self.styles.remove("bold")
             if tag == "h1":
                 self.styles.remove("upper")
             if tag == "h1":
@@ -134,19 +131,14 @@ class LinkedInHTMLParser(HTMLParser):
         elif tag in {"p", "pre", "blockquote"}:
             self._emit_newlines(2)
         elif tag in {"strong", "b"}:
-            if "bold" in self.styles:
-                self.styles.remove("bold")
-            if tag == "h1":
-                self.styles.remove("upper")
+            self.styles.remove("bold")
         elif tag in {"em", "i"}:
-            if "italic" in self.styles:
-                self.styles.remove("italic")
+            self.styles.remove("italic")
         elif tag == "code":
-            if "monospace" in self.styles:
+            if self.monospace_code:
                 self.styles.remove("monospace")
         elif tag in {"ul", "ol"}:
-            if self.lists:
-                self.lists.pop()
+            self.lists.pop()
             if not self.lists:
                 self._emit_newlines(2)
         elif tag == "a":
