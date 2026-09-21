@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Requires Python 3.12 or newer; support for Python 3.10 and 3.11 is discontinued.
+- Drop the ad-hoc regular expression parser in favor of `mistletoe`, a pure
+  Python CommonMark parser. This makes the conversion much more robust and
+  removes previous limitations.
+- Code blocks are now rendered cleanly without leaking internal placeholders.
+- Tables are passed through as plain text, as LinkedIn has no table support,
+  but their contents are now extracted rather than mangled.
+- Links and images are now parsed properly even if they contain balanced
+  brackets or parentheses.
+- Raw HTML is ignored rather than left in the text, ensuring a clean,
+  readable pasting into LinkedIn.
+- Honor CommonMark context for list markers and nesting, indented code,
+  nested blockquotes, reference definitions, and thematic breaks within
+  list items. Some edge-case output changes as a result.
+- Keep the public `convert()` and `convert_file()` options, Unicode styles,
+  CLI behavior, and two-space nested-list indentation.
 
 ## [0.4.0] — 2026-09-20
 

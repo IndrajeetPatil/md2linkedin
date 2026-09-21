@@ -97,6 +97,8 @@ md2linkedin post.md --no-monospace-code
 - **Links**: stripped to display text by default; `--preserve-links`
   retains URLs
 - **Images**: replaced by alt text
+- **Tables**: rows rendered as labelled values, so columns remain
+  readable in plain text
 - **Bullet lists**: `-`/`*`/`+` → `•`; nested items get one marker per
   level (`‣`, `◦`, `▪`)
 - **Blockquotes**: leading `>` stripped
@@ -117,9 +119,8 @@ notable limitations:
   fixed-width alignment on proportional fonts (like LinkedIn’s default
   font). As a result, indentation and column alignment in code blocks
   will often break visually.
-- **Tables**: Markdown tables are not converted — they pass through as
-  raw pipe syntax (`| col | col |`), which LinkedIn does not render,
-  producing unreadable output.
+- **Tables**: Rows are rendered as labelled values rather than aligned
+  columns, since LinkedIn uses proportional fonts.
 - **Accessibility**: Screen readers often read Unicode mathematical
   characters aloud individually (e.g., “mathematical sans-serif bold b”)
   instead of as complete words, making the content difficult for
@@ -127,14 +128,6 @@ notable limitations:
 - **Searchability**: Text styled with these Unicode characters may not
   be indexed properly by LinkedIn’s search algorithm, meaning people
   searching for your keywords might not find your post.
-- **Markdown parsing**: The converter is a pipeline of regular
-  expressions, not a CommonMark parser. Ordinary posts convert
-  faithfully, but constructs whose meaning depends on their surroundings
-  — indented code blocks, nested blockquotes, link reference
-  definitions, a thematic break indented inside a list item — are read
-  more loosely than a real parser would read them. See [Markdown parsing
-  fidelity](https://www.indrapatil.com/md2linkedin/advanced/#markdown-parsing-fidelity)
-  for the specifics.
 
 For more examples, check out the package documentation at:
 <https://www.indrapatil.com/md2linkedin/>
