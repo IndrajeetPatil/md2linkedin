@@ -38,6 +38,7 @@ class LinkedInHTMLParser(HTMLParser):
         self.link_text: list[str] = []
         self.link_url: str = ""
         self.link_title: str = ""
+        self.after_li: bool = False
 
     def _emit_newlines(self, n: int) -> None:
         text = "".join(self.out)
@@ -68,11 +69,13 @@ class LinkedInHTMLParser(HTMLParser):
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:  # ruff: ignore[complex-structure, too-many-branches]
         attrs_dict = dict(attrs)
         if tag in {"p", "pre", "blockquote"}:
-            if self.out:
+            if self.out and not getattr(self, "after_li", False):
                 self._emit_newlines(2)
+            self.after_li = False
         elif tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
-            if self.out:
+            if self.out and not getattr(self, "after_li", False):
                 self._emit_newlines(2)
+            self.after_li = False
             self.styles.append("bold")
             if tag == "h1":
                 self.styles.append("upper")
@@ -90,8 +93,9 @@ class LinkedInHTMLParser(HTMLParser):
         elif tag in {"ul", "ol"}:
             if self.lists:
                 self._emit_newlines(1)
-            elif self.out:
+            elif self.out and not getattr(self, "after_li", False):
                 self._emit_newlines(2)
+            self.after_li = False
             start = int(attrs_dict.get("start") or 1)
             self.lists.append({"type": tag, "count": start})
         elif tag == "li":
@@ -105,6 +109,7 @@ class LinkedInHTMLParser(HTMLParser):
                 marker = f"{list_info['count']}. "
                 list_info["count"] = int(list_info["count"]) + 1
             self.out.append(indent + marker)
+            self.after_li = True
         elif tag == "a":
             self.in_link = True
             self.link_url = attrs_dict.get("href", "") or ""
@@ -158,6 +163,8 @@ class LinkedInHTMLParser(HTMLParser):
 
     @override
     def handle_data(self, data: str) -> None:
+        if data.strip():
+            self.after_li = False
         self._emit_text(data)
 
 
