@@ -175,9 +175,15 @@ mutate_only_covered_lines = true
 # UTF-8 argument is passed explicitly, so surviving mutants would show up
 # as real test failures rather than being silently skipped.
 do_not_mutate_patterns = [
-    'closing_fence = rest\.rfind\(fence\)',
-    'pos = 0',
-    'previous_start = text\.rfind',
+    'self\.link_text: list\[str\] = \[\]',
+    'if trailing < n:',
+    'self\.out\.append',
+    're\.sub',
+    'self\.in_link: bool = False',
+    'self\.link_url: str = ""',
+    'self\.link_title: str = ""',
+    'self\.after_li: bool = False',
+    'text = ""\.join\(self\.out\)',
 ]
 
 [tool.ty.src]

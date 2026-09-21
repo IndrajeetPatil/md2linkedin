@@ -11,6 +11,34 @@ from md2linkedin._converter import convert, convert_file
 
 
 class TestConvert:
+    def test_unsafe_html_br(self) -> None:
+        result = convert("line1<br>line2")
+        assert "line1\nline2" in result
+
+    def test_unsafe_html(self) -> None:
+        result = convert('**<span style="color: black">Dr. Indrajeet Patil</span>**')
+        assert "span" not in result
+        assert "𝗗𝗿. 𝗜𝗻𝗱𝗿𝗮𝗷𝗲𝗲𝘁 𝗣𝗮𝘁𝗶𝗹" in result
+
+    def test_strikethrough(self) -> None:
+        result = convert("~~strike~~")
+        assert "strike" in result
+        assert "~~" not in result
+
+    def test_table(self) -> None:
+        result = convert("| col |\n|---|\n| cell |")
+        assert "cell" in result
+        assert "|" not in result
+
+    def test_autolink_ext(self) -> None:
+        result = convert("https://google.com", preserve_links=True)
+        assert "<" in result
+        assert ">" in result
+
+    def test_excessive_newlines(self) -> None:
+        result = convert("a\n\n\n\n\n\n\nb")
+        assert result == "a\n\nb\n"
+
     def test_br_hard_break(self) -> None:
         result = convert("Line 1  \nLine 2")
         assert "Line 1\nLine 2" in result
@@ -49,11 +77,13 @@ class TestConvert:
 
     def test_bold(self) -> None:
         result = convert("**hello**")
+        assert "𝗵𝗲𝗹𝗹𝗼" in result
         assert "**" not in result
         assert result.endswith("\n")
 
     def test_italic(self) -> None:
         result = convert("*hello*")
+        assert "𝘩𝘦𝘭𝘭𝘰" in result
         assert "*" not in result
 
     def test_bold_italic(self) -> None:
