@@ -55,7 +55,7 @@ test-coverage:
 # Benchmarking uses the candidate environment for both source revisions.
 BENCHMARK_SOURCE ?= $(CURDIR)/src
 BENCHMARK_OUTPUT ?= $(CURDIR)/.codspeed/local
-BENCHMARK_THRESHOLD ?= 1500
+BENCHMARK_THRESHOLD ?= 5
 
 benchmark:
 	PYTHONPATH="$(BENCHMARK_SOURCE)" uv run --no-sync python -c 'import md2linkedin; from pathlib import Path; print("Benchmark source:", md2linkedin.__file__); assert Path(md2linkedin.__file__).resolve().parent == Path("$(BENCHMARK_SOURCE)").resolve() / "md2linkedin"'

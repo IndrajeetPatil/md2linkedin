@@ -92,14 +92,19 @@ md2linkedin post.md --no-monospace-code
   border
 - **Code spans**: backticks stripped, content rendered in Unicode
   Monospace (𝚌𝚘𝚍𝚎) by default; `--no-monospace-code` keeps plain text
-- **Fenced code blocks**: fences stripped and content rendered in
-  Unicode Monospace by default; `--no-monospace-code` preserves verbatim
+- **Fenced and indented code blocks**: fences and indent stripped,
+  content rendered in Unicode Monospace by default;
+  `--no-monospace-code` keeps plain text
 - **Links**: stripped to display text by default; `--preserve-links`
   retains URLs
 - **Images**: replaced by alt text
 - **Bullet lists**: `-`/`*`/`+` → `•`; nested items get one marker per
   level (`‣`, `◦`, `▪`)
-- **Blockquotes**: leading `>` stripped
+- **Ordered lists**: numbers kept verbatim, counting on from wherever
+  the list starts
+- **Tables**: header row in bold, cells joined by `|`
+- **Strikethrough**: `~~text~~` → `text`, markers dropped
+- **Blockquotes**: leading `>` stripped at every level of nesting
 - **HTML spans**: unwrapped, inner text preserved
 - **HTML entities**: decoded (`&amp;` → `&`, etc.)
 - **Backslash escapes**: resolved (`\*` → `*`)
@@ -117,9 +122,10 @@ notable limitations:
   fixed-width alignment on proportional fonts (like LinkedIn’s default
   font). As a result, indentation and column alignment in code blocks
   will often break visually.
-- **Tables**: Markdown tables are not converted — they pass through as
-  raw pipe syntax (`| col | col |`), which LinkedIn does not render,
-  producing unreadable output.
+- **Tables**: Markdown tables are flattened to one line per row, with a
+  bold header and cells joined by `|`. Nothing keeps the columns aligned
+  on LinkedIn’s proportional font, so wide tables are better rewritten
+  as lists.
 - **Accessibility**: Screen readers often read Unicode mathematical
   characters aloud individually (e.g., “mathematical sans-serif bold b”)
   instead of as complete words, making the content difficult for
@@ -127,14 +133,13 @@ notable limitations:
 - **Searchability**: Text styled with these Unicode characters may not
   be indexed properly by LinkedIn’s search algorithm, meaning people
   searching for your keywords might not find your post.
-- **Markdown parsing**: The converter is a pipeline of regular
-  expressions, not a CommonMark parser. Ordinary posts convert
-  faithfully, but constructs whose meaning depends on their surroundings
-  — indented code blocks, nested blockquotes, link reference
-  definitions, a thematic break indented inside a list item — are read
-  more loosely than a real parser would read them. See [Markdown parsing
-  fidelity](https://www.indrapatil.com/md2linkedin/advanced/#markdown-parsing-fidelity)
-  for the specifics.
+- **Markdown extensions**: The converter reads CommonMark, plus tables,
+  strikethrough and autolinks. Task-list checkboxes and footnotes are
+  not enabled, because LinkedIn has nowhere to put them: `- [ ] todo`
+  keeps its literal `[ ]`, and `text[^1]` becomes `text^1`. See [What
+  Gets
+  Transformed](https://www.indrapatil.com/md2linkedin/advanced/#what-gets-transformed-and-what-doesnt)
+  for the full list.
 
 For more examples, check out the package documentation at:
 <https://www.indrapatil.com/md2linkedin/>

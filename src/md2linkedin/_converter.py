@@ -1,6 +1,6 @@
 import re
+from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
 
 import comrak
 from selectolax.parser import HTMLParser, Node
@@ -14,32 +14,146 @@ from md2linkedin._unicode import (
 
 _ENCODING = "utf-8"
 
+# selectolax spells a text node's tag this way.
+_TEXT_TAG = "-text"
 
-class SelectolaxVisitor:
-    """Tree visitor that translates HTML nodes to LinkedIn styled text."""
+_HEADING_TAGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
+# Tags that render as their own paragraph, separated by a blank line.
+_BLOCK_TAGS = frozenset({"p", "pre", "blockquote", "table"})
+# Tags that only switch a style on for the text they wrap.
+_STYLE_TAGS = {"strong": "bold", "b": "bold", "em": "italic", "i": "italic"}
+_LIST_TAGS = frozenset({"ul", "ol"})
+_CELL_TAGS = frozenset({"th", "td"})
+# Tags whose children are rows and cells rather than prose, so the whitespace
+# between them is layout rather than content.
+_TABLE_TAGS = frozenset({"table", "thead", "tbody", "tfoot", "tr"})
+# Raw HTML whose content is meant for the browser, not for the reader.
+_SKIPPED_TAGS = frozenset({"script", "style"})
+
+_BULLETS = ("•", "‣", "◦", "▪")
+_HEADING_RULE = "━" * 40
+_CELL_SEPARATOR = " | "
+_TRAILING_SPACE = re.compile(r"[ \t]+(?=\n)")
+
+
+@dataclass
+class _Link:
+    """An open ``<a>`` element and the styled text collected inside it."""
+
+    url: str
+    title: str
+    text: list[str]
+
+
+@dataclass
+class _ListLevel:
+    """An open ``<ul>``/``<ol>`` element and the next number to hand out."""
+
+    ordered: bool
+    number: int
+
+
+def _list_start(node: Node) -> int:
+    """Read the first number of an ordered list, defaulting to one."""
+    start = node.attributes.get("start")
+    if start is None:
+        return 1
+    try:
+        return int(start)
+    except ValueError:
+        # Empty or not a number: raw HTML can spell it any way it likes.
+        return 1
+
+
+def _leads_a_list_item(node: Node) -> bool:
+    """Report whether the node is the first block inside a list item."""
+    parent = node.parent
+    return parent is not None and parent.tag == "li" and node.prev is None
+
+
+def _follows_a_cell(node: Node) -> bool:
+    """Report whether another cell precedes the node in its row."""
+    sibling = node.prev
+    while sibling is not None:
+        if sibling.tag in _CELL_TAGS:
+            return True
+        sibling = sibling.prev
+    return False
+
+
+class Renderer:
+    """Renders a parsed HTML tree as LinkedIn-ready styled plain text."""
 
     def __init__(self, *, preserve_links: bool, monospace_code: bool) -> None:
         self.preserve_links: bool = preserve_links
         self.monospace_code: bool = monospace_code
         self.out: list[str] = []
+        # Newlines at the end of ``out``, tracked so that block separation
+        # does not have to re-join everything rendered so far.
+        self.trailing: int = 0
         self.styles: list[str] = []
-        self.lists: list[dict[str, int | str]] = []
-        self.in_link: bool = False
-        self.link_text: list[str] = []
-        self.link_url: str = ""
-        self.link_title: str = ""
-        self.after_li: bool = False
+        self.lists: list[_ListLevel] = []
+        self.links: list[_Link] = []
 
-    def _emit_newlines(self, n: int) -> None:
-        text = "".join(self.out)
-        trailing = len(text) - len(text.rstrip("\n"))
-        if trailing < n:
-            self.out.append("\n" * (n - trailing))
+    def render(self, root: Node | None) -> str:
+        """Render the tree under ``root`` and return the text."""
+        if root is not None:
+            self.visit(root)
+        return "".join(self.out)
+
+    def visit(self, node: Node) -> None:
+        """Recursively render a node and its children."""
+        tag = node.tag
+        if tag == _TEXT_TAG:
+            self._visit_text(node)
+            return
+        if tag in _SKIPPED_TAGS:
+            return
+        if tag == "li":
+            # An item renders its own children, because everything it holds
+            # has to line up under the marker.
+            self._visit_item(node)
+            return
+
+        self._enter(node)
+        self._visit_children(node)
+        self._exit(tag)
+
+    def _visit_children(self, node: Node) -> None:
+        child = node.child
+        while child is not None:
+            self.visit(child)
+            child = child.next
+
+    # ── output ────────────────────────────────────────────────────────────────
+
+    def _append(self, text: str) -> None:
+        """Write rendered text, keeping the trailing-newline count in step."""
+        if not text:
+            return
+        self.out.append(text)
+        self.trailing = len(text) - len(text.rstrip("\n"))
+
+    def _write(self, text: str) -> None:
+        """Write styled text to the innermost open link, or to the output."""
+        if self.links:
+            self.links[-1].text.append(text)
+        else:
+            self._append(text)
+
+    def _emit_newlines(self, count: int) -> None:
+        """Pad the output so that it ends in at least ``count`` newlines."""
+        padding = "\n" * (count - self.trailing)
+        if padding:
+            self.out.append(padding)
+            self.trailing = count
 
     def _emit_text(self, text: str) -> None:
+        """Write text with the styles of the enclosing tags applied."""
         styled = text
         if "upper" in self.styles:
             styled = styled.upper()
+
         if "bold" in self.styles and "italic" in self.styles:
             styled = to_sans_bold_italic(styled)
         elif "bold" in self.styles:
@@ -50,108 +164,176 @@ class SelectolaxVisitor:
         if "monospace" in self.styles:
             styled = to_monospace(styled)
 
-        if self.in_link:
-            self.link_text.append(styled)
-        else:
-            self.out.append(styled)
+        self._write(styled)
 
-    def visit(self, node: Node) -> None:  # ruff: ignore[complex-structure, too-many-branches, too-many-statements]
-        """Recursively visit the DOM tree and emit styled text."""
-        if node.tag == "-text":
-            data = node.text_content or ""
-            if data.strip():
-                self.after_li = False
-            self._emit_text(data)
+    # ── tags ──────────────────────────────────────────────────────────────────
+
+    def _visit_text(self, node: Node) -> None:
+        # ``text()`` rather than ``text_content``: a text node always has text,
+        # and this spelling says so without an unreachable fallback.
+        data = node.text()
+        parent = node.parent
+        if parent is not None and parent.tag in _TABLE_TAGS and not data.strip():
             return
+        self._emit_text(data)
 
+    def _enter(self, node: Node) -> None:
         tag = node.tag
-        attrs_dict = node.attributes or {}
+        if tag in _BLOCK_TAGS:
+            self._start_block(node)
+        elif tag in _HEADING_TAGS:
+            self._start_heading(node, tag)
+        elif tag in _LIST_TAGS:
+            self._start_list(node, tag)
+        elif tag in _CELL_TAGS:
+            self._start_cell(node, tag)
+        elif tag == "tr":
+            self._emit_newlines(1)
+        else:
+            self._enter_inline(node, tag)
 
-        if tag in {"p", "pre", "blockquote"}:
-            if self.out and not getattr(self, "after_li", False):
-                self._emit_newlines(2)
-            self.after_li = False
-        elif tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
-            if self.out and not getattr(self, "after_li", False):
-                self._emit_newlines(2)
-            self.after_li = False
-            self.styles.append("bold")
-            if tag == "h1":
-                self.styles.append("upper")
-                self.out.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
-        elif tag in {"strong", "b"}:
-            self.styles.append("bold")
-        elif tag in {"em", "i"}:
-            self.styles.append("italic")
+    def _enter_inline(self, node: Node, tag: str) -> None:
+        style = _STYLE_TAGS.get(tag)
+        if style is not None:
+            self.styles.append(style)
         elif tag == "code":
             if self.monospace_code:
                 self.styles.append("monospace")
-        elif tag in {"ul", "ol"}:
-            if self.lists:
-                self._emit_newlines(1)
-            elif self.out and not getattr(self, "after_li", False):
-                self._emit_newlines(2)
-            self.after_li = False
-            start = int(attrs_dict.get("start") or 1)
-            self.lists.append({"type": tag, "count": start})
-        elif tag == "li":
-            self._emit_newlines(1)
-            depth = len(self.lists) - 1
-            indent = "  " * depth
-            list_info = self.lists[-1]
-            if list_info["type"] == "ul":
-                marker = ["•", "‣", "◦", "▪"][min(depth, 3)] + " "
-            else:
-                marker = f"{list_info['count']}. "
-                list_info["count"] = int(list_info["count"]) + 1
-            self.out.append(indent + marker)
-            self.after_li = True
         elif tag == "a":
-            self.in_link = True
-            self.link_url = attrs_dict.get("href", "") or ""
-            self.link_title = attrs_dict.get("title", "") or ""
-            self.link_text = []
+            self._start_link(node)
         elif tag == "img":
-            alt = attrs_dict.get("alt", "") or ""
-            self._emit_text(alt)
+            self._emit_text(node.attributes.get("alt") or "")
         elif tag == "br":
             self._emit_newlines(1)
 
-        child = node.child
-        while child:
-            self.visit(child)
-            child = child.next
+    def _exit(self, tag: str) -> None:
+        if tag in _BLOCK_TAGS:
+            self._emit_newlines(2)
+        elif tag in _HEADING_TAGS:
+            self._end_heading(tag)
+        elif tag in _LIST_TAGS:
+            self._end_list()
+        elif tag == "th":
+            # ``_start_cell`` turns a header cell bold; nothing else in a
+            # table changes the style stack.
+            self.styles.remove("bold")
+        else:
+            self._exit_inline(tag)
 
-        if tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
-            self.styles.remove("bold")
-            if tag == "h1":
-                self.styles.remove("upper")
-                self.out.append("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            self._emit_newlines(2)
-        elif tag in {"p", "pre", "blockquote"}:
-            self._emit_newlines(2)
-        elif tag in {"strong", "b"}:
-            self.styles.remove("bold")
-        elif tag in {"em", "i"}:
-            self.styles.remove("italic")
+    def _exit_inline(self, tag: str) -> None:
+        style = _STYLE_TAGS.get(tag)
+        if style is not None:
+            self.styles.remove(style)
         elif tag == "code":
             if self.monospace_code:
                 self.styles.remove("monospace")
-        elif tag in {"ul", "ol"}:
-            self.lists.pop()
-            if not self.lists:
-                self._emit_newlines(2)
         elif tag == "a":
-            self.in_link = False
-            text = "".join(self.link_text)
-            if self.preserve_links:
-                if text == self.link_url:
-                    self.out.append(f"<{text}>")
-                else:
-                    title_part = f' "{self.link_title}"' if self.link_title else ""
-                    self.out.append(f"[{text}]({self.link_url}{title_part})")
-            else:
-                self.out.append(text)
+            self._end_link()
+
+    def _start_block(self, node: Node) -> None:
+        # The first block of a list item continues the line the marker opened;
+        # every other block starts after a blank line. Leading newlines are
+        # stripped from the finished document, so the first block is not a
+        # special case here.
+        if not _leads_a_list_item(node):
+            self._emit_newlines(2)
+
+    def _start_heading(self, node: Node, tag: str) -> None:
+        self._start_block(node)
+        self.styles.append("bold")
+        if tag == "h1":
+            self.styles.append("upper")
+            self._append(_HEADING_RULE)
+            self._emit_newlines(1)
+
+    def _end_heading(self, tag: str) -> None:
+        self.styles.remove("bold")
+        if tag == "h1":
+            self.styles.remove("upper")
+            self._emit_newlines(1)
+            self._append(_HEADING_RULE)
+        self._emit_newlines(2)
+
+    def _start_list(self, node: Node, tag: str) -> None:
+        # A nested list carries on the line its parent item started, so it
+        # only needs a line break rather than a blank line.
+        if self.lists:
+            self._emit_newlines(1)
+        else:
+            self._start_block(node)
+        self.lists.append(_ListLevel(ordered=tag == "ol", number=_list_start(node)))
+
+    def _end_list(self) -> None:
+        self.lists.pop()
+        if not self.lists:
+            self._emit_newlines(2)
+
+    def _visit_item(self, node: Node) -> None:
+        self._emit_newlines(1)
+        marker = self._item_marker()
+        body, gap = self._render_apart(node)
+        # Everything after the first line of an item is indented to the
+        # column the marker opened, so nested lists, continuation paragraphs
+        # and wrapped lines all sit inside the item.
+        self._append(marker + body.replace("\n", "\n" + " " * len(marker)))
+        # A loose item ends in a blank line, which separates it from the next.
+        self._emit_newlines(gap)
+
+    def _item_marker(self) -> str:
+        if not self.lists:
+            # A stray ``<li>`` in raw HTML is not an item of anything, so it
+            # gets a line of its own and no marker.
+            return ""
+        level = self.lists[-1]
+        if level.ordered:
+            # The numbers already convey the order, so they are kept verbatim.
+            marker = f"{level.number}. "
+            level.number += 1
+            return marker
+        depth = len(self.lists) - 1
+        return _BULLETS[min(depth, len(_BULLETS) - 1)] + " "
+
+    def _render_apart(self, node: Node) -> tuple[str, int]:
+        """Render the children of a node on their own, away from the output.
+
+        Returns the rendered text and the number of newlines it ends in.
+        """
+        held_out, held_trailing = self.out, self.trailing
+        self.out = []
+        self.trailing = 0
+        self._visit_children(node)
+        rendered = "".join(self.out)
+        self.out, self.trailing = held_out, held_trailing
+        body = rendered.rstrip("\n")
+        return body, len(rendered) - len(body)
+
+    def _start_cell(self, node: Node, tag: str) -> None:
+        if _follows_a_cell(node):
+            self._append(_CELL_SEPARATOR)
+        if tag == "th":
+            self.styles.append("bold")
+
+    def _start_link(self, node: Node) -> None:
+        attrs = node.attributes
+        self.links.append(
+            _Link(
+                url=attrs.get("href") or "",
+                title=attrs.get("title") or "",
+                text=[],
+            ),
+        )
+
+    def _end_link(self) -> None:
+        link = self.links.pop()
+        text = "".join(link.text)
+        if not self.preserve_links:
+            self._write(text)
+        elif text == link.url:
+            # An autolink: the URL is its own display text.
+            self._write(f"<{text}>")
+        else:
+            title = f' "{link.title}"' if link.title else ""
+            self._write(f"[{text}]({link.url}{title})")
 
 
 def convert(
@@ -168,8 +350,8 @@ def convert(
             unchanged in the output instead of being reduced to display text.
         monospace_code: When ``True`` (the default), inline code spans and
             fenced code blocks are rendered in Unicode Mathematical Monospace.
-            When ``False``, inline code is kept as plain text and fenced
-            blocks are preserved verbatim.
+            When ``False``, code is kept as plain text, with the backticks
+            and fences stripped.
 
     Returns:
         A plain-text string suitable for pasting into LinkedIn.
@@ -178,26 +360,32 @@ def convert(
     if not text or not text.strip():
         return ""
 
-    opts = comrak.RenderOptions()
-    opts.compact_html = True
-    opts.unsafe_ = True  # Allows raw HTML rendering so we can parse it
+    render_options = comrak.RenderOptions()
+    render_options.compact_html = True
+    # Raw HTML is passed through to the parser below, which reads the text out
+    # of it. Nothing is ever rendered as HTML, so nothing can be injected.
+    render_options.unsafe_ = True
 
-    exts = comrak.ExtensionOptions()
-    exts.strikethrough = True
-    exts.table = True
-    exts.autolink = True
+    extensions = comrak.ExtensionOptions()
+    extensions.strikethrough = True
+    extensions.table = True
+    extensions.autolink = True
 
-    html = comrak.render_markdown(text, extension_options=exts, render_options=opts)
+    html = comrak.render_markdown(
+        text,
+        extension_options=extensions,
+        render_options=render_options,
+    )
 
     tree = HTMLParser(html)
-    visitor = SelectolaxVisitor(
+    renderer = Renderer(
         preserve_links=preserve_links,
         monospace_code=monospace_code,
     )
-    visitor.visit(cast("Node", tree.root))
-
-    out = "".join(visitor.out)
-    return re.sub(r"\n{3,}", "\n\n", out).strip() + "\n"
+    out = renderer.render(tree.root)
+    # An item that holds nothing but a nested list leaves its marker alone on
+    # a line; no line is meant to end in blank space.
+    return _TRAILING_SPACE.sub("", out).strip() + "\n"
 
 
 def convert_file(
