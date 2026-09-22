@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `monospace_code=False` strips the fences from a fenced block and keeps the
   content as plain text. It previously left the ` ``` ` fences in the
   output.
+- Conversion costs more than it did, because a document is now parsed
+  rather than pattern-matched. A LinkedIn-sized post takes a few tens of
+  microseconds longer; the parsing itself happens in Rust and C, so the
+  cost stays linear in input length.
 - Requires Python 3.12 or newer; support for Python 3.10 and 3.11 is discontinued.
 
 ### Fixed
