@@ -69,14 +69,30 @@ jobs:
           done
 
       - name: Fail on performance regressions
+        # A pull request that deliberately changes how conversion works reports
+        # the whole one-off cost against its base, so it cannot come in under a
+        # margin sized for runner jitter. Labelling it ``benchmark-baseline-reset``
+        # records that the numbers were read and accepted, and keeps the margin
+        # where it is for every other pull request. The label lives on the pull
+        # request, so it cannot leak into the push-to-main comparison that
+        # measures the same change once it lands.
+        continue-on-error: ${{ contains(github.event.pull_request.labels.*.name, 'benchmark-baseline-reset') }}
         run: make benchmark-compare
 
       - name: Publish comparison summary
         if: always()
+        env:
+          BASELINE_RESET: ${{ contains(github.event.pull_request.labels.*.name, 'benchmark-baseline-reset') }}
         run: |
           cat benchmark-revisions.txt >> "$GITHUB_STEP_SUMMARY"
           if [ -f benchmark-results/comparison.md ]; then
             cat benchmark-results/comparison.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$BASELINE_RESET" = true ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "> Labelled \`benchmark-baseline-reset\`: a regression over the" \
+              "margin is reported above but does not fail this run." \
+              >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload local benchmark reports

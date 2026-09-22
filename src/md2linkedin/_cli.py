@@ -43,8 +43,8 @@ from ._converter import convert, convert_file
     default=False,
     help=(
         "Disable monospace Unicode rendering for inline code and fenced"
-        " code blocks. When set, inline code is kept as plain text and"
-        " fenced blocks are preserved verbatim."
+        " code blocks. When set, code is kept as plain text, with the"
+        " backticks and fences stripped."
     ),
 )
 def main(

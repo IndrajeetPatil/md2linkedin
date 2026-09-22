@@ -78,6 +78,32 @@ Note that the noisiest benchmark is `test_unicode_mapping`, not the very short
 auto-calibration gives it far more iterations per round. Relative noise tracks
 work per measurement, not wall-clock duration.
 
+A change that deliberately alters how conversion works can exceed the margin
+without the margin being wrong. The gate compares against the base branch, so
+such a pull request reports the full one-off cost of the change and then goes
+quiet once it lands and the base carries the new implementation. Widening the
+margin to accommodate it would hide runner jitter in every later pull request
+to buy nothing in this one.
+
+Label such a pull request `benchmark-baseline-reset` instead. The comparison
+still runs and the table still reports every measured change, but the step is
+allowed to fail without failing the job, so the accepted cost does not sit on
+the pull request as an unexplained red cross. Record in the pull request body
+what the new cost is and why it is worth paying. Reach for the label only when
+the cost is the point of the change: a regression that is merely unexplained
+is the gate working, not the gate misfiring.
+
+The label is read from the pull request payload when the run starts, so apply
+it before the run you want it to affect. Re-running an existing run replays the
+original payload and will not see a label added afterwards; push a commit, or
+close and reopen the pull request, to get a run that does.
+
+Note also that `test_convert_document[post]` is short enough for fixed
+per-document cost to dominate it: setting up a parser and handing the document
+to it does not get cheaper with a 250-byte input, so a change in that cost
+shows up there several times larger than in `[long-document]`. Read the two
+together before concluding where a regression comes from.
+
 This does not provide CodSpeed's instruction-count simulation or guarantee
 detection of small slowdowns. Investigate the raw timings and rerun noisy
 results before changing the limit.

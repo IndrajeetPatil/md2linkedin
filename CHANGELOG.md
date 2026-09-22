@@ -7,9 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Markdown tables are rendered: the header row in bold, cells joined by
+  ` | `, one line per row. They were previously emitted as unreadable
+  run-together text (fixes #70).
+- `~~strikethrough~~` keeps its text and drops its markers, instead of
+  leaving `~~` in the output.
+
 ### Changed
 
+- Conversion now runs a real CommonMark parser
+  ([`comrak`](https://pypi.org/project/comrak/)) and walks the resulting
+  document with [`selectolax`](https://pypi.org/project/selectolax/), in
+  place of the pipeline of regular expressions. Every construct is read in
+  context, which resolves the whole class of fidelity gaps listed in #70 —
+  four-space indented code blocks are code, `>> inner` is a doubly nested
+  quote, `[ref]: url` definitions are consumed rather than printed, a
+  thematic break inside a list item is a break rather than a bullet, and a
+  mixed or renumbered marker starts a new list.
+- Blank lines inside a code block are preserved. The old pipeline collapsed
+  every run of three or more newlines anywhere in the document.
+- `monospace_code=False` strips the fences from a fenced block and keeps the
+  content as plain text. It previously left the ` ``` ` fences in the
+  output.
+- Conversion costs more than it did, because a document is now parsed
+  rather than pattern-matched. A LinkedIn-sized post takes a few tens of
+  microseconds longer; the parsing itself happens in Rust and C, so the
+  cost stays linear in input length.
 - Requires Python 3.12 or newer; support for Python 3.10 and 3.11 is discontinued.
+
+### Fixed
+
+- `<script>` and `<style>` in raw HTML are dropped along with their content.
+  Both the tags and the code inside them used to be emitted as text.
 
 ## [0.4.0] — 2026-09-20
 
