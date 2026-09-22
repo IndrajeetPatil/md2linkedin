@@ -93,10 +93,18 @@ what the new cost is and why it is worth paying. Reach for the label only when
 the cost is the point of the change: a regression that is merely unexplained
 is the gate working, not the gate misfiring.
 
-The label is read from the pull request payload when the run starts, so apply
-it before the run you want it to affect. Re-running an existing run replays the
-original payload and will not see a label added afterwards; push a commit, or
-close and reopen the pull request, to get a run that does.
+Such a change is measured twice. The commit that lands it is compared, as a
+push, against the last commit before it — which still holds the old
+implementation, so it reports the same cost a second time. The push run
+therefore looks the label up on the pull request the commit came from, and
+honours it there too. Only that one commit is covered: the next push to `main`
+compares against a base that already carries the new implementation, and a
+commit pushed straight to `main` belongs to no pull request and stays gated.
+
+On a pull request the label is read from the event payload when the run starts,
+so apply it before the run you want it to affect. Re-running an existing run
+replays the original payload and will not see a label added afterwards; push a
+commit, or close and reopen the pull request, to get a run that does.
 
 Note also that `test_convert_document[post]` is short enough for fixed
 per-document cost to dominate it: setting up a parser and handing the document
