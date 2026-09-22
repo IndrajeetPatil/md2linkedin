@@ -9,6 +9,8 @@ on:
 
 permissions:
   contents: read
+  # Reading the labels of the pull request a pushed commit came from.
+  pull-requests: read
 
 concurrency:
   # Every push must finish its comparison with the previous commit. Unique run
@@ -68,21 +70,43 @@ jobs:
             done
           done
 
-      - name: Fail on performance regressions
+      - name: Look for an accepted baseline reset
+        id: reset
         # A pull request that deliberately changes how conversion works reports
         # the whole one-off cost against its base, so it cannot come in under a
-        # margin sized for runner jitter. Labelling it ``benchmark-baseline-reset``
-        # records that the numbers were read and accepted, and keeps the margin
-        # where it is for every other pull request. The label lives on the pull
-        # request, so it cannot leak into the push-to-main comparison that
-        # measures the same change once it lands.
-        continue-on-error: ${{ contains(github.event.pull_request.labels.*.name, 'benchmark-baseline-reset') }}
+        # margin sized for runner jitter. Labelling it
+        # ``benchmark-baseline-reset`` records that the numbers were read and
+        # accepted, and keeps the margin where it is everywhere else.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
+        run: |
+          labels="$PR_LABELS"
+          # The commit that lands such a change is measured a second time, as a
+          # push, against the last commit before it — which still holds the old
+          # implementation, so it reports the same cost again. Read the labels
+          # back off the pull request it came from rather than failing a merge
+          # commit for a cost already accepted on review. A commit pushed
+          # straight to main belongs to no pull request and stays gated.
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            labels=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" \
+              --jq '.[].labels[].name' | tr '\n' ' ') || labels=""
+          fi
+          accepted=false
+          for label in $labels; do
+            if [ "$label" = benchmark-baseline-reset ]; then accepted=true; fi
+          done
+          echo "accepted=$accepted" >> "$GITHUB_OUTPUT"
+          echo "Baseline reset accepted: $accepted"
+
+      - name: Fail on performance regressions
+        continue-on-error: ${{ steps.reset.outputs.accepted == 'true' }}
         run: make benchmark-compare
 
       - name: Publish comparison summary
         if: always()
         env:
-          BASELINE_RESET: ${{ contains(github.event.pull_request.labels.*.name, 'benchmark-baseline-reset') }}
+          BASELINE_RESET: ${{ steps.reset.outputs.accepted }}
         run: |
           cat benchmark-revisions.txt >> "$GITHUB_STEP_SUMMARY"
           if [ -f benchmark-results/comparison.md ]; then
