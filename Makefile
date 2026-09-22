@@ -48,7 +48,9 @@ hooks:
 # --------------------------------------
 
 test-coverage:
-	uv run coverage run -m pytest .
+	# No path argument: a path overrides ``testpaths`` and walks the whole
+	# tree, which collects mutmut's copy of the suite under ``mutants/``.
+	uv run coverage run -m pytest
 	uv run coverage report
 	uv run coverage html
 
