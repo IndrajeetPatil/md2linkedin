@@ -130,6 +130,11 @@ class TestConvert:
         # Only raw HTML can spell an anchor with no ``href`` at all.
         assert convert("<a>text</a>", preserve_links=True) == "[text]()\n"
 
+    def test_a_link_with_no_text_leaves_the_spacing_alone(self) -> None:
+        # Writing nothing must not look like writing a line without newlines,
+        # or the paragraph after it would gain a blank line.
+        assert convert("a\n\n[](https://example.com)\n\nb") == "a\n\nb\n"
+
     def test_autolink_is_reduced_to_the_url(self) -> None:
         assert convert("<https://example.com>") == "https://example.com\n"
 

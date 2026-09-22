@@ -115,7 +115,7 @@ class Renderer:
             self._visit_item(node)
             return
 
-        self._enter(node)
+        self._enter(node, tag)
         self._visit_children(node)
         self._exit(tag)
 
@@ -148,8 +148,10 @@ class Renderer:
             self.out.append(padding)
             self.trailing = count
 
-    def _emit_text(self, text: str) -> None:
+    def _emit_text(self, text: str | None) -> None:
         """Write text with the styles of the enclosing tags applied."""
+        if not text:
+            return
         styled = text
         if "upper" in self.styles:
             styled = styled.upper()
@@ -169,16 +171,16 @@ class Renderer:
     # ── tags ──────────────────────────────────────────────────────────────────
 
     def _visit_text(self, node: Node) -> None:
-        # ``text()`` rather than ``text_content``: a text node always has text,
-        # and this spelling says so without an unreachable fallback.
-        data = node.text()
         parent = node.parent
-        if parent is not None and parent.tag in _TABLE_TAGS and not data.strip():
+        # Between rows and cells, whitespace is layout rather than content.
+        # ``text()`` is only reached there, and unlike ``text_content`` it is
+        # typed as always returning a string; it also costs three times as
+        # much, which matters on the hot path below but not here.
+        if parent is not None and parent.tag in _TABLE_TAGS and not node.text().strip():
             return
-        self._emit_text(data)
+        self._emit_text(node.text_content)
 
-    def _enter(self, node: Node) -> None:
-        tag = node.tag
+    def _enter(self, node: Node, tag: str) -> None:
         if tag in _BLOCK_TAGS:
             self._start_block(node)
         elif tag in _HEADING_TAGS:
@@ -202,7 +204,7 @@ class Renderer:
         elif tag == "a":
             self._start_link(node)
         elif tag == "img":
-            self._emit_text(node.attributes.get("alt") or "")
+            self._emit_text(node.attributes.get("alt"))
         elif tag == "br":
             self._emit_newlines(1)
 
