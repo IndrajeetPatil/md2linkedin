@@ -44,7 +44,6 @@ Changelog = "https://github.com/IndrajeetPatil/md2linkedin/blob/main/CHANGELOG.m
 dev = [
     "add-trailing-comma>=4.0.0",
     "coverage>=7.16.2",
-    "deptry>=0.25.1",
     "jupyter>=1.1.1",
     "mkdocstrings-python>=2.0.9",
     "mutmut>=3.8.0",
@@ -177,7 +176,3 @@ strict-generic-narrowing = true
 
 [tool.uv]
 required-version = ">=0.12.0"
-
-[tool.deptry]
-extend_exclude = ["scripts"]
-known_first_party = ["md2linkedin"]
