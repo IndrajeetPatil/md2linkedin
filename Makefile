@@ -36,7 +36,7 @@ typecoverage:
 	uv run pyrefly coverage check --fail-under 100
 
 audit:
-	uv audit --no-dev --preview-features audit
+	uv audit --no-dev --preview-features audit && uv run deptry .
 
 qa: format lint typecheck typecoverage audit
 
