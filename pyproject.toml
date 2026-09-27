@@ -43,7 +43,7 @@ Changelog = "https://github.com/IndrajeetPatil/md2linkedin/blob/main/CHANGELOG.m
 [dependency-groups]
 dev = [
     "add-trailing-comma>=4.0.0",
-    "coverage>=7.16.1",
+    "coverage>=7.16.2",
     "jupyter>=1.1.1",
     "mkdocstrings-python>=2.0.9",
     "mutmut>=3.8.0",
@@ -54,9 +54,9 @@ dev = [
     "pytest-cov>=7.1.0",
     "pytest-random-order>=1.2.0",
     "pyyaml>=6.0.3",
-    "ruff>=0.16.8",
-    "ty>=0.0.83",
-    "zensical>=0.0.64",
+    "ruff>=0.16.9",
+    "ty>=0.0.84",
+    "zensical>=0.0.65",
 ]
 
 [build-system]
