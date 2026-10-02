@@ -1,4 +1,4 @@
-.PHONY: update-deps upgrade-deps format lint typecheck typecoverage audit qa hooks test-coverage mutation-test benchmark benchmark-compare build test-package check-package serve-docs help
+.PHONY: update-deps upgrade-deps format lint typecheck typecoverage audit qa hooks test-coverage mutation-test benchmark benchmark-compare build test-package check-package build-docs serve-docs help
 
 # ANSI color codes
 RED = \033[0;31m
@@ -89,12 +89,13 @@ check-package: test-package qa build
 # Documentation
 # --------------------------------------
 
-serve-docs:
+build-docs:
 	uv run quarto render README.qmd
 	cp README.md docs/index.md
 	cp CHANGELOG.md docs/changelog.md
-	uv run python scripts/generate_llmstxt.py
 	uv run zensical build --strict
+
+serve-docs: build-docs
 	uv run zensical serve --strict
 
 # --------------------------------------
@@ -124,6 +125,7 @@ help:
 	@printf "    $(RED)test-package$(NC)  - Run tests and coverage\n"
 	@printf "    $(RED)check-package$(NC) - Full package check (tests, QA, build)\n\n"
 	@printf "$(GREEN) Documentation:$(NC)\n"
+	@printf "    $(RED)build-docs$(NC)    - Build documentation with strict validation\n"
 	@printf "    $(RED)serve-docs$(NC)    - Build and serve documentation\n\n"
 	@printf "$(YELLOW)Examples:$(NC)\n"
 	@printf "    make $(RED)test-coverage$(NC)  # Run tests and coverage\n"
