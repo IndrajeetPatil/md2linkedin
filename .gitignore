@@ -14,8 +14,6 @@ wheels/
 /site
 README.html
 README_files/
-docs/llms.txt
-docs/llms-full.txt
 
 # Installer logs
 pip-log.txt
