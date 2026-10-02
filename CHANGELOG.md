@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support for Python 3.15.
 - Markdown tables are rendered: the header row in bold, cells joined by
   ` | `, one line per row. They were previously emitted as unreadable
   run-together text (fixes #70).

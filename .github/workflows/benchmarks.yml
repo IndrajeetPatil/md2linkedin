@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 15
     env:
       PYTHONHASHSEED: "0"
-      UV_PYTHON: "3.14"
+      UV_PYTHON: "3.15"
       # A PR measures its exact head against its base. Pushes use the previous
       # commit; a manual run compares HEAD with its first parent.
       BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
