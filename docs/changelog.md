@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   quote, `[ref]: url` definitions are consumed rather than printed, a
   thematic break inside a list item is a break rather than a bullet, and a
   mixed or renumbered marker starts a new list.
+- HTML is parsed with `selectolax`'s Lexbor backend, as required by
+  `selectolax` 1.0, which removed the Modest backend. Conversion is roughly a
+  third faster.
 - Blank lines inside a code block are preserved. The old pipeline collapsed
   every run of three or more newlines anywhere in the document.
 - `monospace_code=False` strips the fences from a fenced block and keeps the
