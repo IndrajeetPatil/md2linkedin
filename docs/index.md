@@ -5,8 +5,6 @@
 version](https://img.shields.io/pypi/v/md2linkedin.png)](https://pypi.org/project/md2linkedin/)
 ![Python
 versions](https://img.shields.io/pypi/pyversions/md2linkedin.png)
-[![PyPI
-Downloads](https://img.shields.io/pypi/dm/md2linkedin.png)](https://pypistats.org/packages/md2linkedin)
 
 `md2linkedin` converts Markdown text to LinkedIn-compatible plain text
 by replacing bold, italic, and bold-italic markers with Unicode
@@ -16,10 +14,9 @@ natively.
 
 ## Installation
 
-| Package Manager | Installation Command      |
-|-----------------|---------------------------|
-| pip             | `pip install md2linkedin` |
-| uv              | `uv add md2linkedin`      |
+``` bash
+uv add md2linkedin
+```
 
 > **Tip:** Run the CLI without installing it with
 > `uvx md2linkedin post.md`.
