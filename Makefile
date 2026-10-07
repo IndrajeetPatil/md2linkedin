@@ -54,14 +54,16 @@ test-coverage:
 	uv run coverage report
 	uv run coverage html
 
-# Benchmarking uses the candidate environment for both source revisions.
-BENCHMARK_SOURCE ?= $(CURDIR)/src
+# Each revision is measured in the locked environment of its own checkout, so
+# a dependency change is measured along with the source that needs it.
+BENCHMARK_PROJECT ?= $(CURDIR)
+BENCHMARK_SOURCE ?= $(BENCHMARK_PROJECT)/src
 BENCHMARK_OUTPUT ?= $(CURDIR)/.codspeed/local
 BENCHMARK_THRESHOLD ?= 5
 
 benchmark:
-	PYTHONPATH="$(BENCHMARK_SOURCE)" uv run --no-sync python -c 'import md2linkedin; from pathlib import Path; print("Benchmark source:", md2linkedin.__file__); assert Path(md2linkedin.__file__).resolve().parent == Path("$(BENCHMARK_SOURCE)").resolve() / "md2linkedin"'
-	PYTHONPATH="$(BENCHMARK_SOURCE)" PYTHONHASHSEED=0 CODSPEED_PROFILE_FOLDER="$(BENCHMARK_OUTPUT)" uv run --no-sync pytest tests/benchmarks --codspeed --codspeed-mode=walltime --random-order-bucket=none
+	PYTHONPATH="$(BENCHMARK_SOURCE)" uv run --no-sync --project "$(BENCHMARK_PROJECT)" python -c 'import md2linkedin; from pathlib import Path; print("Benchmark source:", md2linkedin.__file__); assert Path(md2linkedin.__file__).resolve().parent == Path("$(BENCHMARK_SOURCE)").resolve() / "md2linkedin"'
+	PYTHONPATH="$(BENCHMARK_SOURCE)" PYTHONHASHSEED=0 CODSPEED_PROFILE_FOLDER="$(BENCHMARK_OUTPUT)" uv run --no-sync --project "$(BENCHMARK_PROJECT)" pytest tests/benchmarks --codspeed --codspeed-mode=walltime --random-order-bucket=none
 
 benchmark-compare:
 	uv run --no-sync python scripts/compare_benchmarks.py benchmark-results/base benchmark-results/candidate --threshold "$(BENCHMARK_THRESHOLD)" --output benchmark-results/comparison.md
