@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 import pytest
-from selectolax.parser import HTMLParser
+from selectolax.lexbor import LexborHTMLParser
 
 from md2linkedin._converter import Renderer, convert, convert_file
 
@@ -159,6 +159,10 @@ class TestConvert:
 
     def test_image_without_alt_text_renders_nothing(self) -> None:
         assert convert("![](logo.png)") == "\n"
+
+    def test_raw_html_image_without_an_alt_attribute_renders_nothing(self) -> None:
+        # Markdown images always carry ``alt``; raw HTML need not.
+        assert convert('a <img src="logo.png"> b') == "a  b\n"
 
     # ── lists ─────────────────────────────────────────────────────────────────
 
@@ -394,13 +398,13 @@ class TestConvert:
 
 def _render(html: str) -> str:
     return Renderer(preserve_links=False, monospace_code=True).render(
-        HTMLParser(html).root,
+        LexborHTMLParser(html).root,
     )
 
 
 class TestRenderer:
     def test_an_absent_tree_renders_nothing(self) -> None:
-        # ``HTMLParser.root`` is optional, so the renderer has to cope with it.
+        # ``LexborHTMLParser.root`` is optional, so the renderer has to cope with it.
         assert not Renderer(preserve_links=False, monospace_code=True).render(None)
 
     def test_a_block_is_padded_on_both_sides(self) -> None:

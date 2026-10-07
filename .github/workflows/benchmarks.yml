@@ -51,21 +51,26 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --locked --dev
+        # The base gets its own environment: its source may not import against
+        # the candidate's dependencies, as when a dependency drops an API.
+        run: |
+          uv sync --locked --dev
+          uv sync --locked --dev --project "$RUNNER_TEMP/benchmark-base"
 
       - name: Measure base and candidate
-        # Both revisions use the candidate's benchmark suite, configuration,
-        # interpreter, and dependencies. Only the imported source tree changes.
+        # Both revisions use the candidate's benchmark suite, configuration and
+        # interpreter. Each imports its own source tree and runs in the
+        # environment locked by its own commit.
         run: |
           for sample in 1 2 3; do
             # Alternate which revision runs first to reduce ordering bias.
             revisions="base candidate"
             if [ "$sample" = 2 ]; then revisions="candidate base"; fi
             for revision in $revisions; do
-              source="$GITHUB_WORKSPACE/src"
-              if [ "$revision" = base ]; then source="$RUNNER_TEMP/benchmark-base/src"; fi
+              project="$GITHUB_WORKSPACE"
+              if [ "$revision" = base ]; then project="$RUNNER_TEMP/benchmark-base"; fi
               make benchmark \
-                BENCHMARK_SOURCE="$source" \
+                BENCHMARK_PROJECT="$project" \
                 BENCHMARK_OUTPUT="$GITHUB_WORKSPACE/benchmark-results/$revision/$sample"
             done
           done
