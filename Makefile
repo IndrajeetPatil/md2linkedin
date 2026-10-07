@@ -61,12 +61,25 @@ BENCHMARK_SOURCE ?= $(BENCHMARK_PROJECT)/src
 BENCHMARK_OUTPUT ?= $(CURDIR)/.codspeed/local
 BENCHMARK_THRESHOLD ?= 5
 
+# Runs a command with the chosen source tree importable, in its environment.
+BENCHMARK_RUN = PYTHONPATH="$(BENCHMARK_SOURCE)" \
+	uv run --no-sync --project "$(BENCHMARK_PROJECT)"
+# Guards against measuring an installed copy instead of the chosen source.
+BENCHMARK_SOURCE_CHECK = import md2linkedin, pathlib; \
+	path = pathlib.Path(md2linkedin.__file__).resolve().parent; \
+	print("Benchmark source:", path); \
+	assert path == pathlib.Path("$(BENCHMARK_SOURCE)").resolve() / "md2linkedin"
+
 benchmark:
-	PYTHONPATH="$(BENCHMARK_SOURCE)" uv run --no-sync --project "$(BENCHMARK_PROJECT)" python -c 'import md2linkedin; from pathlib import Path; print("Benchmark source:", md2linkedin.__file__); assert Path(md2linkedin.__file__).resolve().parent == Path("$(BENCHMARK_SOURCE)").resolve() / "md2linkedin"'
-	PYTHONPATH="$(BENCHMARK_SOURCE)" PYTHONHASHSEED=0 CODSPEED_PROFILE_FOLDER="$(BENCHMARK_OUTPUT)" uv run --no-sync --project "$(BENCHMARK_PROJECT)" pytest tests/benchmarks --codspeed --codspeed-mode=walltime --random-order-bucket=none
+	$(BENCHMARK_RUN) python -c '$(BENCHMARK_SOURCE_CHECK)'
+	PYTHONHASHSEED=0 CODSPEED_PROFILE_FOLDER="$(BENCHMARK_OUTPUT)" \
+		$(BENCHMARK_RUN) pytest tests/benchmarks \
+		--codspeed --codspeed-mode=walltime --random-order-bucket=none
 
 benchmark-compare:
-	uv run --no-sync python scripts/compare_benchmarks.py benchmark-results/base benchmark-results/candidate --threshold "$(BENCHMARK_THRESHOLD)" --output benchmark-results/comparison.md
+	uv run --no-sync python scripts/compare_benchmarks.py \
+		benchmark-results/base benchmark-results/candidate \
+		--threshold "$(BENCHMARK_THRESHOLD)" --output benchmark-results/comparison.md
 
 mutation-test:
 	rm -rf mutants/
