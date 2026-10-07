@@ -105,8 +105,6 @@ check-package: test-package qa build
 # --------------------------------------
 
 build-docs:
-	uv run quarto render README.qmd
-	cp README.md docs/index.md
 	cp CHANGELOG.md docs/changelog.md
 	uv run zensical build --strict
 
