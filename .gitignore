@@ -12,8 +12,6 @@ wheels/
 
 # zensical documentation
 /site
-README.html
-README_files/
 
 # Installer logs
 pip-log.txt

@@ -1,0 +1,31 @@
+{#-
+  Copy of the theme's partials/actions.html. The only change: docs/index.md
+  just includes README.md, so the homepage's edit and view actions point at
+  README.md instead. Re-copy from the theme if it changes upstream.
+-#}
+{% set edit_url = page.edit_url | replace("/docs/index.md", "/README.md") if page.edit_url else page.edit_url -%}
+{% if "content.action.copy" in features and page.markdown_url %}
+  <button type="button" title="{{ lang.t('action.copy') }}" aria-label="{{ lang.t('action.copy') }}" class="md-content__button md-icon" data-md-copy-url="{{ page.markdown_url | url }}">
+    {% set icon = config.theme.icon.copy or "material/content-copy" %}
+    {% include ".icons/" ~ icon ~ ".svg" %}
+  </button>
+{% endif %}
+{% if edit_url %}
+  {% if "content.action.edit" in features %}
+    <a href="{{ edit_url }}" title="{{ lang.t('action.edit') }}" class="md-content__button md-icon" rel="edit">
+      {% set icon = config.theme.icon.edit or "material/file-edit-outline" %}
+      {% include ".icons/" ~ icon ~ ".svg" %}
+    </a>
+  {% endif %}
+  {% if "content.action.view" in features %}
+    {% if "/blob/" in edit_url %}
+      {% set part = "/blob/" %}
+    {% else %}
+      {% set part = "/edit/" %}
+    {% endif %}
+    <a href="{{ edit_url | replace(part, '/raw/') }}" title="{{ lang.t('action.view') }}" class="md-content__button md-icon">
+      {% set icon = config.theme.icon.view or "material/file-eye-outline" %}
+      {% include ".icons/" ~ icon ~ ".svg" %}
+    </a>
+  {% endif %}
+{% endif %}

@@ -25,9 +25,12 @@ once, with correctness assertions and without timing, during `make check-package
 The `Benchmarks` workflow runs on pull requests, pushes to `main`, and manual
 dispatch. It checks out the exact PR head and base commits (previous commit for a
 push; first parent for a manual run). It runs the candidate's benchmark suite
-against each source tree in the **same locked candidate environment** on one
-Ubuntu runner. The import path is checked before each run. This isolates source
-changes; dependency-only regressions are outside the comparison.
+against each source tree on one Ubuntu runner, each in the **environment locked
+by its own commit**. The import path is checked before each run. A pull request
+that leaves `uv.lock` alone therefore compares source changes alone, while a
+dependency update is measured together with any source changes it needs. One
+shared environment cannot do the latter: when a dependency drops an API, the
+base source no longer imports against the candidate's dependencies.
 
 New runs for the same PR replace older runs. Push and manual runs each have a
 unique concurrency group, so a later push cannot cancel or replace a pending
@@ -61,9 +64,11 @@ away less jitter.
 To size the margin, measure noise rather than speed. Two sources give it
 directly:
 
-- Commits that touch only CI config or dependencies leave `src/` unchanged, so
-  the whole comparison for those runs is noise. Across five such runs the worst
-  reported delta was **2.7%** and the remaining nineteen were all within 1.2%.
+- Commits that touch only CI config leave `src/` and `uv.lock` unchanged, so
+  the whole comparison for those runs is noise. Across five such runs (measured
+  when both revisions still shared one environment, so dependency-only commits
+  counted too) the worst reported delta was **2.7%** and the remaining nineteen
+  were all within 1.2%.
 - In any run that leaves a module alone, that module's benchmarks are a noise
   reading on real CI hardware. `test_unicode_mapping` came in at -0.1% on two
   separate runs whose changes were confined to `_converter.py`.
@@ -120,13 +125,15 @@ Repository branch protection must require the
 
 ## Compare revisions locally
 
-Create a separate checkout of the baseline, then run from the candidate checkout:
+Create a separate checkout of the baseline with its own environment, then run
+from the candidate checkout:
 
 ```sh
 git worktree add --detach ../benchmark-base origin/main
-uv sync --locked
+uv sync --locked --dev
+uv sync --locked --dev --project ../benchmark-base
 for sample in 1 2 3; do
-  make benchmark BENCHMARK_SOURCE="$(cd ../benchmark-base && pwd)/src" \
+  make benchmark BENCHMARK_PROJECT="$(cd ../benchmark-base && pwd)" \
     BENCHMARK_OUTPUT="$PWD/benchmark-results/base/$sample"
   make benchmark BENCHMARK_OUTPUT="$PWD/benchmark-results/candidate/$sample"
 done

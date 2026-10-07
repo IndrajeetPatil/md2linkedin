@@ -125,6 +125,3 @@ extra:
   analytics:
     provider: google
     property: G-3BQ49J7KYH
-
-hooks:
-  - hooks.py
