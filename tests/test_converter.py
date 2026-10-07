@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 import pytest
-from selectolax.parser import HTMLParser
+from selectolax.lexbor import LexborHTMLParser as HTMLParser
 
 from md2linkedin._converter import Renderer, convert, convert_file
 

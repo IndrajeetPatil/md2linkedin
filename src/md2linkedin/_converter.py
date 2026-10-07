@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import comrak
-from selectolax.parser import HTMLParser, Node
+from selectolax.lexbor import LexborHTMLParser as HTMLParser
+from selectolax.lexbor import LexborNode as Node
 
 from md2linkedin._unicode import (
     to_monospace,
@@ -103,7 +104,7 @@ class Renderer:
 
     def visit(self, node: Node) -> None:
         """Recursively render a node and its children."""
-        tag = node.tag
+        tag = node.tag or ""
         if tag == _TEXT_TAG:
             self._visit_text(node)
             return
@@ -150,7 +151,7 @@ class Renderer:
 
     def _emit_text(self, text: str | None) -> None:
         """Write text with the styles of the enclosing tags applied."""
-        if not text:
+        if text is None or text == "":  # ruff: ignore[compare-to-empty-string]
             return
         styled = text
         if "upper" in self.styles:
