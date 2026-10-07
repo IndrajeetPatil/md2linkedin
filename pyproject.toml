@@ -109,6 +109,9 @@ ignore = [
     "magic-value-comparison",
     # large test classes are fine when grouping related cases
     "too-many-public-methods",
+    # tests run fixed code in a fresh interpreter (sys.executable) to observe imports
+    "suspicious-subprocess-import",
+    "subprocess-without-shell-equals-true",
 ]
 
 [tool.ruff.format]

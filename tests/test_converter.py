@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -581,3 +583,26 @@ class TestConvertFile:
         # ``None`` or an arg-drop (which defaults to ``None``) both fail.
         assert recorded["encoding"] == "utf-8"
         assert isinstance(recorded["data"], str)
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 15),
+    reason="lazy imports (PEP 810) need Python 3.15+",
+)
+def test_parser_extensions_load_on_first_conversion() -> None:
+    # A fresh interpreter, since this test session has loaded them already.
+    code = """
+import sys
+import md2linkedin
+loaded = lambda: [name in sys.modules for name in ("comrak", "selectolax.lexbor")]
+print(loaded())
+md2linkedin.convert("**hi**")
+print(loaded())
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+    assert result.stdout.splitlines() == ["[False, False]", "[True, True]"]

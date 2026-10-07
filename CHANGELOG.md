@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   microseconds longer; the parsing itself happens in Rust and C, so the
   cost stays linear in input length.
 - Requires Python 3.12 or newer; support for Python 3.10 and 3.11 is discontinued.
+- On Python 3.15 and newer, the Markdown and HTML parsers are loaded only
+  when the first conversion runs (PEP 810 lazy imports), so
+  `import md2linkedin`, `md2linkedin --help` and `md2linkedin --version`
+  start faster.
 
 ### Fixed
 
