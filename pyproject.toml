@@ -114,12 +114,12 @@ ignore = [
 preview = true
 docstring-code-format = true
 
-[tool.pytest.ini_options]
+[tool.pytest]
+# Strict mode enables strict_config, strict_markers, strict_parametrization_ids,
+# and strict_xfail, plus any strictness options future pytest releases add. uv.lock
+# pins pytest, so new options only arrive through a reviewed dependency update.
+strict = true
 addopts = [
-    # error on problems parsing pytest configuration
-    "--strict-config",
-    # error on using unregistered marker
-    "--strict-markers",
     # show extra test summary info for everything
     "-ra",
     # include more verbose output
@@ -129,7 +129,6 @@ addopts = [
 ]
 testpaths = ["tests"]
 filterwarnings = ["error"]
-xfail_strict = true
 python_files = ["test_*.py", "test-*.py", "tests.py", "test.py"]
 
 [tool.coverage.run]
