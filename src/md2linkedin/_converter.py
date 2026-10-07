@@ -3,8 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import comrak
-from selectolax.lexbor import LexborHTMLParser as HTMLParser
-from selectolax.lexbor import LexborNode as Node
+from selectolax.lexbor import LexborHTMLParser, LexborNode
 
 from md2linkedin._unicode import (
     to_monospace,
@@ -54,7 +53,7 @@ class _ListLevel:
     number: int
 
 
-def _list_start(node: Node) -> int:
+def _list_start(node: LexborNode) -> int:
     """Read the first number of an ordered list, defaulting to one."""
     start = node.attributes.get("start")
     if start is None:
@@ -66,13 +65,13 @@ def _list_start(node: Node) -> int:
         return 1
 
 
-def _leads_a_list_item(node: Node) -> bool:
+def _leads_a_list_item(node: LexborNode) -> bool:
     """Report whether the node is the first block inside a list item."""
     parent = node.parent
     return parent is not None and parent.tag == "li" and node.prev is None
 
 
-def _follows_a_cell(node: Node) -> bool:
+def _follows_a_cell(node: LexborNode) -> bool:
     """Report whether another cell precedes the node in its row."""
     sibling = node.prev
     while sibling is not None:
@@ -96,19 +95,20 @@ class Renderer:
         self.lists: list[_ListLevel] = []
         self.links: list[_Link] = []
 
-    def render(self, root: Node | None) -> str:
+    def render(self, root: LexborNode | None) -> str:
         """Render the tree under ``root`` and return the text."""
         if root is not None:
             self.visit(root)
         return "".join(self.out)
 
-    def visit(self, node: Node) -> None:
+    def visit(self, node: LexborNode) -> None:
         """Recursively render a node and its children."""
-        tag = node.tag or ""
+        tag = node.tag
         if tag == _TEXT_TAG:
             self._visit_text(node)
             return
-        if tag in _SKIPPED_TAGS:
+        # Lexbor leaves only exotic non-element nodes unnamed, with nothing to render.
+        if tag is None or tag in _SKIPPED_TAGS:
             return
         if tag == "li":
             # An item renders its own children, because everything it holds
@@ -120,7 +120,7 @@ class Renderer:
         self._visit_children(node)
         self._exit(tag)
 
-    def _visit_children(self, node: Node) -> None:
+    def _visit_children(self, node: LexborNode) -> None:
         child = node.child
         while child is not None:
             self.visit(child)
@@ -151,7 +151,9 @@ class Renderer:
 
     def _emit_text(self, text: str | None) -> None:
         """Write text with the styles of the enclosing tags applied."""
-        if text is None or text == "":  # ruff: ignore[compare-to-empty-string]
+        # Empty text is not worth a check of its own: styling leaves it empty,
+        # and ``_append`` drops it.
+        if text is None:
             return
         styled = text
         if "upper" in self.styles:
@@ -171,7 +173,7 @@ class Renderer:
 
     # ── tags ──────────────────────────────────────────────────────────────────
 
-    def _visit_text(self, node: Node) -> None:
+    def _visit_text(self, node: LexborNode) -> None:
         parent = node.parent
         # Between rows and cells, whitespace is layout rather than content.
         # ``text()`` is only reached there, and unlike ``text_content`` it is
@@ -181,7 +183,7 @@ class Renderer:
             return
         self._emit_text(node.text_content)
 
-    def _enter(self, node: Node, tag: str) -> None:
+    def _enter(self, node: LexborNode, tag: str) -> None:
         if tag in _BLOCK_TAGS:
             self._start_block(node)
         elif tag in _HEADING_TAGS:
@@ -195,7 +197,7 @@ class Renderer:
         else:
             self._enter_inline(node, tag)
 
-    def _enter_inline(self, node: Node, tag: str) -> None:
+    def _enter_inline(self, node: LexborNode, tag: str) -> None:
         style = _STYLE_TAGS.get(tag)
         if style is not None:
             self.styles.append(style)
@@ -233,7 +235,7 @@ class Renderer:
         elif tag == "a":
             self._end_link()
 
-    def _start_block(self, node: Node) -> None:
+    def _start_block(self, node: LexborNode) -> None:
         # The first block of a list item continues the line the marker opened;
         # every other block starts after a blank line. Leading newlines are
         # stripped from the finished document, so the first block is not a
@@ -241,7 +243,7 @@ class Renderer:
         if not _leads_a_list_item(node):
             self._emit_newlines(2)
 
-    def _start_heading(self, node: Node, tag: str) -> None:
+    def _start_heading(self, node: LexborNode, tag: str) -> None:
         self._start_block(node)
         self.styles.append("bold")
         if tag == "h1":
@@ -257,7 +259,7 @@ class Renderer:
             self._append(_HEADING_RULE)
         self._emit_newlines(2)
 
-    def _start_list(self, node: Node, tag: str) -> None:
+    def _start_list(self, node: LexborNode, tag: str) -> None:
         # A nested list carries on the line its parent item started, so it
         # only needs a line break rather than a blank line.
         if self.lists:
@@ -271,7 +273,7 @@ class Renderer:
         if not self.lists:
             self._emit_newlines(2)
 
-    def _visit_item(self, node: Node) -> None:
+    def _visit_item(self, node: LexborNode) -> None:
         self._emit_newlines(1)
         marker = self._item_marker()
         body, gap = self._render_apart(node)
@@ -296,7 +298,7 @@ class Renderer:
         depth = len(self.lists) - 1
         return _BULLETS[min(depth, len(_BULLETS) - 1)] + " "
 
-    def _render_apart(self, node: Node) -> tuple[str, int]:
+    def _render_apart(self, node: LexborNode) -> tuple[str, int]:
         """Render the children of a node on their own, away from the output.
 
         Returns the rendered text and the number of newlines it ends in.
@@ -310,13 +312,13 @@ class Renderer:
         body = rendered.rstrip("\n")
         return body, len(rendered) - len(body)
 
-    def _start_cell(self, node: Node, tag: str) -> None:
+    def _start_cell(self, node: LexborNode, tag: str) -> None:
         if _follows_a_cell(node):
             self._append(_CELL_SEPARATOR)
         if tag == "th":
             self.styles.append("bold")
 
-    def _start_link(self, node: Node) -> None:
+    def _start_link(self, node: LexborNode) -> None:
         attrs = node.attributes
         self.links.append(
             _Link(
@@ -380,7 +382,7 @@ def convert(
         render_options=render_options,
     )
 
-    tree = HTMLParser(html)
+    tree = LexborHTMLParser(html)
     renderer = Renderer(
         preserve_links=preserve_links,
         monospace_code=monospace_code,
