@@ -91,24 +91,30 @@ class PyodideRunner {
       }
     }
 
-    // Capture stdout
+    // Capture stdout verbatim. The `batched` handler strips newlines, so use
+    // the raw `write` handler and decode the bytes ourselves.
+    const decoder = new TextDecoder();
     const output = [];
     pyodide.setStdout({
-      batched: (text) => output.push(text),
+      write: (buffer) => {
+        output.push(decoder.decode(buffer, { stream: true }));
+        return buffer.length;
+      },
     });
+    const collect = () => output.join("") + decoder.decode();
 
     try {
       // Run the code
       await pyodide.runPythonAsync(code);
       return {
         success: true,
-        output: output.join(""),
+        output: collect(),
         error: null,
       };
     } catch (error) {
       return {
         success: false,
-        output: output.join(""),
+        output: collect(),
         error: error.message,
       };
     }
@@ -166,7 +172,7 @@ class InteractiveCodeBlock {
 
     // Create output div (hidden initially)
     const outputDiv = document.createElement("div");
-    outputDiv.className = "pyodide-output";
+    outputDiv.className = "pyodide-result";
     outputDiv.style.display = "none";
 
     // Insert controls and output after the code block
@@ -204,25 +210,25 @@ class InteractiveCodeBlock {
       // Display output
       if (result.success) {
         if (result.output) {
-          this.outputDiv.innerHTML = `<pre class="pyodide-stdout">${this.escapeHtml(
-            result.output
-          )}</pre>`;
+          this.outputDiv.innerHTML = `<pre class="pyodide-stdout"><code>${this.escapeHtml(
+            result.output.trimEnd()
+          )}</code></pre>`;
         } else {
           this.outputDiv.innerHTML =
             '<div class="pyodide-success">✓ Code executed successfully (no output)</div>';
         }
       } else {
-        this.outputDiv.innerHTML = `<pre class="pyodide-error">Error: ${this.escapeHtml(
+        this.outputDiv.innerHTML = `<pre class="pyodide-error"><code>Error: ${this.escapeHtml(
           result.error
-        )}</pre>`;
+        )}</code></pre>`;
       }
 
       // Show clear button
       this.clearButton.style.display = "inline-block";
     } catch (error) {
-      this.outputDiv.innerHTML = `<pre class="pyodide-error">Failed to execute: ${this.escapeHtml(
+      this.outputDiv.innerHTML = `<pre class="pyodide-error"><code>Failed to execute: ${this.escapeHtml(
         error.message
-      )}</pre>`;
+      )}</code></pre>`;
       this.clearButton.style.display = "inline-block";
     } finally {
       // Re-enable button

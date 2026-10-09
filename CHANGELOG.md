@@ -5,11 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [Unreleased]
 
 ### Added
 
 - Support for Python 3.15.
+
+### Changed
+
+- On Python 3.15 and newer, the Markdown and HTML parsers are loaded only
+  when the first conversion runs (PEP 810 lazy imports), so
+  `import md2linkedin`, `md2linkedin --help` and `md2linkedin --version`
+  start faster.
+
+## [0.5.0] — 2026-10-07
+
+### Added
+
 - Markdown tables are rendered: the header row in bold, cells joined by
   ` | `, one line per row. They were previously emitted as unreadable
   run-together text (fixes #70).
@@ -40,10 +52,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   microseconds longer; the parsing itself happens in Rust and C, so the
   cost stays linear in input length.
 - Requires Python 3.12 or newer; support for Python 3.10 and 3.11 is discontinued.
-- On Python 3.15 and newer, the Markdown and HTML parsers are loaded only
-  when the first conversion runs (PEP 810 lazy imports), so
-  `import md2linkedin`, `md2linkedin --help` and `md2linkedin --version`
-  start faster.
 
 ### Fixed
 
