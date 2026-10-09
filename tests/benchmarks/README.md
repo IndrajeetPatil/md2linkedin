@@ -10,7 +10,8 @@ as ordinary workflow artifacts. Nothing is uploaded to CodSpeed.
 
 ## Run locally
 
-Use Python 3.15, matching CI:
+Use Python 3.15.0rc3, matching CI. This explicit release-candidate pin
+keeps fresh installs working until uv can download Python 3.15.0 final:
 
 ```sh
 uv sync --locked
