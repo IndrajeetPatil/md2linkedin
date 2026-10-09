@@ -11,4 +11,4 @@ permissions:
 
 jobs:
   test:
-    uses: IndrajeetPatil/workflows/.github/workflows/python-test.yaml@11355112cd25a795847bb93b6da964fa357f6978 # python 3.15 matrix (workflows #72)
+    uses: IndrajeetPatil/workflows/.github/workflows/python-test.yaml@4df5a32ed5b2026f39fe8347ae4ff1d45c79575a # python 3.15 matrix (workflows #72)
