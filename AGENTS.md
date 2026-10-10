@@ -79,8 +79,6 @@ This is a Python package repository following standard development practices.
 3. Verify all changes by running `make check-package`.
 4. Commit your changes and push to the branch to update the Pull Request.
 
-
-
 ## Security
 - **Code Scanning Alerts**: During the release process, code scanning alerts should be checked via the GitHub API (`gh api repos/IndrajeetPatil/md2linkedin/code-scanning/alerts`).
 - If alerts are false positives or occur in tests, they should be dismissed using `gh api -X PATCH repos/IndrajeetPatil/md2linkedin/code-scanning/alerts/{number} -f state=dismissed -f dismissed_reason="..."` (valid reasons: "false positive", "won't fix", "used in tests").
