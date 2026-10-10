@@ -11,6 +11,9 @@ This is a Python package repository following standard development practices.
   Python examples run in `tests/test_readme.py`, which compares each one's
   output with the fenced block after its `<!--pytest-codeblocks:expected-output-->`
   marker; update that block when a converter change alters the output.
+- `CHANGELOG.md`: Also the documentation changelog page — `docs/changelog.md`
+  only includes it via `--8<--`, so edit `CHANGELOG.md`, never
+  `docs/changelog.md`.
 - `pyproject.toml`: The primary configuration file for metadata and tools.
 - `uv.lock`: Lockfile ensuring reproducible environments.
 
