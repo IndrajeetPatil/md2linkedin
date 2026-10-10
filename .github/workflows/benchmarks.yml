@@ -25,8 +25,7 @@ jobs:
     timeout-minutes: 15
     env:
       PYTHONHASHSEED: "0"
-      # Use the available release candidate until uv ships 3.15.0 final.
-      UV_PYTHON: "3.15.0rc3"
+      UV_PYTHON: "3.15"
       # A PR measures its exact head against its base. Pushes use the previous
       # commit; a manual run compares HEAD with its first parent.
       BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
@@ -47,8 +46,9 @@ jobs:
           } | tee benchmark-revisions.txt
 
       - name: Install uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
+          version: "0.13.0"
           enable-cache: true
 
       - name: Install locked dependencies
