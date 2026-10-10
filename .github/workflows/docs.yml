@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   docs:
-    uses: IndrajeetPatil/workflows/.github/workflows/python-docs.yaml@310556bcfaedf6938b20971d9d81600f2d6ecf58 # python 3.15 toolchain (workflows #72)
+    uses: IndrajeetPatil/workflows/.github/workflows/python-docs.yaml@main
     permissions:
       contents: read
       pages: write
