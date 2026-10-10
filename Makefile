@@ -105,7 +105,6 @@ check-package: test-package qa build
 # --------------------------------------
 
 build-docs:
-	cp CHANGELOG.md docs/changelog.md
 	uv run zensical build --strict
 
 serve-docs: build-docs
