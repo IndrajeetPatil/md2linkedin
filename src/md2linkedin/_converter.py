@@ -1,3 +1,8 @@
+# Python 3.15+ (PEP 810) defers these imports until first use, so that
+# ``import md2linkedin``, ``--help`` and ``--version`` skip loading the parser
+# extensions. Earlier versions ignore this and import eagerly.
+__lazy_modules__ = ["comrak", "selectolax.lexbor"]
+
 import re
 from dataclasses import dataclass
 from pathlib import Path

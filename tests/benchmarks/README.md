@@ -10,7 +10,7 @@ as ordinary workflow artifacts. Nothing is uploaded to CodSpeed.
 
 ## Run locally
 
-Use Python 3.14, matching CI:
+Use Python 3.15 final and uv 0.13.0 or newer, matching CI:
 
 ```sh
 uv sync --locked
