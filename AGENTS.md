@@ -26,6 +26,8 @@ This is a Python package repository following standard development practices.
 
 ## Code Quality & Testing
 - Code formatting and linting are handled by `ruff`, and type checking by `ty`. We use `pyrefly` to enforce 100% type coverage.
+- `make format` first fixes missing trailing commas with Ruff's `missing-trailing-comma` (COM812) rule, then runs `ruff format`, preserving intentional multiline layouts.
+  COM812 also runs in `make lint` and the Ruff pre-commit hook. Ruff warns that this rule may conflict with its formatter; it is enabled intentionally so commas are added before formatting can collapse those layouts.
 - If `pyrefly` and `ty` conflict on any issue, `ty` should win.
 - Pre-commit hooks are configured via `prek`.
 - **Do not** commit code with linting errors, type warnings, or failing tests.
