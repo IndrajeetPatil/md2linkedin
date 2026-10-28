@@ -57,6 +57,16 @@ class TestConvert:
         # go, rather than being left in the output as punctuation.
         assert convert("~~strike~~ text") == "strike text\n"
 
+    def test_highlight_markers_are_dropped(self) -> None:
+        # LinkedIn has no highlighting either, so ``==`` goes the same way.
+        assert convert("==marked== text") == "marked text\n"
+
+    def test_highlight_keeps_the_styles_inside_it(self) -> None:
+        assert convert("==a **b**==") == "a 𝗯\n"
+
+    def test_spaced_double_equals_is_not_a_highlight(self) -> None:
+        assert convert("x == y") == "x == y\n"
+
     # ── headings ──────────────────────────────────────────────────────────────
 
     def test_heading_h1_is_bold_upper_between_rules(self) -> None:

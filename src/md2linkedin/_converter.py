@@ -380,6 +380,9 @@ def convert(
     extensions.strikethrough = True
     extensions.table = True
     extensions.autolink = True
+    # ``==text==`` becomes ``<mark>``, which the renderer unwraps like any
+    # other tag it has no style for, so the markers do not reach the output.
+    extensions.highlight = True
 
     html = comrak.render_markdown(
         text,
