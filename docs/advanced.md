@@ -77,6 +77,7 @@ apply_style("Hiring!", "bold")
 | `*italic*` / `_italic_`                   | Unicode 𝘪𝘵𝘢𝘭𝘪𝘤                         |
 | `***bold-italic***` / `___bold-italic___` | Unicode 𝙗𝙤𝙡𝙙-𝙞𝙩𝙖𝙡𝙞𝙘                    |
 | `~~strikethrough~~`                       | `strikethrough` (markers dropped)      |
+| `==highlight==`                           | `highlight` (markers dropped)          |
 | `` `inline code` ``                       | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (backticks stripped) |
 | ` ```fenced block``` `                    | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (fences stripped)    |
 | Four-space indented block                 | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (indent stripped)    |
@@ -118,7 +119,7 @@ consumed. Strip both before converting if you need them gone.
 
 1. [`comrak`](https://pypi.org/project/comrak/) — Rust bindings to the
    reference-grade CommonMark implementation — parses the Markdown and
-   renders it to HTML, with the tables, strikethrough and autolink
+   renders it to HTML, with the tables, strikethrough, autolink and highlight
    extensions enabled.
 2. [`selectolax`](https://pypi.org/project/selectolax/) parses that HTML, and
    a small renderer walks the tree, replacing each element with its LinkedIn
