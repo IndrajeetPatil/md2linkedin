@@ -241,6 +241,8 @@ Python, and the cost scales linearly with input length, so it is safe to call
 on large files:
 
 ```python
+from pathlib import Path
+
 big_md = Path("quarterly_report.md").read_text()
 result = convert(big_md)
 ```
@@ -254,7 +256,7 @@ and digits are remapped to Unicode Mathematical variants:
 from md2linkedin import convert
 
 result = convert("**Excited to share** 🎉 *check this out*!")
-print(result)  # 𝗘𝘅𝗰𝗶𝘁𝗲𝗱 𝘁𝗼 𝘀𝗵𝗮𝗿𝗲 🎉 𝘤𝘩𝘦𝘤𝘬 𝘵𝘩𝘪𝘴 𝘰𝘂𝘵!
+print(result)  # 𝗘𝘅𝗰𝗶𝘁𝗲𝗱 𝘁𝗼 𝘀𝗵𝗮𝗿𝗲 🎉 𝘤𝘩𝘦𝘤𝘬 𝘵𝘩𝘪𝘴 𝘰𝘶𝘵!
 ```
 
 ---
@@ -299,6 +301,8 @@ Or in Python:
 
 ```python
 import subprocess
+from pathlib import Path
+
 from md2linkedin import convert
 
 result = subprocess.run(
