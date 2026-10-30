@@ -352,7 +352,7 @@ def convert(
     preserve_links: bool = False,
     monospace_code: bool = True,
 ) -> str:
-    r"""Convert Markdown text to LinkedIn-compatible Unicode plain text.
+    """Convert Markdown text to LinkedIn-compatible Unicode plain text.
 
     Args:
         text: The Markdown source string.
@@ -408,7 +408,7 @@ def convert_file(
     preserve_links: bool = False,
     monospace_code: bool = True,
 ) -> Path:
-    r"""Convert a Markdown file and write the result to a ``.txt`` file.
+    """Convert a Markdown file and write the result to a ``.txt`` file.
 
     Args:
         input_path: Path to the Markdown source file.
@@ -417,7 +417,10 @@ def convert_file(
         monospace_code: Passed through to :func:`convert`.
 
     Returns:
-        The resolved path of the written output file.
+        The path of the written output file.
+
+    Raises:
+        FileNotFoundError: If *input_path* does not exist.
 
     """
     input_path = Path(input_path)
