@@ -94,21 +94,20 @@ def main(
             monospace_code=monospace_code,
         )
         click.echo(f"LinkedIn-formatted text written to: {out_path}")
-    else:
-        # Read from stdin
-        if _stdin_is_tty():
-            msg = (
-                "No input file provided and stdin is a terminal. "
-                "Provide a file path or pipe content via stdin."
-            )
-            raise click.UsageError(msg)
-        md_text = sys.stdin.read()
-        result = convert(
-            md_text,
-            preserve_links=preserve_links,
-            monospace_code=monospace_code,
+        return
+
+    if _stdin_is_tty():
+        msg = (
+            "No input file provided and stdin is a terminal. "
+            "Provide a file path or pipe content via stdin."
         )
-        click.echo(result, nl=False)
+        raise click.UsageError(msg)
+    result = convert(
+        sys.stdin.read(),
+        preserve_links=preserve_links,
+        monospace_code=monospace_code,
+    )
+    click.echo(result, nl=False)
 
 
 def _stdin_is_tty() -> bool:
