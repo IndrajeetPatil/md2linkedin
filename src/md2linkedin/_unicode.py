@@ -1,8 +1,8 @@
-"""Unicode Mathematical Sans-Serif character mapping functions.
+"""Unicode Mathematical Sans-Serif and Monospace character mapping functions.
 
 Converts ASCII letters and digits to their Unicode Mathematical
-Sans-Serif equivalents, enabling bold, italic, and bold-italic
-styling in plain-text environments like LinkedIn.
+Sans-Serif and Monospace equivalents, enabling bold, italic, bold-italic
+and monospace styling in plain-text environments like LinkedIn.
 """
 
 from __future__ import annotations

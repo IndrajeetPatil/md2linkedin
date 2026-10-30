@@ -7,8 +7,8 @@ The package exposes two main entry points:
   ``.linkedin.txt`` output file.
 
 Lower-level Unicode mapping utilities (:func:`to_sans_bold`,
-:func:`to_sans_italic`, :func:`to_sans_bold_italic`, :func:`apply_style`)
-are also public for programmatic use.
+:func:`to_sans_italic`, :func:`to_sans_bold_italic`, :func:`to_monospace`,
+:func:`apply_style`) are also public for programmatic use.
 """
 
 from __future__ import annotations
