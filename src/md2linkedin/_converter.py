@@ -367,7 +367,7 @@ def convert(
         A plain-text string suitable for pasting into LinkedIn.
 
     """
-    if not text or not text.strip():
+    if not text.strip():
         return ""
 
     render_options = comrak.RenderOptions()
