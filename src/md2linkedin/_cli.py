@@ -54,7 +54,7 @@ def main(
     preserve_links: bool,
     no_monospace_code: bool,
 ) -> None:
-    r"""Convert Markdown to LinkedIn-friendly Unicode text.
+    """Convert Markdown to LinkedIn-friendly Unicode text.
 
     Reads from INPUT_FILE (or stdin when INPUT_FILE is omitted) and writes
     LinkedIn-compatible plain text in which bold and italic formatting is
@@ -65,22 +65,18 @@ def main(
 
     \b
     Examples:
-
       # Convert a file (output written to README.linkedin.txt)
       md2linkedin README.md
-
       # Specify the output path explicitly
       md2linkedin README.md -o post.txt
-
       # Pipe from stdin
       echo "**Hello**, *world*!" | md2linkedin
-
       # Keep link URLs in the output
       md2linkedin README.md --preserve-links
-
       # Disable monospace code rendering
       md2linkedin README.md --no-monospace-code
 
+    \f
     Raises:
         click.UsageError: If neither an input file nor piped stdin is provided.
 
