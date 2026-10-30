@@ -78,14 +78,7 @@
   color: #66bb6a;
 }
 
-/* Make code blocks with Pyodide controls look better */
+/* Sit the Run/Clear controls directly under their code block. */
 .highlight.pyodide-enabled {
   margin-bottom: 0;
-}
-
-/* Fallback for browsers without :has() support */
-@supports selector(:has(*)) {
-  .highlight:has(+ .pyodide-controls) {
-    margin-bottom: 0;
-  }
 }
