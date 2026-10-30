@@ -319,15 +319,20 @@ linkedin_text = convert(result.stdout)
 
 ## CLI Reference
 
+Run `md2linkedin --help` for the full text.
+
 ```
 Usage: md2linkedin [OPTIONS] [INPUT_FILE]
 
-  Convert Markdown to LinkedIn-friendly Unicode text.
-
 Options:
-  -o, --output PATH    Output file path.
-  --preserve-links     Keep link syntax in output.
-  --no-monospace-code  Disable monospace Unicode rendering for code.
   -V, --version        Show the version and exit.
+  -o, --output FILE    Output file path. Defaults to INPUT_FILE with a
+                       '.linkedin.txt' extension. Ignored when reading from
+                       stdin.
+  --preserve-links     Keep Markdown link syntax ([text](url)) in the output
+                       instead of stripping URLs.
+  --no-monospace-code  Disable monospace Unicode rendering for inline code and
+                       fenced code blocks. When set, code is kept as plain
+                       text, with the backticks and fences stripped.
   -h, --help           Show this message and exit.
 ```
