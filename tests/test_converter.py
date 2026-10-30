@@ -532,8 +532,6 @@ class TestConvertFile:
         ) -> str:
             if self == src:
                 recorded["encoding"] = encoding
-                recorded["errors"] = errors
-                recorded["newline"] = newline
             # Bypass the patched method by using the underlying file API.
             with self.open(encoding=encoding, errors=errors, newline=newline) as f:
                 return f.read()
@@ -568,8 +566,6 @@ class TestConvertFile:
         ) -> int:
             if self != src:
                 recorded["encoding"] = encoding
-                recorded["errors"] = errors
-                recorded["newline"] = newline
                 recorded["data"] = data
             # Bypass the patched method by using the underlying file API.
             with self.open(
