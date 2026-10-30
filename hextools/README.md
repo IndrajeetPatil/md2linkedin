@@ -5,22 +5,16 @@ sticker logo.
 
 ## Generating the logo
 
-1. **Download icons** from [Flaticon](https://www.flaticon.com/) and place
-   them in this directory:
-   - `icon_md.png` — Markdown icon
-     (search: "markdown" on flaticon.com; e.g. by Freepik)
-   - `icon_linkedin.png` — LinkedIn icon
-     (search: "linkedin" on flaticon.com; e.g. by Freepik)
-   - `icon_arrow.png` — Arrow/conversion icon
-     (search: "arrow convert" on flaticon.com; e.g. by Freepik)
+The sticker artwork is `data.jpeg`, a composition of three Flaticon icons
+(Markdown, LinkedIn and an arrow, all by Freepik). To regenerate the logo:
 
-2. **Install R dependencies**:
+1. **Install R dependencies**:
 
    ```r
    install.packages(c("hexSticker", "magick", "showtext"))
    ```
 
-3. **Run the script** from the repository root:
+2. **Run the script** from the repository root:
 
    ```bash
    Rscript hextools/script.R
