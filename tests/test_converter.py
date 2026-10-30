@@ -431,39 +431,40 @@ class TestRenderer:
 # ── convert_file ──────────────────────────────────────────────────────────────
 
 
+def _write_markdown(tmp_path: Path, text: str) -> Path:
+    src = tmp_path / "test.md"
+    src.write_text(text, encoding="utf-8")
+    return src
+
+
 class TestConvertFile:
     def test_basic_conversion(self, tmp_path: Path) -> None:
-        src = tmp_path / "test.md"
-        src.write_text("**bold** text", encoding="utf-8")
+        src = _write_markdown(tmp_path, "**bold** text")
         out = convert_file(src)
         assert out.exists()
         content = out.read_text(encoding="utf-8")
         assert "**" not in content
 
     def test_default_output_path(self, tmp_path: Path) -> None:
-        src = tmp_path / "test.md"
-        src.write_text("hello", encoding="utf-8")
+        src = _write_markdown(tmp_path, "hello")
         out = convert_file(src)
         assert out.suffix == ".txt"
         assert "linkedin" in out.name
 
     def test_explicit_output_path(self, tmp_path: Path) -> None:
-        src = tmp_path / "test.md"
+        src = _write_markdown(tmp_path, "hello")
         dst = tmp_path / "output.txt"
-        src.write_text("hello", encoding="utf-8")
         out = convert_file(src, dst)
         assert out == dst
         assert dst.exists()
 
     def test_preserve_links_forwarded(self, tmp_path: Path) -> None:
-        src = tmp_path / "test.md"
-        src.write_text("[GitHub](https://github.com)", encoding="utf-8")
+        src = _write_markdown(tmp_path, "[GitHub](https://github.com)")
         out = convert_file(src, preserve_links=True)
         assert out.read_text(encoding="utf-8").strip() == "[GitHub](https://github.com)"
 
     def test_string_path_accepted(self, tmp_path: Path) -> None:
-        src = tmp_path / "test.md"
-        src.write_text("hello", encoding="utf-8")
+        src = _write_markdown(tmp_path, "hello")
         out = convert_file(str(src))
         assert out.exists()
 
@@ -479,38 +480,33 @@ class TestConvertFile:
     def test_default_strips_links(self, tmp_path: Path) -> None:
         # The default value of ``preserve_links`` MUST be False, i.e. links
         # are stripped to their display text unless the caller opts in.
-        src = tmp_path / "test.md"
-        src.write_text("[GitHub](https://github.com)", encoding="utf-8")
+        src = _write_markdown(tmp_path, "[GitHub](https://github.com)")
         out = convert_file(src)
         content = out.read_text(encoding="utf-8").strip()
         assert content == "GitHub"
 
     def test_output_is_utf8(self, tmp_path: Path) -> None:
-        src = tmp_path / "test.md"
-        src.write_text("**café** résumé 🎉", encoding="utf-8")
+        src = _write_markdown(tmp_path, "**café** résumé 🎉")
         out = convert_file(src)
         content = out.read_text(encoding="utf-8")
         assert "é" in content
         assert "🎉" in content
 
     def test_monospace_code_forwarded(self, tmp_path: Path) -> None:
-        src = tmp_path / "test.md"
-        src.write_text("use `hello` here", encoding="utf-8")
+        src = _write_markdown(tmp_path, "use `hello` here")
         out = convert_file(src, monospace_code=False)
         content = out.read_text(encoding="utf-8")
         assert "hello" in content
         assert "𝚑𝚎𝚕𝚕𝚘" not in content
 
     def test_monospace_code_default(self, tmp_path: Path) -> None:
-        src = tmp_path / "test.md"
-        src.write_text("use `hello` here", encoding="utf-8")
+        src = _write_markdown(tmp_path, "use `hello` here")
         out = convert_file(src)
         content = out.read_text(encoding="utf-8")
         assert "𝚑𝚎𝚕𝚕𝚘" in content
 
     def test_returns_path_object(self, tmp_path: Path) -> None:
-        src = tmp_path / "test.md"
-        src.write_text("hello", encoding="utf-8")
+        src = _write_markdown(tmp_path, "hello")
         result = convert_file(src)
         assert isinstance(result, Path)
 
@@ -524,8 +520,7 @@ class TestConvertFile:
         # keyword argument entirely.  Both variants are indistinguishable
         # on Linux/macOS at runtime (the default locale is already
         # UTF-8), so we assert the argument explicitly via a spy.
-        src = tmp_path / "test.md"
-        src.write_text("hello", encoding="utf-8")
+        src = _write_markdown(tmp_path, "hello")
 
         recorded: dict[str, object] = {}
 
@@ -560,8 +555,7 @@ class TestConvertFile:
         # keyword argument entirely.  Both variants are indistinguishable
         # on Linux/macOS at runtime (the default locale is already
         # UTF-8), so we assert the argument explicitly via a spy.
-        src = tmp_path / "test.md"
-        src.write_text("hello", encoding="utf-8")
+        src = _write_markdown(tmp_path, "hello")
 
         recorded: dict[str, object] = {}
 
