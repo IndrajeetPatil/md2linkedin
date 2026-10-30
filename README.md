@@ -85,13 +85,13 @@ md2linkedin post.md --no-monospace-code
 - **Bold**: `**text**` or `__text__` → Unicode Sans-Serif Bold (𝗯𝗼𝗹𝗱)
 - **Italic**: `*text*` or `_text_` → Unicode Sans-Serif Italic (𝘪𝘵𝘢𝘭𝘪𝘤)
 - **Bold-italic**: `***text***` or `___text___` → Unicode Sans-Serif Bold Italic (𝙗𝙤𝙡𝙙-𝙞𝙩𝙖𝙡𝙞𝙘)
-- **Headers**: `#`/`##`/etc. styled with bold Unicode; H1 gets a `━` border
+- **Headers**: `#`/`##`/etc. styled with bold Unicode; H1 is also uppercased between `━` borders
 - **Code spans**: backticks stripped, content rendered in Unicode Monospace (𝚌𝚘𝚍𝚎) by default; `--no-monospace-code` keeps plain text
 - **Fenced and indented code blocks**: fences and indent stripped, content rendered in Unicode Monospace by default; `--no-monospace-code` keeps plain text
 - **Links**: stripped to display text by default; `--preserve-links` retains URLs
 - **Images**: replaced by alt text
 - **Bullet lists**: `-`/`*`/`+` → `•`; nested items get one marker per level (`‣`, `◦`, `▪`)
-- **Ordered lists**: numbers kept verbatim, counting on from wherever the list starts
+- **Ordered lists**: numbered in sequence from the list's first number (`1.`, `1.` → `1.`, `2.`)
 - **Tables**: header row in bold, cells joined by ` | `
 - **Strikethrough**: `~~text~~` → `text`, markers dropped
 - **Highlight**: `==text==` → `text`, markers dropped

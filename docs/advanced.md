@@ -81,7 +81,7 @@ apply_style("Hiring!", "bold")
 | `` `inline code` ``                       | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (backticks stripped) |
 | ` ```fenced block``` `                    | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (fences stripped)    |
 | Four-space indented block                 | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (indent stripped)    |
-| `# H1`                                    | Bold Unicode + `━` border              |
+| `# H1`                                    | Bold uppercase Unicode + `━` borders   |
 | `## H2`–`###### H6`                       | Bold Unicode, no border                |
 | `Title` + `=====` / `-----` (setext)      | Same as `# H1` / `## H2`               |
 | `[text](url)`                             | `text` (URL discarded)                 |
@@ -91,7 +91,7 @@ apply_style("Hiring!", "bold")
 | `- item`                                  | `• item`                               |
 | `  - nested`                              | `  ‣ nested`                           |
 | `    - nested twice`                      | `    ◦ nested twice`                   |
-| `1. item`                                 | `1. item` (numbers kept verbatim)      |
+| `1. item` / `1) item`                     | `1. item` (renumbered in sequence)     |
 | `\| a \| b \|` table                      | Bold header, cells joined by `\|`      |
 | `> blockquote`                            | `> ` prefix removed, at every depth    |
 | `---` / `* * *` thematic break            | Dropped                                |
@@ -169,8 +169,9 @@ convert("- Role\n  - Applications\n    - AI Launchpad")
 #     ◦ AI Launchpad
 ```
 
-Ordered markers are kept verbatim, since the numbers already convey order, and
-a list that starts at `3.` keeps counting from three. Bullets nested under an
+Ordered items are numbered in sequence from the list's first number, so
+`1.`, `1.`, `1.` becomes `1.`, `2.`, `3.` and a list that starts at `3.` keeps
+counting from three. A `)` delimiter becomes `.`. Bullets nested under an
 ordered item are indented to the width of its marker, so they line up under
 its text rather than under its number.
 
