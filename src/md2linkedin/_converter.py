@@ -296,7 +296,8 @@ class Renderer:
             return ""
         level = self.lists[-1]
         if level.ordered:
-            # The numbers already convey the order, so they are kept verbatim.
+            # Items are numbered on from the list's start value, whatever
+            # numbers the source used.
             marker = f"{level.number}. "
             level.number += 1
             return marker
