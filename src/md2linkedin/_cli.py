@@ -80,7 +80,7 @@ def main(
     Raises:
         click.UsageError: If neither an input file nor piped stdin is provided.
 
-    """
+    """  # ruff: ignore[escape-sequence-in-docstring] (Click markers)
     monospace_code = not no_monospace_code
     if input_file is not None:
         out_path = convert_file(
