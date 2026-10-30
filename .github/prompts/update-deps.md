@@ -5,7 +5,7 @@ description: Update dependencies and ensure the codebase is compatible with the 
 
 # Update Dependencies and Refactor Codebase
 
-Run `make update-deps` to refresh backend `uv` dependencies and `prek` hook revisions. Then iterate
+Run `make update-deps` to refresh `uv` dependencies and `prek` hook revisions. Then iterate
 until the full local quality gate passes:
 
 - `make check-package`
@@ -16,7 +16,7 @@ Ensure that the minimum versions of updated dependencies in `pyproject.toml` are
 
 Ensure that all dependencies in `pyproject.toml` remain alphabetically sorted.
 
-If the `uv` version changes, ensure any hardcoded versions are kept in sync.
+If the `uv` version changes, keep its hardcoded versions in sync: `required-version` and the `uv_build` bounds in `pyproject.toml`, and the minimum in `tests/benchmarks/README.md`.
 
 `make update-deps` runs `prek update --freeze`, which refreshes each prek hook to its latest tag but records the resolved commit SHA in `rev` with a `# frozen: <tag>` comment. Ensure that versions of hooks (like `ruff` and `ty`) in `prek.toml` are matching their respective versions in `pyproject.toml`. Never rewrite a frozen `rev` back to a bare mutable tag.
 

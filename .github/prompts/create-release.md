@@ -18,11 +18,10 @@ receiving a valid answer, take ownership of the remaining release work.
 ## Prepare the release
 
 Read `AGENTS.md`, `.github/workflows/release.yml`, `pyproject.toml`, and the
-latest entries in `CHANGELOG.md`. For publication,
-`.github/workflows/release.yml` is authoritative: its trusted-publishing flow
-supersedes legacy instructions in `AGENTS.md` to run `uv publish` or
-`gh release create` locally. Do not upload distributions from the developer's
-machine.
+latest entries in `CHANGELOG.md`. Publication happens only through the
+trusted-publishing flow in `.github/workflows/release.yml`: never run
+`uv publish` or `gh release create` locally, and do not upload distributions
+from the developer's machine.
 
 1. Verify `gh` authentication, fetch and prune `origin`, and inspect the working
    tree. Preserve unrelated local changes. If necessary, use a clean worktree.
@@ -52,11 +51,11 @@ machine.
 
 ## Validate and merge the release pull request
 
-Run the complete local gate and inspect the built wheel and source distribution:
+Run the complete local gate, which also builds the wheel and source
+distribution, and inspect the built artifacts:
 
 ```bash
 make check-package
-uv build
 git diff --check
 ```
 
