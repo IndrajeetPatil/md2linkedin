@@ -413,7 +413,9 @@ def convert_file(
 
     Args:
         input_path: Path to the Markdown source file.
-        output_path: Destination path for the converted output.
+        output_path: Destination path for the converted output. Defaults to
+            *input_path* with its last suffix replaced by ``.linkedin.txt``,
+            so ``notes.v2.md`` is written to ``notes.v2.linkedin.txt``.
         preserve_links: Passed through to :func:`convert`.
         monospace_code: Passed through to :func:`convert`.
 
@@ -430,7 +432,7 @@ def convert_file(
         raise FileNotFoundError(msg)
 
     if output_path is None:
-        output_path = input_path.with_suffix("").with_suffix(".linkedin.txt")
+        output_path = input_path.with_suffix(".linkedin.txt")
     output_path = Path(output_path)
 
     md_text = input_path.read_text(encoding=_ENCODING)
