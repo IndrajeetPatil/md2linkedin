@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from scripts.compare_benchmarks import compare, load_results, main, read_report
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
 
 
@@ -65,20 +66,41 @@ def test_invalid_benchmark_ids(tmp_path: Path, uri: object) -> None:
         read_report(path)
 
 
-@pytest.mark.parametrize("mutation", ["empty", "duplicate", "mode", "version"])
-def test_incompatible_reports(tmp_path: Path, mutation: str) -> None:
+@pytest.mark.parametrize(
+    ("mutate", "error"),
+    [
+        pytest.param(
+            lambda data: data.update(benchmarks=[]),
+            "expected nonempty",
+            id="empty",
+        ),
+        pytest.param(
+            lambda data: data.update(benchmarks=data["benchmarks"] * 2),
+            "duplicate benchmark: ",
+            id="duplicate",
+        ),
+        pytest.param(
+            lambda data: data["instrument"].update(type="simulation"),
+            "expected nonempty",
+            id="mode",
+        ),
+        pytest.param(
+            lambda data: data["creator"].update(version="0.0.0"),
+            "expected nonempty",
+            id="version",
+        ),
+    ],
+)
+def test_incompatible_reports(
+    tmp_path: Path,
+    mutate: Callable[[dict[str, Any]], None],
+    error: str,
+) -> None:
     path = write_report(tmp_path, 1)
     data = json.loads(path.read_text(encoding="utf-8"))
-    if mutation == "empty":
-        data["benchmarks"] = []
-    elif mutation == "duplicate":
-        data["benchmarks"] *= 2
-    elif mutation == "mode":
-        data["instrument"]["type"] = "simulation"
-    else:
-        data["creator"]["version"] = "0.0.0"
+    mutate(data)
     path.write_text(json.dumps(data), encoding="utf-8")
-    with pytest.raises(ValueError, match=r"expected nonempty|duplicate benchmark: "):
+    with pytest.raises(ValueError, match=error):
         read_report(path)
 
 
