@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
+from md2linkedin import __version__
 from md2linkedin._cli import _stdin_is_tty, main
 
 if TYPE_CHECKING:
@@ -25,14 +26,17 @@ class TestCliFileInput:
         src.write_text("**bold** text", encoding="utf-8")
         result = runner.invoke(main, [str(src)])
         assert result.exit_code == 0
-        assert "LinkedIn-formatted" in result.output
+        assert (tmp_path / "test.linkedin.txt").read_text(encoding="utf-8") == (
+            "𝗯𝗼𝗹𝗱 text\n"
+        )
 
     def test_default_output_filename(self, runner: CliRunner, tmp_path: Path) -> None:
         src = tmp_path / "post.md"
         src.write_text("hello", encoding="utf-8")
-        runner.invoke(main, [str(src)])
+        result = runner.invoke(main, [str(src)])
+        assert result.exit_code == 0
         expected = tmp_path / "post.linkedin.txt"
-        assert expected.exists()
+        assert expected.read_text(encoding="utf-8") == "hello\n"
 
     def test_explicit_output_path(self, runner: CliRunner, tmp_path: Path) -> None:
         src = tmp_path / "post.md"
@@ -40,24 +44,31 @@ class TestCliFileInput:
         src.write_text("hello", encoding="utf-8")
         result = runner.invoke(main, [str(src), "-o", str(dst)])
         assert result.exit_code == 0
-        assert dst.exists()
+        assert dst.read_text(encoding="utf-8") == "hello\n"
 
     def test_preserve_links_flag(self, runner: CliRunner, tmp_path: Path) -> None:
         src = tmp_path / "post.md"
         src.write_text("[GitHub](https://github.com)", encoding="utf-8")
         dst = tmp_path / "out.txt"
-        runner.invoke(main, [str(src), "-o", str(dst), "--preserve-links"])
-        assert dst.read_text(encoding="utf-8").strip() == "[GitHub](https://github.com)"
+        result = runner.invoke(main, [str(src), "-o", str(dst), "--preserve-links"])
+        assert result.exit_code == 0
+        assert dst.read_text(encoding="utf-8") == "[GitHub](https://github.com)\n"
 
     def test_output_path_printed(self, runner: CliRunner, tmp_path: Path) -> None:
         src = tmp_path / "test.md"
         src.write_text("hello", encoding="utf-8")
         result = runner.invoke(main, [str(src)])
-        assert str(tmp_path) in result.output
+        assert result.output == (
+            f"LinkedIn-formatted text written to: {tmp_path / 'test.linkedin.txt'}\n"
+        )
 
     def test_nonexistent_file_error(self, runner: CliRunner, tmp_path: Path) -> None:
-        result = runner.invoke(main, [str(tmp_path / "missing.md")])
-        assert result.exit_code != 0
+        missing = tmp_path / "missing.md"
+        result = runner.invoke(main, [str(missing)])
+        # Click rejects the path itself, as a usage error, before converting.
+        assert result.exit_code == 2
+        # Click quotes the path with repr(), which doubles Windows backslashes.
+        assert f"File {str(missing)!r} does not exist." in result.output
 
 
 class TestCliStdin:
@@ -67,28 +78,30 @@ class TestCliStdin:
             assert _stdin_is_tty() is is_tty
 
     @pytest.mark.parametrize(
-        ("markdown", "marker"),
-        [("**hello** world", "**"), ("*italic*", "*")],
+        ("markdown", "expected"),
+        [("**hello** world", "𝗵𝗲𝗹𝗹𝗼 world\n"), ("*italic*", "𝘪𝘵𝘢𝘭𝘪𝘤\n")],
         ids=["bold", "italic"],
     )
     def test_reads_from_stdin(
         self,
         runner: CliRunner,
         markdown: str,
-        marker: str,
+        expected: str,
     ) -> None:
         result = runner.invoke(main, [], input=markdown)
         assert result.exit_code == 0
-        assert marker not in result.output
+        assert result.output == expected
 
     def test_stdin_empty(self, runner: CliRunner) -> None:
         result = runner.invoke(main, [], input="")
         assert result.exit_code == 0
+        assert not result.output
 
     def test_tty_stdin_no_file_error(self, runner: CliRunner) -> None:
         with patch("md2linkedin._cli._stdin_is_tty", return_value=True):
             result = runner.invoke(main, [])
-        assert result.exit_code != 0
+        assert result.exit_code == 2
+        assert "No input file provided and stdin is a terminal." in result.output
 
 
 class TestCliNoMonospaceCode:
@@ -100,24 +113,25 @@ class TestCliNoMonospaceCode:
         src = tmp_path / "post.md"
         src.write_text("use `hello` here", encoding="utf-8")
         dst = tmp_path / "out.txt"
-        runner.invoke(main, [str(src), "-o", str(dst), "--no-monospace-code"])
-        content = dst.read_text(encoding="utf-8")
-        assert "hello" in content
-        assert "𝚑𝚎𝚕𝚕𝚘" not in content
+        result = runner.invoke(
+            main,
+            [str(src), "-o", str(dst), "--no-monospace-code"],
+        )
+        assert result.exit_code == 0
+        assert dst.read_text(encoding="utf-8") == "use hello here\n"
 
     def test_monospace_code_default_on(self, runner: CliRunner, tmp_path: Path) -> None:
         src = tmp_path / "post.md"
         src.write_text("use `hello` here", encoding="utf-8")
         dst = tmp_path / "out.txt"
-        runner.invoke(main, [str(src), "-o", str(dst)])
-        content = dst.read_text(encoding="utf-8")
-        assert "𝚑𝚎𝚕𝚕𝚘" in content
+        result = runner.invoke(main, [str(src), "-o", str(dst)])
+        assert result.exit_code == 0
+        assert dst.read_text(encoding="utf-8") == "use 𝚑𝚎𝚕𝚕𝚘 here\n"
 
     def test_no_monospace_code_stdin(self, runner: CliRunner) -> None:
         result = runner.invoke(main, ["--no-monospace-code"], input="use `hello` here")
         assert result.exit_code == 0
-        assert "hello" in result.output
-        assert "𝚑𝚎𝚕𝚕𝚘" not in result.output
+        assert result.output == "use hello here\n"
 
 
 class TestCliFlags:
@@ -125,10 +139,14 @@ class TestCliFlags:
     def test_version_flag(self, runner: CliRunner, flag: str) -> None:
         result = runner.invoke(main, [flag])
         assert result.exit_code == 0
-        assert "." in result.output  # version number contains dots
+        assert result.output == f"main, version {__version__}\n"
 
     @pytest.mark.parametrize("flag", ["--help", "-h"])
     def test_help_flag(self, runner: CliRunner, flag: str) -> None:
         result = runner.invoke(main, [flag])
         assert result.exit_code == 0
-        assert "Markdown" in result.output
+        # Usage first, then the docstring's summary line.
+        assert result.output.startswith(
+            "Usage: main [OPTIONS] [INPUT_FILE]\n\n"
+            "  Convert Markdown to LinkedIn-friendly Unicode text.\n",
+        )

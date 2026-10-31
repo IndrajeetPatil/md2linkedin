@@ -37,7 +37,9 @@ def write_report(directory: Path, sample: int, value: float = 100) -> Path:
 def test_threshold(value: float, *, failed: bool) -> None:
     report, actual = compare({"example": 100}, {"example": value}, 10)
     assert actual is failed
+    # One benchmark, so exactly one verdict appears in the report.
     assert ("FAIL" if failed else "PASS") in report
+    assert ("PASS" if failed else "FAIL") not in report
 
 
 def test_repeated_samples_resist_one_outlier(tmp_path: Path) -> None:
@@ -146,7 +148,10 @@ def test_cli_exit_status(tmp_path: Path, value: float, exit_code: int) -> None:
         ])
         == exit_code
     )
-    assert "Standalone CodSpeed" in output.read_text(encoding="utf-8")
+    report = output.read_text(encoding="utf-8")
+    assert report.startswith("## Standalone CodSpeed benchmarks\n")
+    # The written report agrees with the exit status it accompanies.
+    assert ("FAIL" in report) is bool(exit_code)
 
 
 def test_cli_fails_closed_on_missing_reports(tmp_path: Path) -> None:

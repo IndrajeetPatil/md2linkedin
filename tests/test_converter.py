@@ -80,7 +80,8 @@ class TestConvert:
         assert convert("###### Deep") == "𝗗𝗲𝗲𝗽\n"
 
     def test_setext_h1_is_a_heading(self) -> None:
-        assert "━" in convert("Title\n=====")
+        rule = "━" * 40
+        assert convert("Title\n=====") == f"{rule}\n𝗧𝗜𝗧𝗟𝗘\n{rule}\n"
 
     def test_setext_h2_is_a_heading(self) -> None:
         assert convert("Title\n-----") == "𝗧𝗶𝘁𝗹𝗲\n"
@@ -246,8 +247,9 @@ class TestConvert:
         assert convert("intro\n\n- a\n\nend") == "intro\n\n• a\n\nend\n"
 
     def test_a_bullet_after_a_heading_is_a_list(self) -> None:
+        rule = "━" * 40
         result = convert("# Heading\n\n- first\n  - sub\n- second")
-        assert result.endswith("• first\n  ‣ sub\n• second\n")
+        assert result == f"{rule}\n𝗛𝗘𝗔𝗗𝗜𝗡𝗚\n{rule}\n\n• first\n  ‣ sub\n• second\n"
 
     def test_an_indented_fenced_block_keeps_the_list_open(self) -> None:
         # Indented, the block is content of the item above rather than a block
@@ -441,32 +443,30 @@ class TestConvertFile:
     def test_basic_conversion(self, tmp_path: Path) -> None:
         src = _write_markdown(tmp_path, "**bold** text")
         out = convert_file(src)
-        assert out.exists()
-        content = out.read_text(encoding="utf-8")
-        assert "**" not in content
+        assert out.read_text(encoding="utf-8") == "𝗯𝗼𝗹𝗱 text\n"
 
     def test_default_output_path(self, tmp_path: Path) -> None:
         src = _write_markdown(tmp_path, "hello")
         out = convert_file(src)
-        assert out.suffix == ".txt"
-        assert "linkedin" in out.name
+        assert out == tmp_path / "test.linkedin.txt"
 
     def test_explicit_output_path(self, tmp_path: Path) -> None:
         src = _write_markdown(tmp_path, "hello")
         dst = tmp_path / "output.txt"
         out = convert_file(src, dst)
         assert out == dst
-        assert dst.exists()
+        assert dst.read_text(encoding="utf-8") == "hello\n"
 
     def test_preserve_links_forwarded(self, tmp_path: Path) -> None:
         src = _write_markdown(tmp_path, "[GitHub](https://github.com)")
         out = convert_file(src, preserve_links=True)
-        assert out.read_text(encoding="utf-8").strip() == "[GitHub](https://github.com)"
+        assert out.read_text(encoding="utf-8") == "[GitHub](https://github.com)\n"
 
     def test_string_path_accepted(self, tmp_path: Path) -> None:
         src = _write_markdown(tmp_path, "hello")
         out = convert_file(str(src))
-        assert out.exists()
+        assert out == tmp_path / "test.linkedin.txt"
+        assert out.read_text(encoding="utf-8") == "hello\n"
 
     def test_file_not_found_raises(self, tmp_path: Path) -> None:
         missing = tmp_path / "nonexistent.md"
@@ -474,7 +474,10 @@ class TestConvertFile:
         # diagnose the failure; mutmut mutates the f-string body to `None`.
         # `re.escape` is required so Windows path separators aren't treated
         # as regex escapes.
-        with pytest.raises(FileNotFoundError, match=re.escape(str(missing))):
+        with pytest.raises(
+            FileNotFoundError,
+            match=re.escape(f"Input file not found: {missing}"),
+        ):
             convert_file(missing)
 
     def test_default_strips_links(self, tmp_path: Path) -> None:
@@ -482,28 +485,22 @@ class TestConvertFile:
         # are stripped to their display text unless the caller opts in.
         src = _write_markdown(tmp_path, "[GitHub](https://github.com)")
         out = convert_file(src)
-        content = out.read_text(encoding="utf-8").strip()
-        assert content == "GitHub"
+        assert out.read_text(encoding="utf-8") == "GitHub\n"
 
     def test_output_is_utf8(self, tmp_path: Path) -> None:
         src = _write_markdown(tmp_path, "**café** résumé 🎉")
         out = convert_file(src)
-        content = out.read_text(encoding="utf-8")
-        assert "é" in content
-        assert "🎉" in content
+        assert out.read_text(encoding="utf-8") == "𝗰𝗮𝗳é résumé 🎉\n"
 
     def test_monospace_code_forwarded(self, tmp_path: Path) -> None:
         src = _write_markdown(tmp_path, "use `hello` here")
         out = convert_file(src, monospace_code=False)
-        content = out.read_text(encoding="utf-8")
-        assert "hello" in content
-        assert "𝚑𝚎𝚕𝚕𝚘" not in content
+        assert out.read_text(encoding="utf-8") == "use hello here\n"
 
     def test_monospace_code_default(self, tmp_path: Path) -> None:
         src = _write_markdown(tmp_path, "use `hello` here")
         out = convert_file(src)
-        content = out.read_text(encoding="utf-8")
-        assert "𝚑𝚎𝚕𝚕𝚘" in content
+        assert out.read_text(encoding="utf-8") == "use 𝚑𝚎𝚕𝚕𝚘 here\n"
 
     def test_returns_path_object(self, tmp_path: Path) -> None:
         src = _write_markdown(tmp_path, "hello")
@@ -582,7 +579,7 @@ class TestConvertFile:
         # ``encoding="utf-8"`` must be passed explicitly.  Mutations to
         # ``None`` or an arg-drop (which defaults to ``None``) both fail.
         assert recorded["encoding"] == "utf-8"
-        assert isinstance(recorded["data"], str)
+        assert recorded["data"] == "hello\n"
 
 
 @pytest.mark.skipif(
