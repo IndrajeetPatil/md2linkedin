@@ -426,7 +426,7 @@ def convert_file(
         raise FileNotFoundError(msg)
 
     if output_path is None:
-        output_path = input_path.with_suffix("").with_suffix(".linkedin.txt")
+        output_path = input_path.with_suffix(".linkedin.txt")
     output_path = Path(output_path)
 
     md_text = input_path.read_text(encoding=_ENCODING)

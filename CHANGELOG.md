@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `==highlight==` keeps its text and drops its markers, like
   `~~strikethrough~~`, instead of leaving `==` in the output.
 
+### Fixed
+
+- `convert_file()` and the CLI keep every suffix but the last in the default
+  output name: `notes.v2.md` is written to `notes.v2.linkedin.txt` instead of
+  `notes.linkedin.txt`, which dropped `.v2` and could overwrite the output of
+  a sibling such as `notes.v1.md`.
+
 ## [0.5.1] — 2026-10-10
 
 ### Added
