@@ -67,7 +67,8 @@ class TestCliFileInput:
         result = runner.invoke(main, [str(missing)])
         # Click rejects the path itself, as a usage error, before converting.
         assert result.exit_code == 2
-        assert f"File '{missing}' does not exist." in result.output
+        # Click quotes the path with repr(), which doubles Windows backslashes.
+        assert f"File {str(missing)!r} does not exist." in result.output
 
 
 class TestCliStdin:
