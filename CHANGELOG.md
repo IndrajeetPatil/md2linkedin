@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] — 2026-10-31
+
 ### Added
 
 - `==highlight==` keeps its text and drops its markers, like
@@ -18,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   output name: `notes.v2.md` is written to `notes.v2.linkedin.txt` instead of
   `notes.linkedin.txt`, which dropped `.v2` and could overwrite the output of
   a sibling such as `notes.v1.md`.
+- `md2linkedin --help` prints its examples one per line, without a literal
+  `\b` or the docstring's `Raises:` section.
 
 ## [0.5.1] — 2026-10-10
 
