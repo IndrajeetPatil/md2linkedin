@@ -4,7 +4,8 @@ This is a Python package repository following standard development practices.
 
 ## Project Structure
 - `src/`: Contains the main package code.
-- `tests/`: Contains the `pytest` test suite.
+- `tests/`: Contains the `pytest` test suite. `tests/benchmarks/` holds the
+  performance benchmarks behind the CI regression gate; see its `README.md`.
 - `docs/`: Contains documentation files.
 - `README.md`: Also the documentation homepage — `docs/index.md` only
   includes it via `--8<--`, so edit `README.md`, never `docs/index.md`. Its
@@ -31,8 +32,10 @@ This is a Python package repository following standard development practices.
 - If `pyrefly` and `ty` conflict on any issue, `ty` should win.
 - Pre-commit hooks are configured via `prek`.
 - **Do not** commit code with linting errors, type warnings, or failing tests.
-- Always run `make qa` to format, lint, type-check, and audit dependencies.
+- Always run `make qa` to format, lint, type-check, check type coverage, and audit dependencies.
 - Run `make check-package` to run the full validation suite (QA + Tests + Build).
+- After changing `docs/`, `README.md`, `CHANGELOG.md`, `mkdocs.yml` or a public
+  docstring, also run `make build-docs`, a strict build that fails on warnings.
 - **Do not** bypass the `Makefile`; rely on its targets for standardized workflows.
 
 ## Docstrings & Comments

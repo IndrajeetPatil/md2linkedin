@@ -32,10 +32,9 @@ out = convert_file("post.md", "my_post.txt")
 
 ### Stripping and Preserving Links
 
-By default, Markdown link syntax is stripped to display text only
-(`[GitHub](https://github.com)` → `GitHub`). This is useful for removing clickable URLs from your output, keeping only the descriptive text.
-
-Pass `preserve_links=True` to retain the full link syntax:
+By default, links are reduced to their display text
+(`[GitHub](https://github.com)` → `GitHub`). Pass `preserve_links=True` to
+keep the full link syntax:
 
 ```python
 result = convert("[GitHub](https://github.com)", preserve_links=True)
@@ -63,8 +62,8 @@ to_sans_italic("3 years of exp")  # 3 𝘺𝘦𝘢𝘳𝘴 𝘰𝘧 𝘦𝘹𝘱
 to_sans_bold_italic("Key insight")  # 𝙆𝙚𝙮 𝙞𝙣𝙨𝙞𝙜𝙝𝙩
 to_monospace("print('hi')")  # 𝚙𝚛𝚒𝚗𝚝('𝚑𝚒')
 
-# Dynamic dispatch
-apply_style("Hiring!", "bold")
+# Choose the style at runtime: "bold", "italic" or "bold_italic"
+apply_style("Hiring!", "bold")  # 𝗛𝗶𝗿𝗶𝗻𝗴!
 ```
 
 ---
@@ -81,7 +80,7 @@ apply_style("Hiring!", "bold")
 | `` `inline code` ``                       | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (backticks stripped) |
 | ` ```fenced block``` `                    | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (fences stripped)    |
 | Four-space indented block                 | Unicode 𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎 (indent stripped)    |
-| `# H1`                                    | Bold Unicode + `━` border              |
+| `# H1`                                    | Bold uppercase Unicode + `━` borders   |
 | `## H2`–`###### H6`                       | Bold Unicode, no border                |
 | `Title` + `=====` / `-----` (setext)      | Same as `# H1` / `## H2`               |
 | `[text](url)`                             | `text` (URL discarded)                 |
@@ -91,7 +90,7 @@ apply_style("Hiring!", "bold")
 | `- item`                                  | `• item`                               |
 | `  - nested`                              | `  ‣ nested`                           |
 | `    - nested twice`                      | `    ◦ nested twice`                   |
-| `1. item`                                 | `1. item` (numbers kept verbatim)      |
+| `1. item` / `1) item`                     | `1. item` (renumbered in sequence)     |
 | `\| a \| b \|` table                      | Bold header, cells joined by `\|`      |
 | `> blockquote`                            | `> ` prefix removed, at every depth    |
 | `---` / `* * *` thematic break            | Dropped                                |
@@ -117,10 +116,9 @@ consumed. Strip both before converting if you need them gone.
 
 `convert()` is a two-stage pipeline:
 
-1. [`comrak`](https://pypi.org/project/comrak/) — Rust bindings to the
-   reference-grade CommonMark implementation — parses the Markdown and
-   renders it to HTML, with the tables, strikethrough, autolink and highlight
-   extensions enabled.
+1. [`comrak`](https://pypi.org/project/comrak/), Python bindings to a Rust
+   CommonMark parser, parses the Markdown and renders it to HTML, with the
+   tables, strikethrough, autolink and highlight extensions enabled.
 2. [`selectolax`](https://pypi.org/project/selectolax/) parses that HTML, and
    a small renderer walks the tree, replacing each element with its LinkedIn
    equivalent: Unicode styling for emphasis and code, bullets and numbers for
@@ -169,8 +167,9 @@ convert("- Role\n  - Applications\n    - AI Launchpad")
 #     ◦ AI Launchpad
 ```
 
-Ordered markers are kept verbatim, since the numbers already convey order, and
-a list that starts at `3.` keeps counting from three. Bullets nested under an
+Ordered items are numbered in sequence from the list's first number, so
+`1.`, `1.`, `1.` becomes `1.`, `2.`, `3.` and a list that starts at `3.` keeps
+counting from three. A `)` delimiter becomes `.`. Bullets nested under an
 ordered item are indented to the width of its marker, so they line up under
 its text rather than under its number.
 
@@ -187,10 +186,10 @@ convert("- item\n\n  ```\n  a = 1\n  ```")
 
 ### Code Is Rendered in Monospace
 
-By default, inline code and fenced code blocks are converted to Unicode
+By default, inline code and code blocks are converted to Unicode
 Mathematical Monospace characters. Only ASCII letters and digits are mapped;
-all other characters (including Markdown syntax like `**`) pass through
-unchanged — no nested processing is performed:
+everything else, including Markdown syntax like `**`, passes through
+unchanged:
 
 ```python
 convert("Use `**bold**` in Markdown")
@@ -240,6 +239,8 @@ Python, and the cost scales linearly with input length, so it is safe to call
 on large files:
 
 ```python
+from pathlib import Path
+
 big_md = Path("quarterly_report.md").read_text()
 result = convert(big_md)
 ```
@@ -253,36 +254,20 @@ and digits are remapped to Unicode Mathematical variants:
 from md2linkedin import convert
 
 result = convert("**Excited to share** 🎉 *check this out*!")
-print(result)  # 𝗘𝘅𝗰𝗶𝘁𝗲𝗱 𝘁𝗼 𝘀𝗵𝗮𝗿𝗲 🎉 𝘤𝘩𝘦𝘤𝘬 𝘵𝘩𝘪𝘴 𝘰𝘂𝘵!
+print(result)  # 𝗘𝘅𝗰𝗶𝘁𝗲𝗱 𝘁𝗼 𝘀𝗵𝗮𝗿𝗲 🎉 𝘤𝘩𝘦𝘤𝘬 𝘵𝘩𝘪𝘴 𝘰𝘶𝘵!
 ```
 
 ---
 
 ## Running Without Installing (uvx)
 
-If you only need `md2linkedin` occasionally, you can run it directly with
-[`uvx`](https://docs.astral.sh/uv/guides/tools/) without a permanent
-installation:
+Every `md2linkedin` command in these docs also works through
+[`uvx`](https://docs.astral.sh/uv/guides/tools/), which runs the CLI in a
+cached, isolated environment without a permanent installation:
 
 ```bash
-# Convert a Markdown file (output: post.linkedin.txt)
-uvx md2linkedin post.md
-
-# Pipe from stdin
 echo "**bold** and *italic*" | uvx md2linkedin
-
-# Preserve link syntax
-uvx md2linkedin --preserve-links post.md
-
-# Explicit output path
-uvx md2linkedin post.md -o linkedin_post.txt
-
-# Disable monospace code rendering
-uvx md2linkedin --no-monospace-code post.md
 ```
-
-`uvx` downloads and caches the package in an isolated environment, so
-subsequent runs are fast.
 
 ---
 
@@ -298,6 +283,8 @@ Or in Python:
 
 ```python
 import subprocess
+from pathlib import Path
+
 from md2linkedin import convert
 
 result = subprocess.run(
@@ -314,15 +301,20 @@ linkedin_text = convert(result.stdout)
 
 ## CLI Reference
 
+Run `md2linkedin --help` for the full text.
+
 ```
 Usage: md2linkedin [OPTIONS] [INPUT_FILE]
 
-  Convert Markdown to LinkedIn-friendly Unicode text.
-
 Options:
-  -o, --output PATH    Output file path.
-  --preserve-links     Keep link syntax in output.
-  --no-monospace-code  Disable monospace Unicode rendering for code.
   -V, --version        Show the version and exit.
+  -o, --output FILE    Output file path. Defaults to INPUT_FILE with a
+                       '.linkedin.txt' extension. Ignored when reading from
+                       stdin.
+  --preserve-links     Keep Markdown link syntax ([text](url)) in the output
+                       instead of stripping URLs.
+  --no-monospace-code  Disable monospace Unicode rendering for inline code and
+                       fenced code blocks. When set, code is kept as plain
+                       text, with the backticks and fences stripped.
   -h, --help           Show this message and exit.
 ```

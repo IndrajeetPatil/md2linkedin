@@ -64,8 +64,6 @@ markdown_extensions:
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite:
-  - pymdownx.superfences:
-  - markdown.extensions.attr_list:
   - pymdownx.keys:
   - pymdownx.superfences:
       custom_fences:

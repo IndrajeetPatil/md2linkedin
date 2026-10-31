@@ -85,16 +85,14 @@ md2linkedin post.md --no-monospace-code
 - **Bold**: `**text**` or `__text__` → Unicode Sans-Serif Bold (𝗯𝗼𝗹𝗱)
 - **Italic**: `*text*` or `_text_` → Unicode Sans-Serif Italic (𝘪𝘵𝘢𝘭𝘪𝘤)
 - **Bold-italic**: `***text***` or `___text___` → Unicode Sans-Serif Bold Italic (𝙗𝙤𝙡𝙙-𝙞𝙩𝙖𝙡𝙞𝙘)
-- **Headers**: `#`/`##`/etc. styled with bold Unicode; H1 gets a `━` border
-- **Code spans**: backticks stripped, content rendered in Unicode Monospace (𝚌𝚘𝚍𝚎) by default; `--no-monospace-code` keeps plain text
-- **Fenced and indented code blocks**: fences and indent stripped, content rendered in Unicode Monospace by default; `--no-monospace-code` keeps plain text
+- **Headers**: `#`/`##`/etc. styled with bold Unicode; H1 is also uppercased between `━` borders
+- **Code spans and blocks**: backticks, fences and indent stripped; content rendered in Unicode Monospace (𝚌𝚘𝚍𝚎) by default, or kept plain with `--no-monospace-code`
 - **Links**: stripped to display text by default; `--preserve-links` retains URLs
 - **Images**: replaced by alt text
 - **Bullet lists**: `-`/`*`/`+` → `•`; nested items get one marker per level (`‣`, `◦`, `▪`)
-- **Ordered lists**: numbers kept verbatim, counting on from wherever the list starts
+- **Ordered lists**: numbered in sequence from the list's first number (`1.`, `1.` → `1.`, `2.`)
 - **Tables**: header row in bold, cells joined by ` | `
-- **Strikethrough**: `~~text~~` → `text`, markers dropped
-- **Highlight**: `==text==` → `text`, markers dropped
+- **Strikethrough and highlight**: `~~text~~` and `==text==` → `text`, markers dropped
 - **Blockquotes**: leading `>` stripped at every level of nesting
 - **HTML spans**: unwrapped, inner text preserved
 - **HTML entities**: decoded (`&amp;` → `&`, etc.)
@@ -106,11 +104,11 @@ md2linkedin post.md --no-monospace-code
 
 Converting Markdown to LinkedIn-friendly text relies on Unicode Mathematical Alphanumeric Symbols to simulate styling. This approach has notable limitations:
 
-- **Code Blocks**: Monospace Unicode characters do not enforce true fixed-width alignment on proportional fonts (like LinkedIn's default font). As a result, indentation and column alignment in code blocks will often break visually.
+- **Code blocks**: Monospace Unicode characters do not enforce true fixed-width alignment on proportional fonts (like LinkedIn's default font). As a result, indentation and column alignment in code blocks will often break visually.
 - **Tables**: Markdown tables are flattened to one line per row, with a bold header and cells joined by ` | `. Nothing keeps the columns aligned on LinkedIn's proportional font, so wide tables are better rewritten as lists.
 - **Accessibility**: Screen readers often read Unicode mathematical characters aloud individually (e.g., "mathematical sans-serif bold b") instead of as complete words, making the content difficult for visually impaired users to understand.
 - **Searchability**: Text styled with these Unicode characters may not be indexed properly by LinkedIn's search algorithm, meaning people searching for your keywords might not find your post.
-- **Markdown extensions**: The converter reads CommonMark, plus tables, strikethrough, autolinks and `==highlight==`. Task-list checkboxes and footnotes are not enabled, because LinkedIn has nowhere to put them: `- [ ] todo` keeps its literal `[ ]`, and `text[^1]` becomes `text^1`. See [What Gets Transformed](https://www.indrapatil.com/md2linkedin/advanced/#what-gets-transformed-and-what-doesnt) for the full list.
+- **Markdown extensions**: Only CommonMark plus tables, strikethrough, autolinks and `==highlight==` are read. Task-list checkboxes stay as literal `[ ]`/`[x]` and footnotes are flattened (`text[^1]` → `text^1`); see [What Gets Transformed](https://www.indrapatil.com/md2linkedin/advanced/#what-gets-transformed-and-what-doesnt).
 
 For more examples, check out the package documentation at:
 <https://www.indrapatil.com/md2linkedin/>
