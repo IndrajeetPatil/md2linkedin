@@ -296,7 +296,8 @@ class Renderer:
             return ""
         level = self.lists[-1]
         if level.ordered:
-            # The numbers already convey the order, so they are kept verbatim.
+            # Items are numbered on from the list's start value, whatever
+            # numbers the source used.
             marker = f"{level.number}. "
             level.number += 1
             return marker
@@ -352,7 +353,7 @@ def convert(
     preserve_links: bool = False,
     monospace_code: bool = True,
 ) -> str:
-    r"""Convert Markdown text to LinkedIn-compatible Unicode plain text.
+    """Convert Markdown text to LinkedIn-compatible Unicode plain text.
 
     Args:
         text: The Markdown source string.
@@ -367,7 +368,7 @@ def convert(
         A plain-text string suitable for pasting into LinkedIn.
 
     """
-    if not text or not text.strip():
+    if not text.strip():
         return ""
 
     render_options = comrak.RenderOptions()
@@ -408,7 +409,7 @@ def convert_file(
     preserve_links: bool = False,
     monospace_code: bool = True,
 ) -> Path:
-    r"""Convert a Markdown file and write the result to a ``.txt`` file.
+    """Convert a Markdown file and write the result to a ``.txt`` file.
 
     Args:
         input_path: Path to the Markdown source file.
@@ -417,7 +418,10 @@ def convert_file(
         monospace_code: Passed through to :func:`convert`.
 
     Returns:
-        The resolved path of the written output file.
+        The path of the written output file.
+
+    Raises:
+        FileNotFoundError: If *input_path* does not exist.
 
     """
     input_path = Path(input_path)

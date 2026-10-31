@@ -54,7 +54,7 @@ def main(
     preserve_links: bool,
     no_monospace_code: bool,
 ) -> None:
-    r"""Convert Markdown to LinkedIn-friendly Unicode text.
+    """Convert Markdown to LinkedIn-friendly Unicode text.
 
     Reads from INPUT_FILE (or stdin when INPUT_FILE is omitted) and writes
     LinkedIn-compatible plain text in which bold and italic formatting is
@@ -65,26 +65,22 @@ def main(
 
     \b
     Examples:
-
       # Convert a file (output written to README.linkedin.txt)
       md2linkedin README.md
-
       # Specify the output path explicitly
       md2linkedin README.md -o post.txt
-
       # Pipe from stdin
       echo "**Hello**, *world*!" | md2linkedin
-
       # Keep link URLs in the output
       md2linkedin README.md --preserve-links
-
       # Disable monospace code rendering
       md2linkedin README.md --no-monospace-code
 
+    \f
     Raises:
         click.UsageError: If neither an input file nor piped stdin is provided.
 
-    """
+    """  # ruff: ignore[escape-sequence-in-docstring] (Click markers)
     monospace_code = not no_monospace_code
     if input_file is not None:
         out_path = convert_file(
@@ -94,21 +90,20 @@ def main(
             monospace_code=monospace_code,
         )
         click.echo(f"LinkedIn-formatted text written to: {out_path}")
-    else:
-        # Read from stdin
-        if _stdin_is_tty():
-            msg = (
-                "No input file provided and stdin is a terminal. "
-                "Provide a file path or pipe content via stdin."
-            )
-            raise click.UsageError(msg)
-        md_text = sys.stdin.read()
-        result = convert(
-            md_text,
-            preserve_links=preserve_links,
-            monospace_code=monospace_code,
+        return
+
+    if _stdin_is_tty():
+        msg = (
+            "No input file provided and stdin is a terminal. "
+            "Provide a file path or pipe content via stdin."
         )
-        click.echo(result, nl=False)
+        raise click.UsageError(msg)
+    result = convert(
+        sys.stdin.read(),
+        preserve_links=preserve_links,
+        monospace_code=monospace_code,
+    )
+    click.echo(result, nl=False)
 
 
 def _stdin_is_tty() -> bool:

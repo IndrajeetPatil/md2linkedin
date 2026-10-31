@@ -150,3 +150,9 @@ class TestCliFlags:
             "Usage: main [OPTIONS] [INPUT_FILE]\n\n"
             "  Convert Markdown to LinkedIn-friendly Unicode text.\n",
         )
+
+    def test_help_keeps_examples_unwrapped(self, runner: CliRunner) -> None:
+        result = runner.invoke(main, ["--help"])
+        assert "\n    md2linkedin README.md -o post.txt\n" in result.output
+        assert "\\b" not in result.output
+        assert "Raises:" not in result.output
