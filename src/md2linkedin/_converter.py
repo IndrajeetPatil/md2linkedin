@@ -412,7 +412,9 @@ def convert_file(
 
     Args:
         input_path: Path to the Markdown source file.
-        output_path: Destination path for the converted output.
+        output_path: Destination path for the converted output. Defaults to
+            *input_path* with its last suffix replaced by ``.linkedin.txt``,
+            so ``notes.v2.md`` is written to ``notes.v2.linkedin.txt``.
         preserve_links: Passed through to :func:`convert`.
         monospace_code: Passed through to :func:`convert`.
 
