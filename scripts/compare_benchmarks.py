@@ -20,7 +20,7 @@ def read_report(path: Path) -> dict[str, float]:
         Benchmark IDs mapped to positive median nanoseconds.
 
     Raises:
-        ValueError: If results are missing, incompatible, or invalid.
+        ValueError: If results are missing, incompatible, duplicated, or invalid.
 
     """
     data: Any = json.loads(path.read_text(encoding="utf-8"))
@@ -40,8 +40,11 @@ def read_report(path: Path) -> dict[str, float]:
     for benchmark in data["benchmarks"]:
         uri = benchmark["uri"]
         value = benchmark["stats"]["median_ns"]
-        if not isinstance(uri, str) or not uri or uri in results:
-            msg = f"{path}: invalid or duplicate benchmark: {uri!r}"
+        if not isinstance(uri, str) or not uri:
+            msg = f"{path}: invalid benchmark ID: {uri!r}"
+            raise ValueError(msg)
+        if uri in results:
+            msg = f"{path}: duplicate benchmark: {uri!r}"
             raise ValueError(msg)
         if (
             isinstance(value, bool)
@@ -49,7 +52,7 @@ def read_report(path: Path) -> dict[str, float]:
             or not math.isfinite(value)
             or value <= 0
         ):
-            msg = f"{path}: invalid or duplicate benchmark: {uri!r}"
+            msg = f"{path}: invalid median_ns for {uri!r}: {value!r}"
             raise ValueError(msg)
         results[uri] = float(value)
     return results
@@ -79,9 +82,8 @@ def load_results(directory: Path, samples: int) -> dict[str, float]:
 def _format_table(rows: list[tuple[str, ...]]) -> list[str]:
     """Pad Markdown table columns for readable plain-text CI logs.
 
-    Returns:
-        Table lines with left-aligned labels and right-aligned numeric columns.
-
+    Labels are left-aligned and numeric columns right-aligned, and the
+    separator row's colons mark the right-aligned columns for Markdown.
     """
     alignments = ("<", ">", ">", ">", "<")
     widths = [max(map(len, column)) for column in zip(*rows, strict=True)]

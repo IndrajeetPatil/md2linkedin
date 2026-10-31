@@ -51,7 +51,17 @@ def test_invalid_measurements(tmp_path: Path, value: object) -> None:
     data = json.loads(path.read_text(encoding="utf-8"))
     data["benchmarks"][0]["stats"]["median_ns"] = value
     path.write_text(json.dumps(data), encoding="utf-8")
-    with pytest.raises(ValueError, match="invalid or duplicate"):
+    with pytest.raises(ValueError, match="invalid median_ns for "):
+        read_report(path)
+
+
+@pytest.mark.parametrize("uri", ["", 123, None])
+def test_invalid_benchmark_ids(tmp_path: Path, uri: object) -> None:
+    path = write_report(tmp_path, 1)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["benchmarks"][0]["uri"] = uri
+    path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid benchmark ID: "):
         read_report(path)
 
 
@@ -68,7 +78,7 @@ def test_incompatible_reports(tmp_path: Path, mutation: str) -> None:
     else:
         data["creator"]["version"] = "0.0.0"
     path.write_text(json.dumps(data), encoding="utf-8")
-    with pytest.raises(ValueError, match=r"expected nonempty|invalid or duplicate"):
+    with pytest.raises(ValueError, match=r"expected nonempty|duplicate benchmark: "):
         read_report(path)
 
 
