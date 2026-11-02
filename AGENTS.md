@@ -1,7 +1,5 @@
 # Agent Instructions
 
-This is a Python package repository following standard development practices.
-
 ## Project Structure
 - `src/`: Contains the main package code.
 - `tests/`: Contains the `pytest` test suite. `tests/benchmarks/` holds the
@@ -27,8 +25,8 @@ This is a Python package repository following standard development practices.
 
 ## Code Quality & Testing
 - Code formatting and linting are handled by `ruff`, and type checking by `ty`. We use `pyrefly` to enforce 100% type coverage.
-- `make format` first fixes missing trailing commas with Ruff's `missing-trailing-comma` (COM812) rule, then runs `ruff format`, preserving intentional multiline layouts.
-  COM812 also runs in `make lint` and the Ruff pre-commit hook. Ruff warns that this rule may conflict with its formatter; it is enabled intentionally so commas are added before formatting can collapse those layouts.
+- `make format` adds missing trailing commas (Ruff COM812, intentionally enabled despite
+  Ruff's formatter warning) before `ruff format`, preserving multiline layouts.
 - If `pyrefly` and `ty` conflict on any issue, `ty` should win.
 - Pre-commit hooks are configured via `prek`.
 - **Do not** commit code with linting errors, type warnings, or failing tests.
@@ -55,28 +53,10 @@ This is a Python package repository following standard development practices.
   they go stale. Module docstrings stay as they are.
 - Step-by-step notes about individual lines stay as inline comments in the
   body rather than migrating into the docstring.
-- Ruff's pydoclint rules would demand the very sections this convention drops,
-  so `docstring-missing-returns` (`DOC201`), `docstring-missing-yields`
-  (`DOC402`) and `docstring-missing-exception` (`DOC501`) are ignored in
-  `pyproject.toml`. They cannot tell a public function from an internal one,
-  so the public API's `Returns:`/`Raises:` sections are upheld in review
-  instead. If another rule starts flagging a description-only docstring,
-  relax that rule rather than padding the docstring back out.
-
-## Mutation Testing
-- We use [`mutmut`](https://mutmut.readthedocs.io/) to check whether the test
-  suite actually catches semantic changes to the source, not just line coverage.
-- Configuration lives in the `[tool.mutmut]` section of `pyproject.toml`.
-- Run `make mutation-test` locally to execute the full mutation run and print
-  the results table. All surviving mutants MUST be either killed by a new test
-  or explicitly justified as equivalent via `do_not_mutate_patterns` in
-  `pyproject.toml` (with a comment explaining why).
-- CI runs mutation testing on a weekly schedule and on `workflow_dispatch`;
-  see `.github/workflows/mutation-test.yml`. It is intentionally NOT gated on
-  every PR because full runs are slow.
-- Investigate a single surviving mutant with `uv run mutmut show <mutant-id>`
-  and rerun just that mutant with `uv run mutmut run <mutant-id>` after
-  strengthening the tests.
+- Ruff's pydoclint rules `DOC201`, `DOC402` and `DOC501` are ignored in
+  `pyproject.toml` because they cannot tell public from internal functions; the
+  public API's sections are upheld in review. If another rule flags a
+  description-only docstring, relax that rule rather than padding the docstring.
 
 ## Contribution Workflow
 1. Ensure you are on a feature branch.
@@ -84,9 +64,13 @@ This is a Python package repository following standard development practices.
 3. Verify all changes by running `make check-package`.
 4. Commit your changes and push to the branch to update the Pull Request.
 
-## Security
-- **Code Scanning Alerts**: During the release process, code scanning alerts should be checked via the GitHub API (`gh api repos/IndrajeetPatil/md2linkedin/code-scanning/alerts`).
-- If alerts are false positives or occur in tests, they should be dismissed using `gh api -X PATCH repos/IndrajeetPatil/md2linkedin/code-scanning/alerts/{number} -f state=dismissed -f dismissed_reason="..."` (valid reasons: "false positive", "won't fix", "used in tests").
-
 ## Release Process
-To create a new release, use the prompt defined in `.github/prompts/create-release.md`. That prompt will direct you on how to proceed.
+To create a new release, follow `.github/prompts/create-release.md` (it covers
+the code-scanning alert check).
+
+## Agent Skills
+Skills live in `.agents/skills/<name>/SKILL.md`. Load one before its task:
+
+| Skill | Load before |
+| --- | --- |
+| `mutation-testing` | Running mutmut, acting on surviving mutants or the weekly mutation-test report |
