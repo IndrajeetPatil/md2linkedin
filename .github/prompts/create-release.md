@@ -47,7 +47,10 @@ from the developer's machine.
    GitHub release title.
 8. Check open code-scanning alerts. Fix legitimate findings before release;
    dismiss an alert only when repository evidence proves the documented
-   dismissal reason.
+   dismissal reason. List alerts with
+   `gh api repos/IndrajeetPatil/md2linkedin/code-scanning/alerts` and dismiss with
+   `gh api -X PATCH repos/IndrajeetPatil/md2linkedin/code-scanning/alerts/<number> -f state=dismissed -f dismissed_reason="..."`
+   (`false positive`, `won't fix` or `used in tests`).
 
 ## Validate and merge the release pull request
 
