@@ -19,7 +19,7 @@ def write_report(directory: Path, sample: int, value: float = 100) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps({
-            "creator": {"name": "pytest-codspeed", "version": "5.0.3"},
+            "creator": {"name": "pytest-codspeed", "version": "5.0.4"},
             "instrument": {"type": "walltime"},
             "benchmarks": [
                 {

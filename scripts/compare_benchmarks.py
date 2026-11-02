@@ -10,7 +10,7 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
-CODSPEED_VERSION = "5.0.3"
+CODSPEED_VERSION = "5.0.4"
 
 
 def read_report(path: Path) -> dict[str, float]:
