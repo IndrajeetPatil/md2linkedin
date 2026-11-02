@@ -33,6 +33,27 @@ def write_report(directory: Path, sample: int, value: float = 100) -> Path:
     return path
 
 
+@pytest.mark.parametrize("version", ["5.0.3", "5.0.4"])
+def test_supported_versions(tmp_path: Path, version: str) -> None:
+    path = tmp_path / f"report_{version}.json"
+    path.write_text(
+        json.dumps({
+            "creator": {"name": "pytest-codspeed", "version": version},
+            "instrument": {"type": "walltime"},
+            "benchmarks": [
+                {
+                    "uri": "tests/benchmarks/test_example.py::test_example",
+                    "stats": {"median_ns": 100},
+                },
+            ],
+        }),
+        encoding="utf-8",
+    )
+    assert read_report(path) == {
+        "tests/benchmarks/test_example.py::test_example": 100.0,
+    }
+
+
 @pytest.mark.parametrize(("value", "failed"), [(80, False), (110, False), (111, True)])
 def test_threshold(value: float, *, failed: bool) -> None:
     report, actual = compare({"example": 100}, {"example": value}, 10)

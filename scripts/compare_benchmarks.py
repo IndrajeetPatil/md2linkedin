@@ -10,7 +10,7 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
-CODSPEED_VERSION = "5.0.4"
+CODSPEED_VERSIONS: frozenset[str] = frozenset({"5.0.3", "5.0.4"})
 
 
 def read_report(path: Path) -> dict[str, float]:
@@ -26,15 +26,13 @@ def read_report(path: Path) -> dict[str, float]:
     data: Any = json.loads(path.read_text(encoding="utf-8"))
     if (
         not isinstance(data, dict)
-        or data.get("creator", {}).get("version") != CODSPEED_VERSION
+        or data.get("creator", {}).get("version") not in CODSPEED_VERSIONS
         or data.get("instrument", {}).get("type") != "walltime"
         or not isinstance(data.get("benchmarks"), list)
         or not data["benchmarks"]
     ):
-        msg = (
-            f"{path}: expected nonempty pytest-codspeed "
-            f"{CODSPEED_VERSION} walltime results"
-        )
+        versions = ", ".join(sorted(CODSPEED_VERSIONS))
+        msg = f"{path}: expected nonempty pytest-codspeed ({versions}) walltime results"
         raise ValueError(msg)
     results: dict[str, float] = {}
     for benchmark in data["benchmarks"]:
