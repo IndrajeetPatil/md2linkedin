@@ -264,18 +264,6 @@ print(result)  # 𝗘𝘅𝗰𝗶𝘁𝗲𝗱 𝘁𝗼 𝘀𝗵𝗮𝗿𝗲 🎉
 
 ---
 
-## Running Without Installing (uvx)
-
-Every `md2linkedin` command in these docs also works through
-[`uvx`](https://docs.astral.sh/uv/guides/tools/), which runs the CLI in a
-cached, isolated environment without a permanent installation:
-
-```bash
-echo "**bold** and *italic*" | uvx md2linkedin
-```
-
----
-
 ## Integration with Pandoc (LaTeX → LinkedIn)
 
 If you write in LaTeX (e.g. a résumé), you can pipe through `pandoc` first:
