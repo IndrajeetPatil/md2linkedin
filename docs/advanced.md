@@ -34,13 +34,17 @@ out = convert_file("post.md", "my_post.txt")
 
 By default, links are reduced to their display text
 (`[GitHub](https://github.com)` → `GitHub`). Pass `preserve_links=True` to
-keep the full link syntax:
+keep the full link syntax, including any title. Autolinks and bare URLs come
+out in angle brackets:
 
 ```python
-result = convert("[GitHub](https://github.com)", preserve_links=True)
+convert("[GitHub](https://github.com)", preserve_links=True)
 # [GitHub](https://github.com)
 
-result = convert_file("post.md", preserve_links=True)
+convert("See https://github.com", preserve_links=True)
+# See <https://github.com>
+
+out = convert_file("post.md", preserve_links=True)
 ```
 
 ### Direct Unicode Mapping
@@ -102,6 +106,7 @@ apply_style("Hiring!", "bold")  # 𝗛𝗶𝗿𝗶𝗻𝗴!
 | `\*` backslash escapes                    | Resolved to literal `*`                |
 | Emojis, accented chars                    | Passed through unchanged               |
 | Digits inside bold                        | Also converted (`**123**` → `𝟭𝟮𝟯`)     |
+| Digits inside italic / bold-italic        | Unchanged: Unicode has no such digits  |
 | `_snake_case_` in middle of word          | **Not** italicised                     |
 
 Two GitHub extensions are deliberately **not** enabled, because LinkedIn has
@@ -141,12 +146,12 @@ break rather than a bullet.
 
 ### Nested Formatting
 
-Emphasis nests structurally, so an inner span is styled inside the outer one
-rather than replacing it:
+Emphasis nests structurally, so the styles combine: italic inside bold comes
+out bold-italic, while the rest of the outer span stays bold:
 
 ```python
-convert("***very important***")  # → bold-italic Unicode
-convert("**bold and *italic* inside**")  # → bold wrapping italic
+convert("***very important***")  # → 𝙫𝙚𝙧𝙮 𝙞𝙢𝙥𝙤𝙧𝙩𝙖𝙣𝙩
+convert("**bold and *italic* inside**")  # → 𝗯𝗼𝗹𝗱 𝗮𝗻𝗱 𝙞𝙩𝙖𝙡𝙞𝙘 𝗶𝗻𝘀𝗶𝗱𝗲
 ```
 
 ### Nested Bullet Lists
