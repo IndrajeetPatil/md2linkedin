@@ -23,11 +23,20 @@ once, with correctness assertions and without timing, during `make check-package
 ## CI regression gate
 
 The `Benchmarks` workflow runs on pull requests, pushes to `main`, and manual
-dispatch. It checks out the exact PR head and base commits (previous commit for a
-push; first parent for a manual run). It runs the candidate's benchmark suite
-against each source tree on one Ubuntu runner, each in the **environment locked
-by its own commit**. The import path is checked before each run. A pull request
-that leaves `uv.lock` alone therefore compares source changes alone, while a
+dispatch.
+
+### What is compared
+
+| Trigger | Candidate | Base |
+| --- | --- | --- |
+| Pull request | Exact PR head | Exact PR base |
+| Push to `main` | Pushed commit | Previous commit |
+| Manual run | `HEAD` | First parent |
+
+Both revisions run the candidate's benchmark suite on one Ubuntu runner, each
+against its own source tree and in the **environment locked by its own
+commit**. The import path is checked before each run. A pull request that
+leaves `uv.lock` alone therefore compares source changes alone, while a
 dependency update is measured together with any source changes it needs. One
 shared environment cannot do the latter: when a dependency drops an API, the
 base source no longer imports against the candidate's dependencies.
@@ -36,24 +45,40 @@ New runs for the same PR replace older runs. Push and manual runs each have a
 unique concurrency group, so a later push cannot cancel or replace a pending
 comparison and hide a regression in an earlier commit.
 
-Each revision gets three independent runs, alternating which revision runs
-first. CodSpeed warms each benchmark for one second and measures it for up to
-three seconds per run. The comparator takes the median of the three
-`stats.median_ns` measurements for each benchmark and fails if the candidate is
-**more than 5% slower** than the base. Exactly 5% passes.
+### How it decides
 
-Missing reports, empty results, invalid timings, incompatible CodSpeed versions,
-duplicate benchmark IDs, or mismatched benchmark sets fail the gate rather than
-silently passing. The CodSpeed dependency is pinned because the comparator reads
-its JSON format; validate the schema and gate tests when upgrading.
+1. Each revision gets three independent runs, alternating which revision runs
+   first.
+2. CodSpeed warms each benchmark for one second and measures it for up to
+   three seconds per run.
+3. The comparator takes the median of the three `stats.median_ns`
+   measurements for each benchmark.
+4. The gate fails if the candidate is **more than 5% slower** than the base.
+   Exactly 5% passes.
 
-The job summary contains the measured commit SHAs and comparison table.
-Table columns are padded so the Markdown report also aligns in raw CI logs.
-The `standalone-codspeed-results` artifact retains raw JSON, the comparison,
-and commit SHAs for 14 days, including on regression failures.
-The job uses read-only repository permissions and no secrets.
+The gate also fails, rather than silently passing, on missing reports, empty
+results, invalid timings, incompatible CodSpeed versions, duplicate benchmark
+IDs, or mismatched benchmark sets. The CodSpeed dependency is pinned because
+the comparator reads its JSON format; validate the schema and gate tests when
+upgrading.
 
-### Choosing the margin
+This does not provide CodSpeed's instruction-count simulation or guarantee
+detection of small slowdowns. Investigate the raw timings and rerun noisy
+results before changing the limit.
+
+> [!IMPORTANT]
+> Repository branch protection must require the
+> `Standalone CodSpeed regression check` status if it should block merging.
+
+### Reports
+
+- The job summary contains the measured commit SHAs and comparison table.
+  Table columns are padded so the Markdown report also aligns in raw CI logs.
+- The `standalone-codspeed-results` artifact retains raw JSON, the comparison,
+  and commit SHAs for 14 days, including on regression failures.
+- The job uses read-only repository permissions and no secrets.
+
+## Choosing the margin
 
 The margin exists to absorb runner jitter, **not** to budget for absolute
 performance. Both revisions are measured in the same job on the same runner, so
@@ -78,10 +103,19 @@ per-sample spread within one revision can still reach 5–7% on an unlucky runne
 draw; taking the median of three samples is what collapses that into the deltas
 above, so do not reduce the sample count to save CI minutes.
 
-Note that the noisiest benchmark is `test_unicode_mapping`, not the very short
-`test_convert_document[post]`. The fastest benchmark is the quietest, because
-auto-calibration gives it far more iterations per round. Relative noise tracks
-work per measurement, not wall-clock duration.
+### Reading individual benchmarks
+
+- **`test_unicode_mapping` is the noisiest**, not the very short
+  `test_convert_document[post]`. The fastest benchmark is the quietest, because
+  auto-calibration gives it far more iterations per round. Relative noise
+  tracks work per measurement, not wall-clock duration.
+- **`test_convert_document[post]` magnifies fixed per-document cost.** Setting
+  up a parser and handing the document to it does not get cheaper with a
+  250-byte input, so a change in that cost shows up there several times larger
+  than in `[long-document]`. Read the two together before concluding where a
+  regression comes from.
+
+## Accepting a deliberate slowdown
 
 A change that deliberately alters how conversion works can exceed the margin
 without the margin being wrong. The gate compares against the base branch, so
@@ -90,13 +124,16 @@ quiet once it lands and the base carries the new implementation. Widening the
 margin to accommodate it would hide runner jitter in every later pull request
 to buy nothing in this one.
 
-Label such a pull request `benchmark-baseline-reset` instead. The comparison
-still runs and the table still reports every measured change, but the step is
-allowed to fail without failing the job, so the accepted cost does not sit on
-the pull request as an unexplained red cross. Record in the pull request body
-what the new cost is and why it is worth paying. Reach for the label only when
-the cost is the point of the change: a regression that is merely unexplained
-is the gate working, not the gate misfiring.
+Label such a pull request `benchmark-baseline-reset` instead:
+
+- The comparison still runs and the table still reports every measured change,
+  but the step is allowed to fail without failing the job, so the accepted cost
+  does not sit on the pull request as an unexplained red cross.
+- Record in the pull request body what the new cost is and why it is worth
+  paying.
+- Reach for the label only when the cost is the point of the change: a
+  regression that is merely unexplained is the gate working, not the gate
+  misfiring.
 
 Such a change is measured twice. The commit that lands it is compared, as a
 push, against the last commit before it — which still holds the old
@@ -106,22 +143,12 @@ honours it there too. Only that one commit is covered: the next push to `main`
 compares against a base that already carries the new implementation, and a
 commit pushed straight to `main` belongs to no pull request and stays gated.
 
-On a pull request the label is read from the event payload when the run starts,
-so apply it before the run you want it to affect. Re-running an existing run
-replays the original payload and will not see a label added afterwards; push a
-commit, or close and reopen the pull request, to get a run that does.
-
-Note also that `test_convert_document[post]` is short enough for fixed
-per-document cost to dominate it: setting up a parser and handing the document
-to it does not get cheaper with a 250-byte input, so a change in that cost
-shows up there several times larger than in `[long-document]`. Read the two
-together before concluding where a regression comes from.
-
-This does not provide CodSpeed's instruction-count simulation or guarantee
-detection of small slowdowns. Investigate the raw timings and rerun noisy
-results before changing the limit.
-Repository branch protection must require the
-`Standalone CodSpeed regression check` status if it should block merging.
+> [!WARNING]
+> On a pull request the label is read from the event payload when the run
+> starts, so apply it before the run you want it to affect. Re-running an
+> existing run replays the original payload and will not see a label added
+> afterwards; push a commit, or close and reopen the pull request, to get a run
+> that does.
 
 ## Compare revisions locally
 
