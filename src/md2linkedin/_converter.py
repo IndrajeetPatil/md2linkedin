@@ -1,3 +1,10 @@
+"""Markdown to LinkedIn-ready Unicode text conversion.
+
+``comrak`` renders the Markdown as HTML, and ``Renderer`` walks the
+``selectolax`` tree of that HTML, writing its text with the Unicode styles of
+the enclosing tags applied.
+"""
+
 # Python 3.15+ (PEP 810) defers these imports until first use, so that
 # ``import md2linkedin``, ``--help`` and ``--version`` skip loading the parser
 # extensions. Earlier versions ignore this and import eagerly.
