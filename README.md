@@ -15,8 +15,9 @@ platforms like LinkedIn that do not support Markdown natively.
 uv add md2linkedin
 ```
 
-> **Tip:** Run the CLI without installing it with
-> `uvx md2linkedin post.md`.
+> **Tip:** Run the CLI without installing it through
+> [`uvx`](https://docs.astral.sh/uv/guides/tools/): `uvx md2linkedin post.md`.
+> Every CLI example below works the same way.
 
 ## Usage
 

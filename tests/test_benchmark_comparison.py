@@ -14,7 +14,12 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def write_report(directory: Path, sample: int, value: float = 100) -> Path:
+def write_report(
+    directory: Path,
+    sample: int,
+    value: object = 100,
+    uri: object = "tests/benchmarks/test_example.py::test_example",
+) -> Path:
     path = directory / str(sample) / "results" / "123.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -22,10 +27,7 @@ def write_report(directory: Path, sample: int, value: float = 100) -> Path:
             "creator": {"name": "pytest-codspeed", "version": "5.0.4"},
             "instrument": {"type": "walltime"},
             "benchmarks": [
-                {
-                    "uri": "tests/benchmarks/test_example.py::test_example",
-                    "stats": {"median_ns": value},
-                },
+                {"uri": uri, "stats": {"median_ns": value}},
             ],
         }),
         encoding="utf-8",
@@ -71,20 +73,14 @@ def test_repeated_samples_resist_one_outlier(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("value", [0, -1, float("nan"), float("inf"), True, "slow"])
 def test_invalid_measurements(tmp_path: Path, value: object) -> None:
-    path = write_report(tmp_path, 1)
-    data = json.loads(path.read_text(encoding="utf-8"))
-    data["benchmarks"][0]["stats"]["median_ns"] = value
-    path.write_text(json.dumps(data), encoding="utf-8")
+    path = write_report(tmp_path, 1, value)
     with pytest.raises(ValueError, match="invalid median_ns for "):
         read_report(path)
 
 
 @pytest.mark.parametrize("uri", ["", 123, None])
 def test_invalid_benchmark_ids(tmp_path: Path, uri: object) -> None:
-    path = write_report(tmp_path, 1)
-    data = json.loads(path.read_text(encoding="utf-8"))
-    data["benchmarks"][0]["uri"] = uri
-    path.write_text(json.dumps(data), encoding="utf-8")
+    path = write_report(tmp_path, 1, uri=uri)
     with pytest.raises(ValueError, match="invalid benchmark ID: "):
         read_report(path)
 
@@ -135,11 +131,7 @@ def test_missing_samples(tmp_path: Path) -> None:
 
 def test_changed_sample_set(tmp_path: Path) -> None:
     write_report(tmp_path, 1)
-    path = write_report(tmp_path, 2)
-    path.write_text(
-        path.read_text(encoding="utf-8").replace("test_example", "test_other"),
-        encoding="utf-8",
-    )
+    write_report(tmp_path, 2, uri="tests/benchmarks/test_example.py::test_other")
     with pytest.raises(ValueError, match="benchmark sets differ"):
         load_results(tmp_path, 2)
 
