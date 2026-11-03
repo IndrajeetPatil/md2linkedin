@@ -25,8 +25,9 @@
 
 ## Code Quality & Testing
 - Code formatting and linting are handled by `ruff`, and type checking by `ty`. We use `pyrefly` to enforce 100% type coverage.
-- `make format` adds missing trailing commas (Ruff COM812, intentionally enabled despite
-  Ruff's formatter warning) before `ruff format`, preserving multiline layouts.
+- `make format` adds missing trailing commas (Ruff `COM812`,
+  `missing-trailing-comma`, intentionally enabled despite Ruff's formatter
+  warning) before `ruff format`, preserving multiline layouts.
 - If `pyrefly` and `ty` conflict on any issue, `ty` should win.
 - Pre-commit hooks are configured via `prek`.
 - **Do not** commit code with linting errors, type warnings, or failing tests.
@@ -43,8 +44,8 @@
   and `Examples:` sections. These are what `mkdocstrings` renders on the
   documentation site and what `help()` shows, so they are written for someone
   who cannot see the implementation.
-- Internal functions — anything with a leading underscore, such as
-  `_has_indented_line()` or `_convert_bullets()` — get a **description only**:
+- Internal functions — anything with a leading underscore, such as the
+  helpers and `Renderer` methods in `_converter.py` — get a **description only**:
   a summary line, plus as many paragraphs as the behaviour genuinely warrants.
   Say what the step does and why it exists; ordering constraints, non-obvious
   algorithms and workarounds belong here and are worth spelling out.
@@ -54,7 +55,8 @@
 - Step-by-step notes about individual lines stay as inline comments in the
   body rather than migrating into the docstring.
 - Ruff's pydoclint rules `DOC201`, `DOC402` and `DOC501` are ignored in
-  `pyproject.toml` because they cannot tell public from internal functions; the
+  `pyproject.toml` (by name: `docstring-missing-returns`,
+  `docstring-missing-yields`, `docstring-missing-exception`) because they cannot tell public from internal functions; the
   public API's sections are upheld in review. If another rule flags a
   description-only docstring, relax that rule rather than padding the docstring.
 
