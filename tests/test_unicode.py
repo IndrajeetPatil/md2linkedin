@@ -48,7 +48,7 @@ class TestBuildTable:
         assert len(table) == len(string.ascii_letters)
 
 
-# ── to_sans_bold ───────────────────────────────────────────────────────────────
+# ── to_sans_bold ──────────────────────────────────────────────────────────────
 
 
 class TestToSansBold:
@@ -70,7 +70,7 @@ class TestToSansBold:
         assert to_sans_bold(text) == expected
 
 
-# ── to_sans_italic ─────────────────────────────────────────────────────────────
+# ── to_sans_italic ────────────────────────────────────────────────────────────
 
 
 class TestToSansItalic:
@@ -91,7 +91,7 @@ class TestToSansItalic:
         assert to_sans_italic(text) == expected
 
 
-# ── to_sans_bold_italic ────────────────────────────────────────────────────────
+# ── to_sans_bold_italic ───────────────────────────────────────────────────────
 
 
 class TestToSansBoldItalic:
@@ -132,7 +132,7 @@ class TestToMonospace:
         assert to_monospace(text) == expected
 
 
-# ── unmapped characters ────────────────────────────────────────────────────────
+# ── unmapped characters ───────────────────────────────────────────────────────
 
 
 @pytest.mark.parametrize(
@@ -151,7 +151,7 @@ def test_ascii_punctuation_passes_through(func: Callable[[str], str]) -> None:
     assert func(string.punctuation) == string.punctuation
 
 
-# ── apply_style ────────────────────────────────────────────────────────────────
+# ── apply_style ───────────────────────────────────────────────────────────────
 
 
 class TestApplyStyle:
