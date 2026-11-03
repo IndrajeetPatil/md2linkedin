@@ -69,23 +69,6 @@ class TestToSansBold:
     def test_converts(self, text: str, expected: str) -> None:
         assert to_sans_bold(text) == expected
 
-    @pytest.mark.parametrize(
-        ("char", "expected"),
-        [("A", "𝗔"), ("Z", "𝗭"), ("a", "𝗮"), ("z", "𝘇"), ("0", "𝟬"), ("9", "𝟵")],
-        ids=["A", "Z", "a", "z", "0", "9"],
-    )
-    def test_boundary_characters_mapped(self, char: str, expected: str) -> None:
-        # Guard against boundary mutations (e.g. "A" <= c <= "z", "0" <= c <= "9").
-        assert to_sans_bold(char) == expected
-
-    @pytest.mark.parametrize(
-        "char",
-        ["[", "\\", "]", "^", "_", "`", "{", "|", "}", "~", ":", ";", "?", "@"],
-    )
-    def test_between_ascii_ranges_passthrough(self, char: str) -> None:
-        # Chars in ASCII gaps like Z<x<a or 9<x<A must pass through unchanged.
-        assert to_sans_bold(char) == char
-
 
 # ── to_sans_italic ─────────────────────────────────────────────────────────────
 
@@ -107,19 +90,6 @@ class TestToSansItalic:
     def test_converts(self, text: str, expected: str) -> None:
         assert to_sans_italic(text) == expected
 
-    @pytest.mark.parametrize(
-        ("char", "expected"),
-        [("A", "𝘈"), ("Z", "𝘡"), ("a", "𝘢"), ("z", "𝘻")],
-        ids=["A", "Z", "a", "z"],
-    )
-    def test_boundary_characters_mapped(self, char: str, expected: str) -> None:
-        # Guard against boundary mutations in the "a" <= c <= "z" comparison.
-        assert to_sans_italic(char) == expected
-
-    @pytest.mark.parametrize("char", ["[", "\\", "]", "^", "_", "`"])
-    def test_between_ranges_passthrough(self, char: str) -> None:
-        assert to_sans_italic(char) == char
-
 
 # ── to_sans_bold_italic ────────────────────────────────────────────────────────
 
@@ -138,18 +108,6 @@ class TestToSansBoldItalic:
     )
     def test_converts(self, text: str, expected: str) -> None:
         assert to_sans_bold_italic(text) == expected
-
-    @pytest.mark.parametrize(
-        ("char", "expected"),
-        [("A", "𝘼"), ("Z", "𝙕"), ("a", "𝙖"), ("z", "𝙯")],
-        ids=["A", "Z", "a", "z"],
-    )
-    def test_boundary_characters_mapped(self, char: str, expected: str) -> None:
-        assert to_sans_bold_italic(char) == expected
-
-    @pytest.mark.parametrize("char", ["[", "\\", "]", "^", "_", "`"])
-    def test_between_ranges_passthrough(self, char: str) -> None:
-        assert to_sans_bold_italic(char) == char
 
 
 # ── to_monospace ──────────────────────────────────────────────────────────────
@@ -173,17 +131,24 @@ class TestToMonospace:
     def test_converts(self, text: str, expected: str) -> None:
         assert to_monospace(text) == expected
 
-    @pytest.mark.parametrize(
-        ("char", "expected"),
-        [("A", "𝙰"), ("Z", "𝚉"), ("a", "𝚊"), ("z", "𝚣"), ("0", "𝟶"), ("9", "𝟿")],
-        ids=["A", "Z", "a", "z", "0", "9"],
-    )
-    def test_boundary_characters_mapped(self, char: str, expected: str) -> None:
-        assert to_monospace(char) == expected
 
-    @pytest.mark.parametrize("char", ["[", "\\", "]", "^", "_", "`", ":", "@"])
-    def test_between_ranges_passthrough(self, char: str) -> None:
-        assert to_monospace(char) == char
+# ── unmapped characters ────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "func",
+    [
+        pytest.param(to_sans_bold, id="bold"),
+        pytest.param(to_sans_italic, id="italic"),
+        pytest.param(to_sans_bold_italic, id="bold_italic"),
+        pytest.param(to_monospace, id="monospace"),
+    ],
+)
+def test_ascii_punctuation_passes_through(func: Callable[[str], str]) -> None:
+    # Punctuation fills the ASCII gaps around the letters and digits (``@``
+    # before ``A``, ``[`` after ``Z``, ``:`` after ``9``, ...), so a table
+    # that maps one character too many beside a range changes this string.
+    assert func(string.punctuation) == string.punctuation
 
 
 # ── apply_style ────────────────────────────────────────────────────────────────
