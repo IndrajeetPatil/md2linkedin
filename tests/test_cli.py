@@ -20,47 +20,62 @@ def runner() -> CliRunner:
     return CliRunner()
 
 
+def _write_markdown(tmp_path: Path, text: str) -> Path:
+    src = tmp_path / "post.md"
+    src.write_text(text, encoding="utf-8")
+    return src
+
+
 class TestCliFileInput:
-    def test_converts_file(self, runner: CliRunner, tmp_path: Path) -> None:
-        src = tmp_path / "test.md"
-        src.write_text("**bold** text", encoding="utf-8")
+    def test_converts_to_the_default_output_file(
+        self,
+        runner: CliRunner,
+        tmp_path: Path,
+    ) -> None:
+        src = _write_markdown(tmp_path, "**bold** text")
         result = runner.invoke(main, [str(src)])
-        assert result.exit_code == 0
-        assert (tmp_path / "test.linkedin.txt").read_text(encoding="utf-8") == (
-            "𝗯𝗼𝗹𝗱 text\n"
-        )
-
-    def test_default_output_filename(self, runner: CliRunner, tmp_path: Path) -> None:
-        src = tmp_path / "post.md"
-        src.write_text("hello", encoding="utf-8")
-        result = runner.invoke(main, [str(src)])
-        assert result.exit_code == 0
         expected = tmp_path / "post.linkedin.txt"
-        assert expected.read_text(encoding="utf-8") == "hello\n"
-
-    def test_explicit_output_path(self, runner: CliRunner, tmp_path: Path) -> None:
-        src = tmp_path / "post.md"
-        dst = tmp_path / "out.txt"
-        src.write_text("hello", encoding="utf-8")
-        result = runner.invoke(main, [str(src), "-o", str(dst)])
         assert result.exit_code == 0
-        assert dst.read_text(encoding="utf-8") == "hello\n"
+        assert result.output == f"LinkedIn-formatted text written to: {expected}\n"
+        assert expected.read_text(encoding="utf-8") == "𝗯𝗼𝗹𝗱 text\n"
 
-    def test_preserve_links_flag(self, runner: CliRunner, tmp_path: Path) -> None:
-        src = tmp_path / "post.md"
-        src.write_text("[GitHub](https://github.com)", encoding="utf-8")
+    @pytest.mark.parametrize(
+        ("flags", "markdown", "expected"),
+        [
+            pytest.param([], "hello", "hello\n", id="explicit_output_path"),
+            pytest.param(
+                ["--preserve-links"],
+                "[GitHub](https://github.com)",
+                "[GitHub](https://github.com)\n",
+                id="preserve_links",
+            ),
+            pytest.param(
+                [],
+                "use `hello` here",
+                "use 𝚑𝚎𝚕𝚕𝚘 here\n",
+                id="monospace_code_is_on_by_default",
+            ),
+            pytest.param(
+                ["--no-monospace-code"],
+                "use `hello` here",
+                "use hello here\n",
+                id="no_monospace_code",
+            ),
+        ],
+    )
+    def test_writes_to_the_output_option(
+        self,
+        runner: CliRunner,
+        tmp_path: Path,
+        flags: list[str],
+        markdown: str,
+        expected: str,
+    ) -> None:
+        src = _write_markdown(tmp_path, markdown)
         dst = tmp_path / "out.txt"
-        result = runner.invoke(main, [str(src), "-o", str(dst), "--preserve-links"])
+        result = runner.invoke(main, [str(src), "-o", str(dst), *flags])
         assert result.exit_code == 0
-        assert dst.read_text(encoding="utf-8") == "[GitHub](https://github.com)\n"
-
-    def test_output_path_printed(self, runner: CliRunner, tmp_path: Path) -> None:
-        src = tmp_path / "test.md"
-        src.write_text("hello", encoding="utf-8")
-        result = runner.invoke(main, [str(src)])
-        assert result.output == (
-            f"LinkedIn-formatted text written to: {tmp_path / 'test.linkedin.txt'}\n"
-        )
+        assert dst.read_text(encoding="utf-8") == expected
 
     def test_nonexistent_file_error(self, runner: CliRunner, tmp_path: Path) -> None:
         missing = tmp_path / "missing.md"
@@ -78,17 +93,26 @@ class TestCliStdin:
             assert _stdin_is_tty() is is_tty
 
     @pytest.mark.parametrize(
-        ("markdown", "expected"),
-        [("**hello** world", "𝗵𝗲𝗹𝗹𝗼 world\n"), ("*italic*", "𝘪𝘵𝘢𝘭𝘪𝘤\n")],
-        ids=["bold", "italic"],
+        ("flags", "markdown", "expected"),
+        [
+            pytest.param([], "**hello** world", "𝗵𝗲𝗹𝗹𝗼 world\n", id="bold"),
+            pytest.param([], "*italic*", "𝘪𝘵𝘢𝘭𝘪𝘤\n", id="italic"),
+            pytest.param(
+                ["--no-monospace-code"],
+                "use `hello` here",
+                "use hello here\n",
+                id="no_monospace_code",
+            ),
+        ],
     )
     def test_reads_from_stdin(
         self,
         runner: CliRunner,
+        flags: list[str],
         markdown: str,
         expected: str,
     ) -> None:
-        result = runner.invoke(main, [], input=markdown)
+        result = runner.invoke(main, flags, input=markdown)
         assert result.exit_code == 0
         assert result.output == expected
 
@@ -102,36 +126,6 @@ class TestCliStdin:
             result = runner.invoke(main, [])
         assert result.exit_code == 2
         assert "No input file provided and stdin is a terminal." in result.output
-
-
-class TestCliNoMonospaceCode:
-    def test_no_monospace_code_flag_file(
-        self,
-        runner: CliRunner,
-        tmp_path: Path,
-    ) -> None:
-        src = tmp_path / "post.md"
-        src.write_text("use `hello` here", encoding="utf-8")
-        dst = tmp_path / "out.txt"
-        result = runner.invoke(
-            main,
-            [str(src), "-o", str(dst), "--no-monospace-code"],
-        )
-        assert result.exit_code == 0
-        assert dst.read_text(encoding="utf-8") == "use hello here\n"
-
-    def test_monospace_code_default_on(self, runner: CliRunner, tmp_path: Path) -> None:
-        src = tmp_path / "post.md"
-        src.write_text("use `hello` here", encoding="utf-8")
-        dst = tmp_path / "out.txt"
-        result = runner.invoke(main, [str(src), "-o", str(dst)])
-        assert result.exit_code == 0
-        assert dst.read_text(encoding="utf-8") == "use 𝚑𝚎𝚕𝚕𝚘 here\n"
-
-    def test_no_monospace_code_stdin(self, runner: CliRunner) -> None:
-        result = runner.invoke(main, ["--no-monospace-code"], input="use `hello` here")
-        assert result.exit_code == 0
-        assert result.output == "use hello here\n"
 
 
 class TestCliFlags:
