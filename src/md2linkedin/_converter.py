@@ -1,3 +1,10 @@
+"""Markdown to LinkedIn-ready Unicode text conversion.
+
+``comrak`` renders the Markdown as HTML, and ``Renderer`` walks the
+``selectolax`` tree of that HTML, writing its text with the Unicode styles of
+the enclosing tags applied.
+"""
+
 # Python 3.15+ (PEP 810) defers these imports until first use, so that
 # ``import md2linkedin``, ``--help`` and ``--version`` skip loading the parser
 # extensions. Earlier versions ignore this and import eagerly.
@@ -6,11 +13,12 @@ __lazy_modules__ = ["comrak", "selectolax.lexbor"]
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 import comrak
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-from md2linkedin._unicode import (
+from ._unicode import (
     to_monospace,
     to_sans_bold,
     to_sans_bold_italic,
@@ -22,11 +30,21 @@ _ENCODING = "utf-8"
 # selectolax spells a text node's tag this way.
 _TEXT_TAG = "-text"
 
+# The styles a tag can switch on for the text inside it; ``_emit_text`` applies
+# them. Spelled as a type so that pushing or popping a misspelt style is a type
+# error (``in`` checks are not narrowed, so keep those in step by hand).
+type _Style = Literal["bold", "italic", "upper", "monospace"]
+
 _HEADING_TAGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
 # Tags that render as their own paragraph, separated by a blank line.
 _BLOCK_TAGS = frozenset({"p", "pre", "blockquote", "table"})
 # Tags that only switch a style on for the text they wrap.
-_STYLE_TAGS = {"strong": "bold", "b": "bold", "em": "italic", "i": "italic"}
+_STYLE_TAGS: dict[str, _Style] = {
+    "strong": "bold",
+    "b": "bold",
+    "em": "italic",
+    "i": "italic",
+}
 _LIST_TAGS = frozenset({"ul", "ol"})
 _CELL_TAGS = frozenset({"th", "td"})
 # Tags whose children are rows and cells rather than prose, so the whitespace
@@ -96,7 +114,7 @@ class Renderer:
         # Newlines at the end of ``out``, tracked so that block separation
         # does not have to re-join everything rendered so far.
         self.trailing: int = 0
-        self.styles: list[str] = []
+        self.styles: list[_Style] = []
         self.lists: list[_ListLevel] = []
         self.links: list[_Link] = []
 
