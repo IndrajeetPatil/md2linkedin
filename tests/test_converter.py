@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import TypedDict
 
 import pytest
 from selectolax.lexbor import LexborHTMLParser
@@ -501,6 +502,16 @@ class TestConvert:
                 id="emphasis_after_a_break_still_converts",
             ),
             pytest.param(
+                "* * *",
+                "\n",
+                id="a_document_of_nothing_but_a_break_renders_nothing",
+            ),
+            pytest.param(
+                "_ _ _",
+                "\n",
+                id="a_document_of_nothing_but_an_underscore_break_renders_nothing",
+            ),
+            pytest.param(
                 "Line 1  \nLine 2",
                 "Line 1\nLine 2\n",
                 id="hard_break_becomes_a_newline",
@@ -509,10 +520,6 @@ class TestConvert:
     )
     def test_blockquotes_and_breaks(self, markdown: str, expected: str) -> None:
         assert convert(markdown) == expected
-
-    def test_a_document_of_nothing_but_a_break_renders_nothing(self) -> None:
-        assert convert("* * *") == "\n"
-        assert convert("_ _ _") == "\n"
 
     @pytest.mark.parametrize(
         ("markdown", "expected"),
@@ -654,11 +661,60 @@ def _write_markdown(tmp_path: Path, text: str) -> Path:
     return src
 
 
+class _ConvertFileOptions(TypedDict, total=False):
+    preserve_links: bool
+    monospace_code: bool
+
+
 class TestConvertFile:
-    def test_basic_conversion(self, tmp_path: Path) -> None:
-        src = _write_markdown(tmp_path, "**bold** text")
-        out = convert_file(src)
-        assert out.read_text(encoding="utf-8") == "𝗯𝗼𝗹𝗱 text\n"
+    @pytest.mark.parametrize(
+        ("markdown", "options", "expected"),
+        [
+            pytest.param("**bold** text", {}, "𝗯𝗼𝗹𝗱 text\n", id="basic_conversion"),
+            # ``preserve_links`` defaults to False: links are reduced to their
+            # display text unless the caller opts in.
+            pytest.param(
+                "[GitHub](https://github.com)",
+                {},
+                "GitHub\n",
+                id="links_are_stripped_by_default",
+            ),
+            pytest.param(
+                "[GitHub](https://github.com)",
+                {"preserve_links": True},
+                "[GitHub](https://github.com)\n",
+                id="preserve_links_is_forwarded",
+            ),
+            pytest.param(
+                "use `hello` here",
+                {},
+                "use 𝚑𝚎𝚕𝚕𝚘 here\n",
+                id="code_is_monospaced_by_default",
+            ),
+            pytest.param(
+                "use `hello` here",
+                {"monospace_code": False},
+                "use hello here\n",
+                id="monospace_code_is_forwarded",
+            ),
+            pytest.param(
+                "**café** résumé 🎉",
+                {},
+                "𝗰𝗮𝗳é résumé 🎉\n",
+                id="output_is_utf8",
+            ),
+        ],
+    )
+    def test_writes_the_converted_text(
+        self,
+        tmp_path: Path,
+        markdown: str,
+        options: _ConvertFileOptions,
+        expected: str,
+    ) -> None:
+        src = _write_markdown(tmp_path, markdown)
+        out = convert_file(src, **options)
+        assert out.read_text(encoding="utf-8") == expected
 
     @pytest.mark.parametrize(
         ("name", "expected"),
@@ -680,6 +736,8 @@ class TestConvertFile:
     ) -> None:
         src = tmp_path / name
         src.write_text("hello", encoding="utf-8")
+        # Comparing with a ``Path`` also pins the return type, since a ``str``
+        # never equals one.
         assert convert_file(src) == tmp_path / expected
 
     def test_default_output_paths_of_siblings_differ(self, tmp_path: Path) -> None:
@@ -701,11 +759,6 @@ class TestConvertFile:
         assert out == dst
         assert dst.read_text(encoding="utf-8") == "hello\n"
 
-    def test_preserve_links_forwarded(self, tmp_path: Path) -> None:
-        src = _write_markdown(tmp_path, "[GitHub](https://github.com)")
-        out = convert_file(src, preserve_links=True)
-        assert out.read_text(encoding="utf-8") == "[GitHub](https://github.com)\n"
-
     def test_string_path_accepted(self, tmp_path: Path) -> None:
         src = _write_markdown(tmp_path, "hello")
         out = convert_file(str(src))
@@ -724,45 +777,17 @@ class TestConvertFile:
         ):
             convert_file(missing)
 
-    def test_default_strips_links(self, tmp_path: Path) -> None:
-        # The default value of ``preserve_links`` MUST be False, i.e. links
-        # are stripped to their display text unless the caller opts in.
-        src = _write_markdown(tmp_path, "[GitHub](https://github.com)")
-        out = convert_file(src)
-        assert out.read_text(encoding="utf-8") == "GitHub\n"
-
-    def test_output_is_utf8(self, tmp_path: Path) -> None:
-        src = _write_markdown(tmp_path, "**café** résumé 🎉")
-        out = convert_file(src)
-        assert out.read_text(encoding="utf-8") == "𝗰𝗮𝗳é résumé 🎉\n"
-
-    def test_monospace_code_forwarded(self, tmp_path: Path) -> None:
-        src = _write_markdown(tmp_path, "use `hello` here")
-        out = convert_file(src, monospace_code=False)
-        assert out.read_text(encoding="utf-8") == "use hello here\n"
-
-    def test_monospace_code_default(self, tmp_path: Path) -> None:
-        src = _write_markdown(tmp_path, "use `hello` here")
-        out = convert_file(src)
-        assert out.read_text(encoding="utf-8") == "use 𝚑𝚎𝚕𝚕𝚘 here\n"
-
-    def test_returns_path_object(self, tmp_path: Path) -> None:
-        src = _write_markdown(tmp_path, "hello")
-        result = convert_file(src)
-        assert isinstance(result, Path)
-
-    def test_read_text_called_with_utf8_encoding(
+    def test_reads_and_writes_with_explicit_utf8_encoding(
         self,
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Guard against a mutation that flips ``encoding=_ENCODING`` on
-        # ``input_path.read_text`` to ``encoding=None`` or drops the
-        # keyword argument entirely.  Both variants are indistinguishable
-        # on Linux/macOS at runtime (the default locale is already
-        # UTF-8), so we assert the argument explicitly via a spy.
+        # ``read_text`` or ``write_text`` to ``encoding=None`` or drops the
+        # keyword argument entirely. Both variants are indistinguishable on
+        # Linux/macOS at runtime (the default locale is already UTF-8), so
+        # spies record the argument explicitly.
         src = _write_markdown(tmp_path, "hello")
-
         recorded: dict[str, object] = {}
 
         def spy_read_text(
@@ -772,31 +797,10 @@ class TestConvertFile:
             newline: str | None = None,
         ) -> str:
             if self == src:
-                recorded["encoding"] = encoding
+                recorded["read_encoding"] = encoding
             # Bypass the patched method by using the underlying file API.
             with self.open(encoding=encoding, errors=errors, newline=newline) as f:
                 return f.read()
-
-        monkeypatch.setattr(Path, "read_text", spy_read_text)
-        convert_file(src)
-
-        # ``encoding="utf-8"`` must be passed explicitly.  Mutations to
-        # ``None`` or an arg-drop (which defaults to ``None``) both fail.
-        assert recorded["encoding"] == "utf-8"
-
-    def test_write_text_called_with_utf8_encoding(
-        self,
-        tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        # Guard against a mutation that flips ``encoding=_ENCODING`` on
-        # ``output_path.write_text`` to ``encoding=None`` or drops the
-        # keyword argument entirely.  Both variants are indistinguishable
-        # on Linux/macOS at runtime (the default locale is already
-        # UTF-8), so we assert the argument explicitly via a spy.
-        src = _write_markdown(tmp_path, "hello")
-
-        recorded: dict[str, object] = {}
 
         def spy_write_text(
             self: Path,
@@ -806,9 +810,8 @@ class TestConvertFile:
             newline: str | None = None,
         ) -> int:
             if self != src:
-                recorded["encoding"] = encoding
+                recorded["write_encoding"] = encoding
                 recorded["data"] = data
-            # Bypass the patched method by using the underlying file API.
             with self.open(
                 "w",
                 encoding=encoding,
@@ -817,13 +820,17 @@ class TestConvertFile:
             ) as f:
                 return f.write(data)
 
+        monkeypatch.setattr(Path, "read_text", spy_read_text)
         monkeypatch.setattr(Path, "write_text", spy_write_text)
         convert_file(src)
 
-        # ``encoding="utf-8"`` must be passed explicitly.  Mutations to
-        # ``None`` or an arg-drop (which defaults to ``None``) both fail.
-        assert recorded["encoding"] == "utf-8"
-        assert recorded["data"] == "hello\n"
+        # A mutation to ``None``, or dropping the argument (which then
+        # defaults to ``None``), fails here.
+        assert recorded == {
+            "read_encoding": "utf-8",
+            "write_encoding": "utf-8",
+            "data": "hello\n",
+        }
 
 
 @pytest.mark.skipif(
