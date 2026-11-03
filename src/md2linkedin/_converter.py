@@ -18,7 +18,7 @@ from typing import Literal
 import comrak
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-from md2linkedin._unicode import (
+from ._unicode import (
     to_monospace,
     to_sans_bold,
     to_sans_bold_italic,
