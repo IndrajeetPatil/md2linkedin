@@ -147,9 +147,8 @@ skip_empty = true
 
 [tool.mutmut]
 source_paths = ["src/md2linkedin/"]
-# The regression-gate tests import the comparator from this support package,
-# and tests/test_readme.py runs the examples in README.md.
-also_copy = ["scripts/", "README.md"]
+# tests/test_readme.py runs the examples in README.md.
+also_copy = ["README.md"]
 pytest_add_cli_args_test_selection = ["tests/"]
 # Only mutate lines exercised by the test suite so mutmut concentrates on
 # meaningful mutations that the tests should actually catch.
@@ -181,5 +180,4 @@ strict-generic-narrowing = true
 required-version = ">=0.13.0"
 
 [tool.deptry]
-extend_exclude = ["scripts"]
 known_first_party = ["md2linkedin"]
