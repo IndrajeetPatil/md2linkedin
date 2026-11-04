@@ -7,43 +7,32 @@ on:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  # Reading the labels of the pull request a pushed commit came from.
-  pull-requests: read
+permissions: {}
 
 concurrency:
-  # Every push must finish its comparison with the previous commit. Unique run
-  # IDs also prevent pending push runs from replacing one another.
-  group: benchmarks-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  group: benchmarks-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   benchmarks:
-    name: Standalone CodSpeed regression check
+    name: Run CodSpeed benchmarks
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write # CodSpeed requests a short-lived OIDC upload token.
     env:
-      PYTHONHASHSEED: "0"
-      UV_PYTHON: "3.15"
-      # A PR measures its exact head against its base. Pushes use the previous
-      # commit; a manual run compares HEAD with its first parent.
-      BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
+      UV_PYTHON_PREFERENCE: only-system
     steps:
-      - name: Checkout candidate
+      - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
           persist-credentials: false
 
-      - name: Checkout baseline source
-        run: |
-          git worktree add --detach "$RUNNER_TEMP/benchmark-base" "$BASE_REF"
-          {
-            echo "Base: $(git -C "$RUNNER_TEMP/benchmark-base" rev-parse HEAD)"
-            echo "Candidate: $(git rev-parse HEAD)"
-          } | tee benchmark-revisions.txt
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.15"
 
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
@@ -51,86 +40,10 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        # The base gets its own environment: its source may not import against
-        # the candidate's dependencies, as when a dependency drops an API.
-        run: |
-          uv sync --locked --dev
-          uv sync --locked --dev --project "$RUNNER_TEMP/benchmark-base"
+        run: uv sync --locked --dev
 
-      - name: Measure base and candidate
-        # Both revisions use the candidate's benchmark suite, configuration and
-        # interpreter. Each imports its own source tree and runs in the
-        # environment locked by its own commit.
-        run: |
-          for sample in 1 2 3; do
-            # Alternate which revision runs first to reduce ordering bias.
-            revisions="base candidate"
-            if [ "$sample" = 2 ]; then revisions="candidate base"; fi
-            for revision in $revisions; do
-              project="$GITHUB_WORKSPACE"
-              if [ "$revision" = base ]; then project="$RUNNER_TEMP/benchmark-base"; fi
-              make benchmark \
-                BENCHMARK_PROJECT="$project" \
-                BENCHMARK_OUTPUT="$GITHUB_WORKSPACE/benchmark-results/$revision/$sample"
-            done
-          done
-
-      - name: Look for an accepted baseline reset
-        id: reset
-        # A pull request that deliberately changes how conversion works reports
-        # the whole one-off cost against its base, so it cannot come in under a
-        # margin sized for runner jitter. Labelling it
-        # ``benchmark-baseline-reset`` records that the numbers were read and
-        # accepted, and keeps the margin where it is everywhere else.
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
-        run: |
-          labels="$PR_LABELS"
-          # The commit that lands such a change is measured a second time, as a
-          # push, against the last commit before it — which still holds the old
-          # implementation, so it reports the same cost again. Read the labels
-          # back off the pull request it came from rather than failing a merge
-          # commit for a cost already accepted on review. A commit pushed
-          # straight to main belongs to no pull request and stays gated.
-          if [ "$GITHUB_EVENT_NAME" = push ]; then
-            labels=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" \
-              --jq '.[].labels[].name' | tr '\n' ' ') || labels=""
-          fi
-          accepted=false
-          for label in $labels; do
-            if [ "$label" = benchmark-baseline-reset ]; then accepted=true; fi
-          done
-          echo "accepted=$accepted" >> "$GITHUB_OUTPUT"
-          echo "Baseline reset accepted: $accepted"
-
-      - name: Fail on performance regressions
-        continue-on-error: ${{ steps.reset.outputs.accepted == 'true' }}
-        run: make benchmark-compare
-
-      - name: Publish comparison summary
-        if: always()
-        env:
-          BASELINE_RESET: ${{ steps.reset.outputs.accepted }}
-        run: |
-          cat benchmark-revisions.txt >> "$GITHUB_STEP_SUMMARY"
-          if [ -f benchmark-results/comparison.md ]; then
-            cat benchmark-results/comparison.md >> "$GITHUB_STEP_SUMMARY"
-          fi
-          if [ "$BASELINE_RESET" = true ]; then
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "> Labelled \`benchmark-baseline-reset\`: a regression over the" \
-              "margin is reported above but does not fail this run." \
-              >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      - name: Upload local benchmark reports
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - name: Run benchmarks and upload results
+        uses: CodSpeedHQ/action@af75f77f17a054769abefaa42fe8dc2975469b5f # v5.6.3
         with:
-          name: standalone-codspeed-results
-          path: |
-            benchmark-results/
-            benchmark-revisions.txt
-          if-no-files-found: error
-          retention-days: 14
+          mode: simulation
+          run: make benchmark

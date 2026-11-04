@@ -1,4 +1,4 @@
-.PHONY: update-deps upgrade-deps format lint typecheck typecoverage audit qa hooks test-coverage mutation-test benchmark benchmark-compare build test-package check-package build-docs serve-docs help
+.PHONY: update-deps upgrade-deps format lint typecheck typecoverage audit qa hooks test-coverage mutation-test benchmark build test-package check-package build-docs serve-docs help
 
 # ANSI color codes
 RED = \033[0;31m
@@ -54,32 +54,10 @@ test-coverage:
 	uv run coverage report
 	uv run coverage html
 
-# Each revision is measured in the locked environment of its own checkout, so
-# a dependency change is measured along with the source that needs it.
-BENCHMARK_PROJECT ?= $(CURDIR)
-BENCHMARK_SOURCE ?= $(BENCHMARK_PROJECT)/src
-BENCHMARK_OUTPUT ?= $(CURDIR)/.codspeed/local
-BENCHMARK_THRESHOLD ?= 5
-
-# Runs a command with the chosen source tree importable, in its environment.
-BENCHMARK_RUN = PYTHONPATH="$(BENCHMARK_SOURCE)" \
-	uv run --no-sync --project "$(BENCHMARK_PROJECT)"
-# Guards against measuring an installed copy instead of the chosen source.
-BENCHMARK_SOURCE_CHECK = import md2linkedin, pathlib; \
-	path = pathlib.Path(md2linkedin.__file__).resolve().parent; \
-	print("Benchmark source:", path); \
-	assert path == pathlib.Path("$(BENCHMARK_SOURCE)").resolve() / "md2linkedin"
-
+# Simulation measures CPU work in CI; locally this checks correctness.
 benchmark:
-	$(BENCHMARK_RUN) python -c '$(BENCHMARK_SOURCE_CHECK)'
-	PYTHONHASHSEED=0 CODSPEED_PROFILE_FOLDER="$(BENCHMARK_OUTPUT)" \
-		$(BENCHMARK_RUN) pytest tests/benchmarks \
-		--codspeed --codspeed-mode=walltime --random-order-bucket=none
-
-benchmark-compare:
-	uv run --no-sync python scripts/compare_benchmarks.py \
-		benchmark-results/base benchmark-results/candidate \
-		--threshold "$(BENCHMARK_THRESHOLD)" --output benchmark-results/comparison.md
+	PYTHONHASHSEED=0 uv run --no-sync pytest tests/benchmarks \
+		--codspeed --codspeed-mode=simulation --random-order-bucket=none
 
 mutation-test:
 	rm -rf mutants/
@@ -131,8 +109,7 @@ help:
 	@printf "$(GREEN) Testing and Packaging:$(NC)\n"
 	@printf "    $(RED)test-coverage$(NC) - Run tests and generate coverage report\n"
 	@printf "    $(RED)mutation-test$(NC) - Run mutmut mutation testing on the source\n"
-	@printf "    $(RED)benchmark$(NC)     - Run standalone CodSpeed walltime benchmarks\n"
-	@printf "    $(RED)benchmark-compare$(NC) - Compare three base/candidate benchmark runs\n"
+	@printf "    $(RED)benchmark$(NC)     - Run CodSpeed benchmarks (correctness only locally)\n"
 	@printf "    $(RED)build$(NC)         - Build the package\n"
 	@printf "    $(RED)test-package$(NC)  - Run tests and coverage\n"
 	@printf "    $(RED)check-package$(NC) - Full package check (tests, QA, build)\n\n"
