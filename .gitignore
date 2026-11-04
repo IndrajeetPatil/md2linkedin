@@ -44,7 +44,7 @@ DESCRIPTION
 mutants_backup/
 mutants/
 
-# Standalone CodSpeed reports
+# CodSpeed output and legacy standalone reports
 .codspeed/
 benchmark-results/
 benchmark-revisions.txt
