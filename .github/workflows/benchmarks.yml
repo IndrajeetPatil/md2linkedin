@@ -22,22 +22,21 @@ jobs:
       contents: read
       id-token: write # CodSpeed requests a short-lived OIDC upload token.
     env:
-      UV_PYTHON_PREFERENCE: only-system
+      UV_PYTHON: "3.15"
+      UV_PYTHON_PREFERENCE: only-managed
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.15"
-
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: true
+
+      - name: Install Python with uv
+        run: uv python install "$UV_PYTHON"
 
       - name: Install locked dependencies
         run: uv sync --locked --dev

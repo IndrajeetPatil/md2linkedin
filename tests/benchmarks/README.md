@@ -18,6 +18,7 @@ Ubuntu runners rather than CodSpeed's metered macro runners. See
 Use Python 3.15 and uv 0.13.0 or newer, matching CI:
 
 ```sh
+uv python install 3.15
 UV_PYTHON=3.15 uv sync --locked --dev
 make benchmark
 ```
@@ -29,7 +30,8 @@ make benchmark
 
 ## CI and reports
 
-The `Benchmarks` workflow installs the checkout's locked dependencies and calls
+The `Benchmarks` workflow installs Python 3.15 with `uv python install`, selects
+that managed interpreter for the checkout's locked dependencies, and calls
 `make benchmark` through `CodSpeedHQ/action`. The action selects simulation mode
 and uploads the results; CodSpeed handles historical baselines, comparisons,
 profiles, PR comments, and performance checks.
