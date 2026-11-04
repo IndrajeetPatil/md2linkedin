@@ -114,11 +114,6 @@ Converting Markdown to LinkedIn-friendly text relies on Unicode Mathematical Alp
 For more examples, check out the package documentation at:
 <https://www.indrapatil.com/md2linkedin/>
 
-## Contributing
-
-Run `make check-package` to validate changes. For performance checks and local
-benchmark commands, see the [benchmarking guide](https://github.com/IndrajeetPatil/md2linkedin/blob/main/tests/benchmarks/README.md).
-
 ## See Also
 
 - [md2linkedin Web App](https://019d695e-8448-ee38-5db3-7ca4acf2ce2c.share.connect.posit.cloud/) — an interactive web interface for `md2linkedin`, built by [Yann Cohen](https://github.com/iamYannC).
