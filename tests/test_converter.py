@@ -175,6 +175,48 @@ class TestConvert:
     def test_code_with_monospace_off(self, markdown: str, expected: str) -> None:
         assert convert(markdown, monospace_code=False) == expected
 
+    # Unicode has no monospace bold or italic, so code keeps its monospace
+    # letters, and its case, inside emphasis, headings and table headers.
+    @pytest.mark.parametrize(
+        ("markdown", "expected", "expected_plain"),
+        [
+            pytest.param("**use `uv` now**", "𝘂𝘀𝗲 𝚞𝚟 𝗻𝗼𝘄\n", "𝘂𝘀𝗲 𝘂𝘃 𝗻𝗼𝘄\n", id="bold"),
+            pytest.param("*use `uv` now*", "𝘶𝘴𝘦 𝚞𝚟 𝘯𝘰𝘸\n", "𝘶𝘴𝘦 𝘶𝘷 𝘯𝘰𝘸\n", id="italic"),
+            pytest.param("***`code`***", "𝚌𝚘𝚍𝚎\n", "𝙘𝙤𝙙𝙚\n", id="bold_italic"),
+            pytest.param(
+                "# Why `Any`?",
+                f"{_RULE}\n𝗪𝗛𝗬 𝙰𝚗𝚢?\n{_RULE}\n",
+                f"{_RULE}\n𝗪𝗛𝗬 𝗔𝗡𝗬?\n{_RULE}\n",
+                id="h1_keeps_the_case_of_code",
+            ),
+            pytest.param("## Why `Any`?", "𝗪𝗵𝘆 𝙰𝚗𝚢?\n", "𝗪𝗵𝘆 𝗔𝗻𝘆?\n", id="h2"),
+            pytest.param("### Why `Any`?", "𝗪𝗵𝘆 𝙰𝚗𝚢?\n", "𝗪𝗵𝘆 𝗔𝗻𝘆?\n", id="h3"),
+            pytest.param("#### Why `Any`?", "𝗪𝗵𝘆 𝙰𝚗𝚢?\n", "𝗪𝗵𝘆 𝗔𝗻𝘆?\n", id="h4"),
+            pytest.param("##### Why `Any`?", "𝗪𝗵𝘆 𝙰𝚗𝚢?\n", "𝗪𝗵𝘆 𝗔𝗻𝘆?\n", id="h5"),
+            pytest.param("###### Why `Any`?", "𝗪𝗵𝘆 𝙰𝚗𝚢?\n", "𝗪𝗵𝘆 𝗔𝗻𝘆?\n", id="h6"),
+            pytest.param(
+                "- **Item `x`**: desc",
+                "• 𝗜𝘁𝗲𝗺 𝚡: desc\n",
+                "• 𝗜𝘁𝗲𝗺 𝘅: desc\n",
+                id="bold_in_list_item",
+            ),
+            pytest.param(
+                "| `a` | b |\n| --- | --- |\n| 1 | 2 |",
+                "𝚊 | 𝗯\n1 | 2\n",
+                "𝗮 | 𝗯\n1 | 2\n",
+                id="table_header_cell",
+            ),
+        ],
+    )
+    def test_code_inside_styled_text(
+        self,
+        markdown: str,
+        expected: str,
+        expected_plain: str,
+    ) -> None:
+        assert convert(markdown) == expected
+        assert convert(markdown, monospace_code=False) == expected_plain
+
     # ── links and images ──────────────────────────────────────────────────────
 
     @pytest.mark.parametrize(
