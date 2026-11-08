@@ -178,6 +178,11 @@ class Renderer:
         # and ``_append`` drops it.
         if text is None:
             return
+        # Unicode has no monospace bold, italic or capitals, so monospace takes
+        # precedence over the other styles rather than being mapped over them.
+        if "monospace" in self.styles:
+            self._write(to_monospace(text))
+            return
         styled = text
         if "upper" in self.styles:
             styled = styled.upper()
@@ -188,9 +193,6 @@ class Renderer:
             styled = to_sans_bold(styled)
         elif "italic" in self.styles:
             styled = to_sans_italic(styled)
-
-        if "monospace" in self.styles:
-            styled = to_monospace(styled)
 
         self._write(styled)
 

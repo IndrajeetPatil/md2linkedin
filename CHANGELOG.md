@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Code spans inside bold, italic, headings and table headers keep their
+  monospace styling, and their case in an H1, instead of taking on the
+  surrounding style.
+
 ## [0.5.2] — 2026-10-31
 
 ### Added
