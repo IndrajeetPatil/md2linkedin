@@ -21,7 +21,7 @@
 - **Do not** use `pip`, `pipenv`, or `poetry` directly.
 - **Do not** manually edit `uv.lock`.
 - To reproduce the locked environment, run `uv sync`.
-- To explicitly upgrade dependencies and pre-commit hooks, run `make update-deps`.
+- To explicitly upgrade dependencies and pre-commit hooks, follow `.github/prompts/update-deps.md`, which starts with `make update-deps`.
 
 ## Code Quality & Testing
 - Code formatting and linting are handled by `ruff`, and type checking by `ty`. We use `pyrefly` to enforce 100% type coverage.
@@ -29,7 +29,7 @@
   `missing-trailing-comma`, intentionally enabled despite Ruff's formatter
   warning) before `ruff format`, preserving multiline layouts.
 - If `pyrefly` and `ty` conflict on any issue, `ty` should win.
-- Pre-commit hooks are configured via `prek`.
+- Pre-commit hooks are configured for `prek` in `prek.toml`; run them all with `make hooks`.
 - **Do not** commit code with linting errors, type warnings, or failing tests.
 - Always run `make qa` to format, lint, type-check, check type coverage, and audit dependencies.
 - Run `make check-package` to run the full validation suite (QA + Tests + Build).
