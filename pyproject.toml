@@ -51,7 +51,7 @@ dev = [
     "pyrefly>=1.4.0",
     "pytest>=9.1.1",
     "pytest-codeblocks>=0.18.0",
-    "pytest-codspeed==5.0.3",
+    "pytest-codspeed==5.0.4",
     "pytest-cov>=7.1.0",
     "pytest-random-order>=1.2.0",
     "ruff>=0.17.2",
