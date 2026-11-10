@@ -154,7 +154,7 @@ convert("***very important***")  # → 𝙫𝙚𝙧𝙮 𝙞𝙢𝙥𝙤𝙧𝙩
 convert("**bold and *italic* inside**")  # → 𝗯𝗼𝗹𝗱 𝗮𝗻𝗱 𝙞𝙩𝙖𝙡𝙞𝙘 𝗶𝗻𝘀𝗶𝗱𝗲
 ```
 
-### Nested Bullet Lists
+### Lists
 
 Each nesting level gets its own marker — `•`, `‣`, `◦`, `▪` — and two spaces
 of indentation. Levels deeper than the fourth reuse `▪`, with the indentation
@@ -217,23 +217,17 @@ convert("```\n**not bold**\n```", monospace_code=False)
 Either way the content itself is untouched: nothing inside a code span or
 block is read as Markdown, so the `**` above survives.
 
-### Underscore Italic vs. Snake Case
+### Snake Case and Stray Markers
 
-Single underscores are italicised only when they sit at word boundaries:
-
-```python
-convert("_italic_")  # → italic Unicode
-convert("snake_case_variable")  # → unchanged
-```
-
-### Unmatched / Orphaned Markers
-
-Unmatched asterisks or underscores are left untouched — `md2linkedin` never
-crashes on malformed input:
+Single underscores are italicised only when they sit at word boundaries, and
+unmatched asterisks or underscores are left untouched, so malformed input
+never raises:
 
 ```python
-convert("price: $10 * 3")  # → price: $10 * 3 (no crash)
-convert("under_score alone")  # → unchanged
+convert("_italic_")  # → 𝘪𝘵𝘢𝘭𝘪𝘤
+convert("snake_case_variable")  # → snake_case_variable
+convert("price: $10 * 3")  # → price: $10 * 3
+convert("under_score alone")  # → under_score alone
 ```
 
 ### Large Documents
@@ -256,10 +250,8 @@ Emojis and accented characters pass through unchanged — only ASCII letters
 and digits are remapped to Unicode Mathematical variants:
 
 ```python
-from md2linkedin import convert
-
-result = convert("**Excited to share** 🎉 *check this out*!")
-print(result)  # 𝗘𝘅𝗰𝗶𝘁𝗲𝗱 𝘁𝗼 𝘀𝗵𝗮𝗿𝗲 🎉 𝘤𝘩𝘦𝘤𝘬 𝘵𝘩𝘪𝘴 𝘰𝘶𝘵!
+convert("**Excited to share** 🎉 *check this out*!")
+# → 𝗘𝘅𝗰𝗶𝘁𝗲𝗱 𝘁𝗼 𝘀𝗵𝗮𝗿𝗲 🎉 𝘤𝘩𝘦𝘤𝘬 𝘵𝘩𝘪𝘴 𝘰𝘶𝘵!
 ```
 
 ---
