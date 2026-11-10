@@ -109,7 +109,11 @@ class Renderer:
 
     def __init__(self, *, preserve_links: bool, monospace_code: bool) -> None:
         self.preserve_links: bool = preserve_links
-        self.monospace_code: bool = monospace_code
+        # Code is just another style tag when it is to be monospaced, and plain
+        # text, like any tag without a style, when it is not.
+        self.style_tags: dict[str, _Style] = (
+            {**_STYLE_TAGS, "code": "monospace"} if monospace_code else _STYLE_TAGS
+        )
         self.out: list[str] = []
         # Newlines at the end of ``out``, tracked so that block separation
         # does not have to re-join everything rendered so far.
@@ -223,12 +227,9 @@ class Renderer:
             self._enter_inline(node, tag)
 
     def _enter_inline(self, node: LexborNode, tag: str) -> None:
-        style = _STYLE_TAGS.get(tag)
+        style = self.style_tags.get(tag)
         if style is not None:
             self.styles.append(style)
-        elif tag == "code":
-            if self.monospace_code:
-                self.styles.append("monospace")
         elif tag == "a":
             self._start_link(node)
         elif tag == "img":
@@ -251,12 +252,9 @@ class Renderer:
             self._exit_inline(tag)
 
     def _exit_inline(self, tag: str) -> None:
-        style = _STYLE_TAGS.get(tag)
+        style = self.style_tags.get(tag)
         if style is not None:
             self.styles.remove(style)
-        elif tag == "code":
-            if self.monospace_code:
-                self.styles.remove("monospace")
         elif tag == "a":
             self._end_link()
 
