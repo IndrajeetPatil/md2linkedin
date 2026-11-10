@@ -22,4 +22,4 @@ If the `uv` version changes, keep its hardcoded versions in sync: `required-vers
 
 Once the dependency update is green, review relevant changelogs and current documentation for upgraded libraries. Apply small compatibility simplifications only when they reduce local complexity or remove a workaround, and rerun the affected checks after each change.
 
-Make a draft PR using the `gh` CLI. In the PR body, summarise dependency groups changed, compatibility fixes made, validation commands that passed, and any key refactorings as list items.
+Open a ready-for-review (not draft) PR with `gh pr create`. In the PR body, summarise dependency groups changed, compatibility fixes made, validation commands that passed, and any key refactorings as list items.
