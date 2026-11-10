@@ -19,8 +19,6 @@ from md2linkedin._unicode import (
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-# ── _build_table ──────────────────────────────────────────────────────────────
-
 
 class TestBuildTable:
     """Direct tests for the table builder.
@@ -48,9 +46,6 @@ class TestBuildTable:
         assert len(table) == len(string.ascii_letters)
 
 
-# ── to_sans_bold ──────────────────────────────────────────────────────────────
-
-
 class TestToSansBold:
     @pytest.mark.parametrize(
         ("text", "expected"),
@@ -59,18 +54,11 @@ class TestToSansBold:
             pytest.param("abcxyz", "𝗮𝗯𝗰𝘅𝘆𝘇", id="lowercase"),
             pytest.param(string.digits, "𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵", id="digits"),
             pytest.param("café", "𝗰𝗮𝗳é", id="non-ascii"),
-            pytest.param("hi 🎉", "𝗵𝗶 🎉", id="emoji"),
-            pytest.param("Hello, World!", "𝗛𝗲𝗹𝗹𝗼, 𝗪𝗼𝗿𝗹𝗱!", id="punctuation"),
-            pytest.param("a b", "𝗮 𝗯", id="spaces"),
-            pytest.param("", "", id="empty"),
-            pytest.param("Hello World 123", "𝗛𝗲𝗹𝗹𝗼 𝗪𝗼𝗿𝗹𝗱 𝟭𝟮𝟯", id="sentence"),
+            pytest.param("Hello, World 123!", "𝗛𝗲𝗹𝗹𝗼, 𝗪𝗼𝗿𝗹𝗱 𝟭𝟮𝟯!", id="sentence"),
         ],
     )
     def test_converts(self, text: str, expected: str) -> None:
         assert to_sans_bold(text) == expected
-
-
-# ── to_sans_italic ────────────────────────────────────────────────────────────
 
 
 class TestToSansItalic:
@@ -82,16 +70,11 @@ class TestToSansItalic:
             # No italic digits in this Unicode block
             pytest.param("123", "123", id="digits-unchanged"),
             pytest.param("café", "𝘤𝘢𝘧é", id="non-ascii"),
-            pytest.param("go 🚀", "𝘨𝘰 🚀", id="emoji"),
-            pytest.param("Hello!", "𝘏𝘦𝘭𝘭𝘰!", id="punctuation"),
-            pytest.param("", "", id="empty"),
+            pytest.param("Hello World!", "𝘏𝘦𝘭𝘭𝘰 𝘞𝘰𝘳𝘭𝘥!", id="sentence"),
         ],
     )
     def test_converts(self, text: str, expected: str) -> None:
         assert to_sans_italic(text) == expected
-
-
-# ── to_sans_bold_italic ───────────────────────────────────────────────────────
 
 
 class TestToSansBoldItalic:
@@ -102,15 +85,11 @@ class TestToSansBoldItalic:
             pytest.param("abcxyz", "𝙖𝙗𝙘𝙭𝙮𝙯", id="lowercase"),
             pytest.param("123", "123", id="digits-unchanged"),
             pytest.param("café", "𝙘𝙖𝙛é", id="non-ascii"),
-            pytest.param("", "", id="empty"),
-            pytest.param("Hello World!", "𝙃𝙚𝙡𝙡𝙤 𝙒𝙤𝙧𝙡𝙙!", id="mixed"),
+            pytest.param("Hello World!", "𝙃𝙚𝙡𝙡𝙤 𝙒𝙤𝙧𝙡𝙙!", id="sentence"),
         ],
     )
     def test_converts(self, text: str, expected: str) -> None:
         assert to_sans_bold_italic(text) == expected
-
-
-# ── to_monospace ──────────────────────────────────────────────────────────────
 
 
 class TestToMonospace:
@@ -121,20 +100,25 @@ class TestToMonospace:
             pytest.param("abcxyz", "𝚊𝚋𝚌𝚡𝚢𝚣", id="lowercase"),
             pytest.param(string.digits, "𝟶𝟷𝟸𝟹𝟺𝟻𝟼𝟽𝟾𝟿", id="digits"),
             pytest.param("café", "𝚌𝚊𝚏é", id="non-ascii"),
-            pytest.param("hi 🎉", "𝚑𝚒 🎉", id="emoji"),
-            pytest.param("Hello, World!", "𝙷𝚎𝚕𝚕𝚘, 𝚆𝚘𝚛𝚕𝚍!", id="punctuation"),
-            pytest.param("a b", "𝚊 𝚋", id="spaces"),
-            pytest.param("", "", id="empty"),
-            pytest.param("Hello World 123", "𝙷𝚎𝚕𝚕𝚘 𝚆𝚘𝚛𝚕𝚍 𝟷𝟸𝟹", id="sentence"),
+            pytest.param("Hello, World 123!", "𝙷𝚎𝚕𝚕𝚘, 𝚆𝚘𝚛𝚕𝚍 𝟷𝟸𝟹!", id="sentence"),
         ],
     )
     def test_converts(self, text: str, expected: str) -> None:
         assert to_monospace(text) == expected
 
 
-# ── unmapped characters ───────────────────────────────────────────────────────
-
-
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param("", id="empty"),
+        pytest.param(" \t\n", id="whitespace"),
+        pytest.param("é 🎉 🚀", id="non-ascii"),
+        # Punctuation fills the ASCII gaps around the letters and digits (``@``
+        # before ``A``, ``[`` after ``Z``, ``:`` after ``9``, ...), so a table
+        # that maps one character too many beside a range changes this string.
+        pytest.param(string.punctuation, id="ascii-punctuation"),
+    ],
+)
 @pytest.mark.parametrize(
     "func",
     [
@@ -144,14 +128,11 @@ class TestToMonospace:
         pytest.param(to_monospace, id="monospace"),
     ],
 )
-def test_ascii_punctuation_passes_through(func: Callable[[str], str]) -> None:
-    # Punctuation fills the ASCII gaps around the letters and digits (``@``
-    # before ``A``, ``[`` after ``Z``, ``:`` after ``9``, ...), so a table
-    # that maps one character too many beside a range changes this string.
-    assert func(string.punctuation) == string.punctuation
-
-
-# ── apply_style ───────────────────────────────────────────────────────────────
+def test_unmapped_characters_pass_through(
+    func: Callable[[str], str],
+    text: str,
+) -> None:
+    assert func(text) == text
 
 
 class TestApplyStyle:
