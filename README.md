@@ -103,19 +103,17 @@ md2linkedin post.md --no-monospace-code
 
 ## Limitations
 
-Converting Markdown to LinkedIn-friendly text relies on Unicode Mathematical Alphanumeric Symbols to simulate styling. This approach has notable limitations:
+Styling relies on Unicode Mathematical Alphanumeric Symbols, which has trade-offs:
 
-- **Code blocks**: Monospace Unicode characters do not enforce true fixed-width alignment on proportional fonts (like LinkedIn's default font). As a result, indentation and column alignment in code blocks will often break visually.
-- **Tables**: Markdown tables are flattened to one line per row, with a bold header and cells joined by ` | `. Nothing keeps the columns aligned on LinkedIn's proportional font, so wide tables are better rewritten as lists.
-- **Accessibility**: Screen readers often read Unicode mathematical characters aloud individually (e.g., "mathematical sans-serif bold b") instead of as complete words, making the content difficult for visually impaired users to understand.
-- **Searchability**: Text styled with these Unicode characters may not be indexed properly by LinkedIn's search algorithm, meaning people searching for your keywords might not find your post.
-- **Markdown extensions**: Only CommonMark plus tables, strikethrough, autolinks and `==highlight==` are read. Task-list checkboxes stay as literal `[ ]`/`[x]` and footnotes are flattened (`text[^1]` → `text^1`); see [What Gets Transformed](https://www.indrapatil.com/md2linkedin/advanced/#what-gets-transformed-and-what-doesnt).
-
-For more examples, check out the package documentation at:
-<https://www.indrapatil.com/md2linkedin/>
+- **Code blocks**: LinkedIn's proportional font does not keep monospace Unicode characters fixed-width, so indentation and column alignment often break.
+- **Tables**: for the same reason, flattened table columns do not line up; rewrite wide tables as lists.
+- **Accessibility**: screen readers often spell out each styled character (e.g. "mathematical sans-serif bold b") instead of reading whole words.
+- **Searchability**: LinkedIn search may not index styled text, so people searching for those keywords might not find your post.
+- **Markdown extensions**: only CommonMark plus tables, strikethrough, autolinks and `==highlight==` are read. Task-list checkboxes stay as literal `[ ]`/`[x]` and footnotes are flattened (`text[^1]` → `text^1`); see [What Gets Transformed](https://www.indrapatil.com/md2linkedin/advanced/#what-gets-transformed-and-what-doesnt).
 
 ## See Also
 
+- [Documentation](https://www.indrapatil.com/md2linkedin/) — advanced usage, the full conversion table and the API reference.
 - [md2linkedin Web App](https://019d695e-8448-ee38-5db3-7ca4acf2ce2c.share.connect.posit.cloud/) — an interactive web interface for `md2linkedin`, built by [Yann Cohen](https://github.com/iamYannC).
 
 ## License
