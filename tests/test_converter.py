@@ -819,49 +819,31 @@ class TestConvertFile:
         # Linux/macOS at runtime (the default locale is already UTF-8), so
         # spies record the argument explicitly.
         src = _write_markdown(tmp_path, "hello")
-        recorded: dict[str, object] = {}
+        calls: list[tuple[str, Path, str | None]] = []
+        read_text = Path.read_text
+        write_text = Path.write_text
 
-        def spy_read_text(
-            self: Path,
-            encoding: str | None = None,
-            errors: str | None = None,
-            newline: str | None = None,
-        ) -> str:
-            if self == src:
-                recorded["read_encoding"] = encoding
-            # Bypass the patched method by using the underlying file API.
-            with self.open(encoding=encoding, errors=errors, newline=newline) as f:
-                return f.read()
+        def spy_read_text(self: Path, *, encoding: str | None = None) -> str:
+            calls.append(("read", self, encoding))
+            return read_text(self, encoding=encoding)
 
         def spy_write_text(
             self: Path,
             data: str,
+            *,
             encoding: str | None = None,
-            errors: str | None = None,
-            newline: str | None = None,
         ) -> int:
-            if self != src:
-                recorded["write_encoding"] = encoding
-                recorded["data"] = data
-            with self.open(
-                "w",
-                encoding=encoding,
-                errors=errors,
-                newline=newline,
-            ) as f:
-                return f.write(data)
+            calls.append(("write", self, encoding))
+            return write_text(self, data, encoding=encoding)
 
         monkeypatch.setattr(Path, "read_text", spy_read_text)
         monkeypatch.setattr(Path, "write_text", spy_write_text)
-        convert_file(src)
+        out = convert_file(src)
 
         # A mutation to ``None``, or dropping the argument (which then
         # defaults to ``None``), fails here.
-        assert recorded == {
-            "read_encoding": "utf-8",
-            "write_encoding": "utf-8",
-            "data": "hello\n",
-        }
+        assert calls == [("read", src, "utf-8"), ("write", out, "utf-8")]
+        assert read_text(out, encoding="utf-8") == "hello\n"
 
 
 @pytest.mark.skipif(
