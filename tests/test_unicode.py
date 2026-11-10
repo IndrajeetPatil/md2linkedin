@@ -19,8 +19,6 @@ from md2linkedin._unicode import (
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-# ── _build_table ──────────────────────────────────────────────────────────────
-
 
 class TestBuildTable:
     """Direct tests for the table builder.
@@ -48,9 +46,6 @@ class TestBuildTable:
         assert len(table) == len(string.ascii_letters)
 
 
-# ── to_sans_bold ──────────────────────────────────────────────────────────────
-
-
 class TestToSansBold:
     @pytest.mark.parametrize(
         ("text", "expected"),
@@ -68,9 +63,6 @@ class TestToSansBold:
     )
     def test_converts(self, text: str, expected: str) -> None:
         assert to_sans_bold(text) == expected
-
-
-# ── to_sans_italic ────────────────────────────────────────────────────────────
 
 
 class TestToSansItalic:
@@ -91,9 +83,6 @@ class TestToSansItalic:
         assert to_sans_italic(text) == expected
 
 
-# ── to_sans_bold_italic ───────────────────────────────────────────────────────
-
-
 class TestToSansBoldItalic:
     @pytest.mark.parametrize(
         ("text", "expected"),
@@ -108,9 +97,6 @@ class TestToSansBoldItalic:
     )
     def test_converts(self, text: str, expected: str) -> None:
         assert to_sans_bold_italic(text) == expected
-
-
-# ── to_monospace ──────────────────────────────────────────────────────────────
 
 
 class TestToMonospace:
@@ -149,9 +135,6 @@ def test_ascii_punctuation_passes_through(func: Callable[[str], str]) -> None:
     # before ``A``, ``[`` after ``Z``, ``:`` after ``9``, ...), so a table
     # that maps one character too many beside a range changes this string.
     assert func(string.punctuation) == string.punctuation
-
-
-# ── apply_style ───────────────────────────────────────────────────────────────
 
 
 class TestApplyStyle:
