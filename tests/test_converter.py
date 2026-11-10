@@ -762,7 +762,8 @@ class TestConvertFile:
         ("name", "expected"),
         [
             ("README.md", "README.linkedin.txt"),
-            # Only the last suffix is replaced; inner ones are part of the name.
+            # Only the last suffix is replaced; inner ones are part of the name,
+            # so siblings such as ``notes.v1.md`` never share an output file.
             ("notes.v2.md", "notes.v2.linkedin.txt"),
             ("post.draft.final.md", "post.draft.final.linkedin.txt"),
             ("notes", "notes.linkedin.txt"),
@@ -781,18 +782,6 @@ class TestConvertFile:
         # Comparing with a ``Path`` also pins the return type, since a ``str``
         # never equals one.
         assert convert_file(src) == tmp_path / expected
-
-    def test_default_output_paths_of_siblings_differ(self, tmp_path: Path) -> None:
-        # ``notes.v1.md`` and ``notes.v2.md`` once both wrote
-        # ``notes.linkedin.txt``, so the second conversion clobbered the first.
-        v1 = tmp_path / "notes.v1.md"
-        v2 = tmp_path / "notes.v2.md"
-        v1.write_text("one", encoding="utf-8")
-        v2.write_text("two", encoding="utf-8")
-        out_v1 = convert_file(v1)
-        out_v2 = convert_file(v2)
-        assert out_v1.read_text(encoding="utf-8") == "one\n"
-        assert out_v2.read_text(encoding="utf-8") == "two\n"
 
     def test_explicit_output_path(self, tmp_path: Path) -> None:
         src = _write_markdown(tmp_path, "hello")
