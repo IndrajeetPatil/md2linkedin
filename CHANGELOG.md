@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bold-italic and monospace styling as a styled base letter followed by a
   combining mark, instead of staying plain inside styled words. `ß` and `ł`
   have no styled form and stay plain.
+
 - Code spans inside bold, italic, headings and table headers keep their
   monospace styling, and their case in an H1, instead of taking on the
   surrounding style.
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   output name: `notes.v2.md` is written to `notes.v2.linkedin.txt` instead of
   `notes.linkedin.txt`, which dropped `.v2` and could overwrite the output of
   a sibling such as `notes.v1.md`.
+
 - `md2linkedin --help` prints its examples one per line, without a literal
   `\b` or the docstring's `Raises:` section.
 
@@ -53,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Markdown tables are rendered: the header row in bold, cells joined by
   ` | `, one line per row. They were previously emitted as unreadable
   run-together text (fixes #70).
+
 - `~~strikethrough~~` keeps its text and drops its markers, instead of
   leaving `~~` in the output.
 
@@ -67,18 +70,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   quote, `[ref]: url` definitions are consumed rather than printed, a
   thematic break inside a list item is a break rather than a bullet, and a
   mixed or renumbered marker starts a new list.
+
 - HTML is parsed with `selectolax`'s Lexbor backend, as required by
   `selectolax` 1.0, which removed the Modest backend. Conversion is roughly a
   third faster.
+
 - Blank lines inside a code block are preserved. The old pipeline collapsed
   every run of three or more newlines anywhere in the document.
+
 - `monospace_code=False` strips the fences from a fenced block and keeps the
   content as plain text. It previously left the ` ``` ` fences in the
   output.
+
 - Conversion costs more than it did, because a document is now parsed
   rather than pattern-matched. A LinkedIn-sized post takes a few tens of
   microseconds longer; the parsing itself happens in Rust and C, so the
   cost stays linear in input length.
+
 - Requires Python 3.12 or newer; support for Python 3.10 and 3.11 is discontinued.
 
 ### Fixed
@@ -108,31 +116,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under them — except in the middle of a paragraph, where Markdown only
   lets a list start at number one, so `2. prose` there is left as the prose
   it is instead of nesting what follows it one level too deep.
+
 - A heading (ATX or setext), thematic break, blockquote or fenced code block
   at column zero ends an open list, as Markdown says it does, so an item
   after one restarts its nesting from its own indentation instead of
   continuing the list above. None of them is a paragraph either, so an
   ordered list may start under one whatever its first number is.
+
 - A spaced thematic break (`* * *`, `- - -`) is no longer converted into a
   bullet holding the remaining markers. Markdown reads such a line as a
   break wherever a list item would also fit, so it is now dropped like the
   compact `***` form. The `*` and `_` spellings are dropped before the
   emphasis steps run, which used to pair up the first two markers of
   `* * *` and leave a stray one behind.
+
 - A paragraph after a blank line now ends only the list levels it is not
   indented inside, instead of leaving every level open unless the paragraph
   starts at column zero. A second paragraph of an outer item therefore ends
   the list nested in that item, and the next item there nests one level deep
   rather than two.
+
 - A numbered item only carries on a list that is itself numbered. A `2.`
   standing where a bullet item stands no longer opens a phantom level that
   pushed the items under it one level too deep; it is left as the text it
   is. CommonMark would start a second list there instead, which is a known
   gap rather than the intended reading (see #70).
+
 - A tab may separate a list marker from its content (`-\titem`,
   `1.\titem`), as CommonMark allows. Only a space was recognised before, so
   a tab-formatted list was left unconverted and its ordered items did not
   open a level for the bullets nested under them.
+
 - Documents holding many lines that begin with a number convert in linear
   rather than quadratic time. Deciding whether such a line interrupts a
   paragraph re-read everything above it, so a paragraph followed by 1,600
@@ -160,10 +174,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   because the placeholder was built from ASCII alphanumerics that the
   Unicode mapping steps then rewrote. Placeholders now use Private Use Area
   characters, which those steps leave untouched (fixes #63).
+
 - An inline code span that wraps a fenced block (`` ` ```x``` ` ``) no longer
   leaves an unexpanded placeholder in the output. Placeholders are now
   restored in reverse insertion order, so an outer span is expanded before
   the keys nested inside it.
+
 - A single-line fenced run (` ```code``` `) no longer converts to nothing.
   Its body was treated as a language tag and discarded, but a language tag
   is only a language tag when a newline terminates it, so the whole body is
@@ -174,12 +190,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `convert()` and `convert_file()` are now deterministic. Code placeholders
   were previously derived from `uuid4()`, so any input whose placeholder
   leaked produced different output on every call.
+
 - Documents with many code spans convert faster. Placeholders are restored in
   a single regex pass rather than one `str.replace` scan per placeholder,
   which removes the quadratic cost of that step.
+
 - `to_sans_bold()`, `to_sans_italic()`, `to_sans_bold_italic()`, and
   `to_monospace()` are faster. They now apply precomputed `str.translate()`
   tables instead of building the mapping per character on every call.
+
 - `click` is now required at version 8.5.0 or newer (previously 8.4.0).
 
 ## [0.2.3] — 2026-08-05
@@ -217,9 +236,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Code spans and fenced code blocks are now rendered in Unicode Mathematical
   Monospace font by default, making code visually distinct in LinkedIn posts.
+
 - New `monospace_code` parameter for `convert()` and `convert_file()` (default:
   `True`). Set to `False` to restore the previous plain-text behavior.
+
 - New `--no-monospace-code` CLI flag to disable monospace code rendering.
+
 - New `to_monospace()` Unicode mapping function for programmatic use.
 
 ## [0.1.1] — 2026-04-06
@@ -233,16 +255,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Initial release of `md2linkedin`.
+
 - `convert()` function for converting Markdown strings to LinkedIn-compatible
   Unicode plain text.
+
 - `convert_file()` function for file-based conversion with automatic
   `.linkedin.txt` output naming.
+
 - Unicode mapping functions: `to_sans_bold()`, `to_sans_italic()`,
   `to_sans_bold_italic()`, and `apply_style()`.
+
 - Support for: bold (`**`/`__`), italic (`*`/`_`), bold-italic (`***`/`___`),
   ATX headers (`#`–`######`), setext headers, fenced code blocks, inline code,
   links, images, bullet lists, blockquotes, HTML spans, HTML entities, and
   backslash escapes.
+
 - `--preserve-links` flag to retain Markdown link syntax in output.
+
 - `md2linkedin` CLI entry point with stdin support.
+
 - Full test suite with 100% code coverage.
