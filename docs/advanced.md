@@ -104,7 +104,8 @@ apply_style("Hiring!", "bold")  # 𝗛𝗶𝗿𝗶𝗻𝗴!
 | `<!-- comment -->`                        | Dropped                                |
 | `&amp;` / `&gt;` etc.                     | Decoded to `&` / `>`                   |
 | `\*` backslash escapes                    | Resolved to literal `*`                |
-| Emojis, accented chars                    | Passed through unchanged               |
+| Accented letters inside a style          | Styled base letter + combining mark    |
+| `ß`, `ł`, emojis, other scripts           | Passed through unchanged               |
 | Digits inside bold                        | Also converted (`**123**` → `𝟭𝟮𝟯`)     |
 | Digits inside italic / bold-italic        | Unchanged: Unicode has no such digits  |
 | `_snake_case_` in middle of word          | **Not** italicised                     |
@@ -244,10 +245,20 @@ big_md = Path("quarterly_report.md").read_text()
 result = convert(big_md)
 ```
 
-### Emojis and Non-ASCII Characters
+### Accented Letters, Emojis and Other Scripts
 
-Emojis and accented characters pass through unchanged — only ASCII letters
-and digits are remapped to Unicode Mathematical variants:
+Unicode Mathematical variants exist only for the ASCII letters and digits, so
+an accented Latin letter is written as its styled base letter followed by a
+combining mark (`ü` → `𝘂` + U+0308), which renders as a styled `ü`:
+
+```python
+convert("**Grüße** *café* `Größe`")
+# → 𝗚𝗿𝘂̈ß𝗲 𝘤𝘢𝘧𝘦́ 𝙶𝚛𝚘̈ß𝚎
+```
+
+Letters with no ASCII base, such as `ß` and `ł`, have no styled form and stay
+plain. Emojis and other scripts (Greek, Cyrillic, CJK, Hangul, …) pass through
+unchanged:
 
 ```python
 convert("**Excited to share** 🎉 *check this out*!")

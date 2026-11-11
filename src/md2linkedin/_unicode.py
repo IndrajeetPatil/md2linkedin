@@ -2,12 +2,14 @@
 
 Converts ASCII letters and digits to their Unicode Mathematical
 Sans-Serif and Monospace equivalents, enabling bold, italic, bold-italic
-and monospace styling in plain-text environments like LinkedIn.
+and monospace styling in plain-text environments like LinkedIn. Accented
+Latin letters become the styled base letter followed by combining marks.
 """
 
 from __future__ import annotations
 
 import string
+import unicodedata
 from typing import Literal
 
 __all__ = [
@@ -35,25 +37,48 @@ _MONOSPACE_UPPER = 0x1D670  # 𝙰
 _MONOSPACE_LOWER = 0x1D68A  # 𝚊
 _MONOSPACE_DIGIT = 0x1D7F6  # 𝟶
 
+# Every precomposed Latin letter whose canonical decomposition starts with an
+# ASCII letter lies in Latin-1 Supplement through Latin Extended-B or in Latin
+# Extended Additional.
+_ACCENTED_LATIN_RANGES = (range(0xC0, 0x250), range(0x1E00, 0x1F00))
+
 
 # ── Translation tables ─────────────────────────────────────────────────────────
 
 
-def _build_table(upper: int, lower: int, digit: int | None = None) -> dict[int, int]:
+def _build_table(
+    upper: int,
+    lower: int,
+    digit: int | None = None,
+) -> dict[int, int | str]:
     """Build a :meth:`str.translate` table for one Unicode style block.
 
     The table is derived from the codepoints of the block's styled ``A``,
     ``a`` and ``0``. *digit* is ``None`` for the italic blocks, which have no
     digits. Characters absent from the table are left unchanged.
+
+    Unicode has no styled forms of accented letters, so each precomposed Latin
+    letter maps to its NFD form with the base letter styled: ``é`` becomes
+    styled ``e`` followed by U+0301 COMBINING ACUTE ACCENT, which renders as
+    a styled ``é``. Letters without a decomposition, such as ``ß`` and ``ł``,
+    stay plain. Only the Latin blocks are decomposed, so Hangul syllables and
+    other scripts whose NFD form starts with a non-ASCII character are never
+    split apart.
     """
     blocks = [(string.ascii_uppercase, upper), (string.ascii_lowercase, lower)]
     if digit is not None:
         blocks.append((string.digits, digit))
-    return {
+    table: dict[int, int | str] = {
         ord(char): base + offset
         for chars, base in blocks
         for offset, char in enumerate(chars)
     }
+    for codepoint in (cp for block in _ACCENTED_LATIN_RANGES for cp in block):
+        base, *marks = unicodedata.normalize("NFD", chr(codepoint))
+        styled = table.get(ord(base))
+        if isinstance(styled, int):
+            table[codepoint] = chr(styled) + "".join(marks)
+    return table
 
 
 _SANS_BOLD_TABLE = _build_table(_SANS_BOLD_UPPER, _SANS_BOLD_LOWER, _SANS_BOLD_DIGIT)
@@ -72,8 +97,9 @@ def to_sans_bold(text: str) -> str:
     """Convert text to Unicode Mathematical Sans-Serif Bold.
 
     ASCII uppercase letters, lowercase letters, and digits are mapped to
-    their bold sans-serif counterparts. All other characters (spaces,
-    punctuation, non-ASCII) pass through unchanged.
+    their bold sans-serif counterparts. Accented Latin letters become the
+    bold base letter followed by combining marks. All other characters
+    (spaces, punctuation, ``ß``, emojis) pass through unchanged.
 
     Args:
         text: The input string to convert.
@@ -86,8 +112,8 @@ def to_sans_bold(text: str) -> str:
         >>> to_sans_bold("Hello, World! 123")
         '𝗛𝗲𝗹𝗹𝗼, 𝗪𝗼𝗿𝗹𝗱! 𝟭𝟮𝟯'
 
-        >>> to_sans_bold("café")
-        '𝗰𝗮𝗳é'
+        >>> to_sans_bold("café") == "𝗰𝗮𝗳𝗲\u0301"
+        True
 
         >>> to_sans_bold("")
         ''
@@ -100,8 +126,10 @@ def to_sans_italic(text: str) -> str:
     """Convert text to Unicode Mathematical Sans-Serif Italic.
 
     ASCII uppercase and lowercase letters are mapped to their italic
-    sans-serif counterparts. Digits and all other characters pass through
-    unchanged (there are no italic digit codepoints in this Unicode block).
+    sans-serif counterparts. Accented Latin letters become the italic base
+    letter followed by combining marks. Digits and all other characters pass
+    through unchanged (there are no italic digit codepoints in this Unicode
+    block).
 
     Args:
         text: The input string to convert.
@@ -128,8 +156,9 @@ def to_sans_bold_italic(text: str) -> str:
     """Convert text to Unicode Mathematical Sans-Serif Bold Italic.
 
     ASCII uppercase and lowercase letters are mapped to their bold-italic
-    sans-serif counterparts. Digits and all other characters pass through
-    unchanged.
+    sans-serif counterparts. Accented Latin letters become the bold-italic
+    base letter followed by combining marks. Digits and all other characters
+    pass through unchanged.
 
     Args:
         text: The input string to convert.
@@ -153,8 +182,9 @@ def to_monospace(text: str) -> str:
     """Convert text to Unicode Mathematical Monospace.
 
     ASCII uppercase letters, lowercase letters, and digits are mapped to
-    their monospace counterparts. All other characters (spaces,
-    punctuation, non-ASCII) pass through unchanged.
+    their monospace counterparts. Accented Latin letters become the
+    monospace base letter followed by combining marks. All other characters
+    (spaces, punctuation, ``ß``, emojis) pass through unchanged.
 
     Args:
         text: The input string to convert.
@@ -167,8 +197,8 @@ def to_monospace(text: str) -> str:
         >>> to_monospace("Hello, World! 123")
         '𝙷𝚎𝚕𝚕𝚘, 𝚆𝚘𝚛𝚕𝚍! 𝟷𝟸𝟹'
 
-        >>> to_monospace("café")
-        '𝚌𝚊𝚏é'
+        >>> to_monospace("café") == "𝚌𝚊𝚏𝚎\u0301"
+        True
 
         >>> to_monospace("")
         ''

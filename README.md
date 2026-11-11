@@ -99,7 +99,8 @@ md2linkedin post.md --no-monospace-code
 - **HTML entities**: decoded (`&amp;` → `&`, etc.)
 - **Backslash escapes**: resolved (`\*` → `*`)
 - **Windows line endings**: normalised automatically
-- **Emojis & non-ASCII**: pass through unchanged — no accidental corruption
+- **Accented letters**: styled like the letters around them (`**Grüße**` → 𝗚𝗿𝘂̈ß𝗲); `ß`, `ł` and other letters with no ASCII base stay plain
+- **Emojis & other scripts**: pass through unchanged — no accidental corruption
 
 ## Limitations
 

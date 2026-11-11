@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import string
+import unicodedata
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 import pytest
@@ -38,12 +39,47 @@ class TestBuildTable:
     def test_digits_included_when_base_given(self) -> None:
         table = _build_table(0x100, 0x200, 0x300)
         assert [table[ord(d)] for d in "09"] == [0x300, 0x309]
-        assert len(table) == len(string.ascii_letters) + len(string.digits)
 
     def test_digits_omitted_when_base_is_none(self) -> None:
         table = _build_table(0x100, 0x200)
         assert not any(ord(d) in table for d in string.digits)
-        assert len(table) == len(string.ascii_letters)
+
+    def test_ascii_maps_only_letters_and_digits(self) -> None:
+        table = _build_table(0x100, 0x200, 0x300)
+        mapped = {chr(cp) for cp in table if cp < 0x80}
+        assert mapped == set(string.ascii_letters + string.digits)
+
+    @pytest.mark.parametrize(
+        ("char", "expected"),
+        [
+            pytest.param("é", "\u0204\u0301", id="acute"),
+            pytest.param("Ä", "\u0100\u0308", id="uppercase-umlaut"),
+            pytest.param("ǖ", "\u0214\u0308\u0304", id="stacked-marks"),
+            pytest.param("ẞ", None, id="capital-sharp-s"),
+            pytest.param("ł", None, id="no-decomposition"),
+        ],
+    )
+    def test_accented_letters_map_to_styled_base_and_marks(
+        self,
+        char: str,
+        expected: str | None,
+    ) -> None:
+        assert _build_table(0x100, 0x200).get(ord(char)) == expected
+
+    def test_every_decomposable_latin_letter_is_mapped(self) -> None:
+        # Guards the hard-coded Latin ranges: a letter composed of an ASCII
+        # base and marks outside them would silently lose its styling.
+        # Singleton decompositions, such as U+212A KELVIN SIGN to ``K``, are
+        # duplicate symbols rather than accented letters and are left out.
+        table = _build_table(0x100, 0x200)
+        letters = set(string.ascii_letters)
+        composed = {
+            cp
+            for cp in range(0x80, 0x110000)
+            if unicodedata.normalize("NFD", chr(cp))[0] in letters
+            and " " in unicodedata.decomposition(chr(cp))
+        }
+        assert composed <= table.keys()
 
 
 class TestToSansBold:
@@ -53,7 +89,10 @@ class TestToSansBold:
             pytest.param("ABCXYZ", "𝗔𝗕𝗖𝗫𝗬𝗭", id="uppercase"),
             pytest.param("abcxyz", "𝗮𝗯𝗰𝘅𝘆𝘇", id="lowercase"),
             pytest.param(string.digits, "𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵", id="digits"),
-            pytest.param("café", "𝗰𝗮𝗳é", id="non-ascii"),
+            pytest.param("café", "𝗰𝗮𝗳𝗲\u0301", id="accented"),
+            pytest.param("Grüße", "𝗚𝗿𝘂\u0308ß𝗲", id="umlaut-and-sharp-s"),
+            pytest.param("Ärger", "𝗔\u0308𝗿𝗴𝗲𝗿", id="uppercase-accented"),
+            pytest.param("u\u0308", "𝘂\u0308", id="already-decomposed"),
             pytest.param("Hello, World 123!", "𝗛𝗲𝗹𝗹𝗼, 𝗪𝗼𝗿𝗹𝗱 𝟭𝟮𝟯!", id="sentence"),
         ],
     )
@@ -69,7 +108,7 @@ class TestToSansItalic:
             pytest.param("abcxyz", "𝘢𝘣𝘤𝘹𝘺𝘻", id="lowercase"),
             # No italic digits in this Unicode block
             pytest.param("123", "123", id="digits-unchanged"),
-            pytest.param("café", "𝘤𝘢𝘧é", id="non-ascii"),
+            pytest.param("café", "𝘤𝘢𝘧𝘦\u0301", id="accented"),
             pytest.param("Hello World!", "𝘏𝘦𝘭𝘭𝘰 𝘞𝘰𝘳𝘭𝘥!", id="sentence"),
         ],
     )
@@ -84,7 +123,7 @@ class TestToSansBoldItalic:
             pytest.param("ABCXYZ", "𝘼𝘽𝘾𝙓𝙔𝙕", id="uppercase"),
             pytest.param("abcxyz", "𝙖𝙗𝙘𝙭𝙮𝙯", id="lowercase"),
             pytest.param("123", "123", id="digits-unchanged"),
-            pytest.param("café", "𝙘𝙖𝙛é", id="non-ascii"),
+            pytest.param("café", "𝙘𝙖𝙛𝙚\u0301", id="accented"),
             pytest.param("Hello World!", "𝙃𝙚𝙡𝙡𝙤 𝙒𝙤𝙧𝙡𝙙!", id="sentence"),
         ],
     )
@@ -99,7 +138,8 @@ class TestToMonospace:
             pytest.param("ABCXYZ", "𝙰𝙱𝙲𝚇𝚈𝚉", id="uppercase"),
             pytest.param("abcxyz", "𝚊𝚋𝚌𝚡𝚢𝚣", id="lowercase"),
             pytest.param(string.digits, "𝟶𝟷𝟸𝟹𝟺𝟻𝟼𝟽𝟾𝟿", id="digits"),
-            pytest.param("café", "𝚌𝚊𝚏é", id="non-ascii"),
+            pytest.param("café", "𝚌𝚊𝚏𝚎\u0301", id="accented"),
+            pytest.param("Größe", "𝙶𝚛𝚘\u0308ß𝚎", id="umlaut-and-sharp-s"),
             pytest.param("Hello, World 123!", "𝙷𝚎𝚕𝚕𝚘, 𝚆𝚘𝚛𝚕𝚍 𝟷𝟸𝟹!", id="sentence"),
         ],
     )
@@ -112,7 +152,10 @@ class TestToMonospace:
     [
         pytest.param("", id="empty"),
         pytest.param(" \t\n", id="whitespace"),
-        pytest.param("é 🎉 🚀", id="non-ascii"),
+        pytest.param("ß ł 🎉 🚀", id="non-ascii"),
+        # Hangul syllables have canonical decompositions too, but into jamo,
+        # not ASCII letters, so they must stay composed.
+        pytest.param("한글 Ωμέγα ё", id="non-latin-scripts"),
         # Punctuation fills the ASCII gaps around the letters and digits (``@``
         # before ``A``, ``[`` after ``Z``, ``:`` after ``9``, ...), so a table
         # that maps one character too many beside a range changes this string.
