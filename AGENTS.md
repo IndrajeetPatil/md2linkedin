@@ -12,7 +12,8 @@
   marker; update that block when a converter change alters the output.
 - `CHANGELOG.md`: Also the documentation changelog page — `docs/changelog.md`
   only includes it via `--8<--`, so edit `CHANGELOG.md`, never
-  `docs/changelog.md`.
+  `docs/changelog.md`. Always separate two changelog entries with a blank
+  line, so each bullet stands apart from the next.
 - `pyproject.toml`: The primary configuration file for metadata and tools.
 - `uv.lock`: Lockfile ensuring reproducible environments.
 
