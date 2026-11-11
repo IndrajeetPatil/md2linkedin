@@ -24,8 +24,7 @@ sticker(
     h_color = "#2D2D2D",
     filename = "docs/assets/logo.png",
     h_fill = "white",
-    url = "https://www.indrapatil.com/md2linkedin/",
-    u_x = 0.95,
+    url = "indrapatil.com/md2linkedin",
     u_size = 8,
     u_color = "grey",
     dpi = 600
