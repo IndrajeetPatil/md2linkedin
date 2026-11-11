@@ -9,7 +9,9 @@ showtext_auto()
 
 img <- image_read("hextools/data.jpeg")
 
-sticker(
+logo_file <- "docs/assets/logo.png"
+
+logo <- sticker(
     img,
     package = "md2linkedin",
     p_color = "#1A1A1A",
@@ -22,11 +24,23 @@ sticker(
     s_width = 1.35,
     s_height = 1.1,
     h_color = "#2D2D2D",
-    filename = "docs/assets/logo.png",
+    filename = logo_file,
     h_fill = "white",
-    url = "https://www.indrapatil.com/md2linkedin/",
-    u_x = 0.95,
-    u_size = 8,
-    u_color = "grey",
     dpi = 600
 )
+
+# sticker() left-aligns the URL from u_x/u_y, so a short URL ends up bunched
+# towards the bottom vertex. Draw it centred on the lower-right edge instead,
+# inset from the border by the same distance as hexSticker's default.
+edge_angle <- pi / 6
+inset <- 0.08 * cos(edge_angle)
+logo <- logo +
+    geom_url(
+        "indrapatil.com/md2linkedin",
+        x = 1 + sqrt(3) / 4 - inset * sin(edge_angle),
+        y = 0.25 + inset * cos(edge_angle),
+        size = 8,
+        color = "grey",
+        hjust = 0.5
+    )
+save_sticker(logo_file, logo, dpi = 600)
