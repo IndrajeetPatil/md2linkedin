@@ -78,6 +78,13 @@ class TestConvert:
                 "x == y\n",
                 id="spaced_double_equals_is_not_a_highlight",
             ),
+            # Unicode has no styled accented letters, so the styled base letter
+            # carries a combining mark; ``ß`` has neither and stays plain.
+            pytest.param(
+                "**Grüße** *Einbürgerung* ***Ärger*** *mañana*",
+                "𝗚𝗿𝘂\u0308ß𝗲 𝘌𝘪𝘯𝘣𝘶\u0308𝘳𝘨𝘦𝘳𝘶𝘯𝘨 𝘼\u0308𝙧𝙜𝙚𝙧 𝘮𝘢𝘯\u0303𝘢𝘯𝘢\n",
+                id="accented_letters_keep_the_style",
+            ),
         ],
     )
     def test_emphasis(self, markdown: str, expected: str) -> None:
@@ -110,6 +117,11 @@ class TestConvert:
             ),
             pytest.param("Title\n-----", "𝗧𝗶𝘁𝗹𝗲\n", id="setext_h2_is_a_heading"),
             pytest.param(
+                "# Grüße",
+                f"{_RULE}\n𝗚𝗥𝗨\u0308𝗦𝗦𝗘\n{_RULE}\n",
+                id="heading_h1_upper_cases_and_styles_accented_letters",
+            ),
+            pytest.param(
                 "## Heading\n\nbody",
                 "𝗛𝗲𝗮𝗱𝗶𝗻𝗴\n\nbody\n",
                 id="heading_is_separated_from_the_text_below_it",
@@ -140,12 +152,17 @@ class TestConvert:
                 "𝚙𝚛𝚒𝚗𝚝(𝟷)\n",
                 id="indented_code_block_is_a_code_block",
             ),
-            # Only ASCII letters and digits are remapped, so the ``**`` survives
-            # and nothing inside the span is read as emphasis.
+            # Only letters and digits are remapped, so the ``**`` survives and
+            # nothing inside the span is read as emphasis.
             pytest.param(
                 "use `**bold**` here",
                 "use **𝚋𝚘𝚕𝚍** here\n",
                 id="markdown_inside_code_is_not_converted",
+            ),
+            pytest.param(
+                "`Größe`",
+                "𝙶𝚛𝚘\u0308ß𝚎\n",
+                id="accented_letters_in_code_are_monospaced",
             ),
         ],
     )
@@ -662,8 +679,8 @@ class TestConvert:
             pytest.param("**Hello** 🎉", "𝗛𝗲𝗹𝗹𝗼 🎉\n", id="emoji_passes_through"),
             pytest.param(
                 "**café** résumé",
-                "𝗰𝗮𝗳é résumé\n",
-                id="accented_characters_pass_through",
+                "𝗰𝗮𝗳𝗲\u0301 résumé\n",
+                id="unstyled_accented_characters_pass_through",
             ),
         ],
     )
@@ -742,7 +759,7 @@ class TestConvertFile:
             pytest.param(
                 "**café** résumé 🎉",
                 {},
-                "𝗰𝗮𝗳é résumé 🎉\n",
+                "𝗰𝗮𝗳𝗲\u0301 résumé 🎉\n",
                 id="output_is_utf8",
             ),
         ],

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Accented Latin letters (`ä`, `é`, `ñ`, …) take on bold, italic,
+  bold-italic and monospace styling as a styled base letter followed by a
+  combining mark, instead of staying plain inside styled words. `ß` and `ł`
+  have no styled form and stay plain.
 - Code spans inside bold, italic, headings and table headers keep their
   monospace styling, and their case in an H1, instead of taking on the
   surrounding style.
