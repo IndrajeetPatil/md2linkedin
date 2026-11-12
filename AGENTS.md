@@ -1,42 +1,32 @@
 # Agent Instructions
 
-## Project Structure
-- `src/`: Contains the main package code.
-- `tests/`: Contains the `pytest` test suite. `tests/benchmarks/` holds the
-  performance benchmarks behind the CI regression gate; see its `README.md`.
-- `docs/`: Contains documentation files.
-- `README.md`: Also the documentation homepage — `docs/index.md` only
+## Single-source docs
+- `README.md` is also the documentation homepage: `docs/index.md` only
   includes it via `--8<--`, so edit `README.md`, never `docs/index.md`. Its
   Python examples run in `tests/test_readme.py`, which compares each one's
   output with the fenced block after its `<!--pytest-codeblocks:expected-output-->`
   marker; update that block when a converter change alters the output.
-- `CHANGELOG.md`: Also the documentation changelog page — `docs/changelog.md`
+- `CHANGELOG.md` is also the documentation changelog page: `docs/changelog.md`
   only includes it via `--8<--`, so edit `CHANGELOG.md`, never
-  `docs/changelog.md`. Always separate two changelog entries with a blank
-  line, so each bullet stands apart from the next.
-- `pyproject.toml`: The primary configuration file for metadata and tools.
-- `uv.lock`: Lockfile ensuring reproducible environments.
+  `docs/changelog.md`. Separate two changelog entries with a blank line, so
+  each bullet stands apart from the next.
 
-## Setup & Dependencies
-- We use [`uv`](https://github.com/astral-sh/uv) for fast package and environment management.
-- **Do not** use `pip`, `pipenv`, or `poetry` directly.
-- **Do not** manually edit `uv.lock`.
-- To reproduce the locked environment, run `uv sync`.
-- To explicitly upgrade dependencies and pre-commit hooks, follow `.github/prompts/update-deps.md`, which starts with `make update-deps`.
+## Tooling
+- Use `uv` for environments and dependencies, not `pip`, `pipenv` or `poetry`,
+  and never edit `uv.lock` by hand.
+- Use the `Makefile` targets rather than calling the tools directly. `make
+  format` applies Ruff's `missing-trailing-comma` fix before `ruff format`,
+  so a bare `ruff format` collapses intentional multiline layouts.
+- To upgrade dependencies and hooks, follow `.github/prompts/update-deps.md`.
+- If `pyrefly` and `ty` disagree on an issue, `ty` wins.
 
-## Code Quality & Testing
-- Code formatting and linting are handled by `ruff`, and type checking by `ty`. We use `pyrefly` to enforce 100% type coverage.
-- `make format` adds missing trailing commas (Ruff `COM812`,
-  `missing-trailing-comma`, intentionally enabled despite Ruff's formatter
-  warning) before `ruff format`, preserving multiline layouts.
-- If `pyrefly` and `ty` conflict on any issue, `ty` should win.
-- Pre-commit hooks are configured for `prek` in `prek.toml`; run them all with `make hooks`.
-- **Do not** commit code with linting errors, type warnings, or failing tests.
-- Always run `make qa` to format, lint, type-check, check type coverage, and audit dependencies.
-- Run `make check-package` to run the full validation suite (QA + Tests + Build).
+## Checks
+- `make check-package` (tests with 100% coverage, QA, build) and
+  `make hooks` (`prek` hooks from `prek.toml`) must pass before committing.
 - After changing `docs/`, `README.md`, `CHANGELOG.md`, `mkdocs.yml` or a public
   docstring, also run `make build-docs`, a strict build that fails on warnings.
-- **Do not** bypass the `Makefile`; rely on its targets for standardized workflows.
+- The benchmarks in `tests/benchmarks/` back a CI regression gate; see its
+  `README.md`.
 
 ## Docstrings & Comments
 - The public API — `convert()`, `convert_file()`, the `_unicode` mapping
@@ -46,26 +36,20 @@
   documentation site and what `help()` shows, so they are written for someone
   who cannot see the implementation.
 - Internal functions — anything with a leading underscore, such as the
-  helpers and `Renderer` methods in `_converter.py` — get a **description only**:
+  helpers and `Renderer` methods in `_converter.py` — get a description only:
   a summary line, plus as many paragraphs as the behaviour genuinely warrants.
   Say what the step does and why it exists; ordering constraints, non-obvious
   algorithms and workarounds belong here and are worth spelling out.
-- **Do not** give an internal function `Args:`, `Returns:`, or `Raises:`
+- Do not give an internal function `Args:`, `Returns:`, or `Raises:`
   sections. They restate a signature the reader is already looking at, and
   they go stale. Module docstrings stay as they are.
 - Step-by-step notes about individual lines stay as inline comments in the
   body rather than migrating into the docstring.
-- Ruff's pydoclint rules `DOC201`, `DOC402` and `DOC501` are ignored in
-  `pyproject.toml` (by name: `docstring-missing-returns`,
-  `docstring-missing-yields`, `docstring-missing-exception`) because they cannot tell public from internal functions; the
-  public API's sections are upheld in review. If another rule flags a
-  description-only docstring, relax that rule rather than padding the docstring.
-
-## Contribution Workflow
-1. Ensure you are on a feature branch.
-2. Implement your code changes within `src/` and corresponding tests within `tests/`.
-3. Verify all changes by running `make check-package`.
-4. Commit your changes and push to the branch to update the Pull Request.
+- Ruff's `docstring-missing-returns`, `docstring-missing-yields` and
+  `docstring-missing-exception` rules are ignored in `pyproject.toml` because
+  they cannot tell public from internal functions; the public API's sections
+  are upheld in review. If another rule flags a description-only docstring,
+  relax that rule rather than padding the docstring.
 
 ## Release Process
 To create a new release, follow `.github/prompts/create-release.md` (it covers
