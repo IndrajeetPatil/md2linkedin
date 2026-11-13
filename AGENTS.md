@@ -25,6 +25,9 @@
   `make hooks` (`prek` hooks from `prek.toml`) must pass before committing.
 - After changing `docs/`, `README.md`, `CHANGELOG.md`, `mkdocs.yml` or a public
   docstring, also run `make build-docs`, a strict build that fails on warnings.
+- Reference shared workflows with `@main`: the workflows repository requires
+  PRs and Gitleaks/zizmor checks on changes, and this lets merged fixes reach
+  callers immediately.
 - The benchmarks in `tests/benchmarks/` back a CI regression gate; see its
   `README.md`.
 
