@@ -4,7 +4,7 @@ default_stages = ["pre-commit"]
 
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "f368fb366ff7f2f808dd324b83a6d32267799e19"  # frozen: v0.17.2
+rev = "ef6cf06c079dd6b299dfc720b0f14400c9d168e1"  # frozen: v0.17.5
 hooks = [
   { id = "ruff-check", args = ["--fix"] },
   { id = "ruff-format" },
@@ -12,7 +12,7 @@ hooks = [
 
 [[repos]]
 repo = "https://github.com/astral-sh/ty-pre-commit"
-rev = "44e0d809f7977451fe65f3697106f594b0a02492"  # frozen: v0.0.91
+rev = "d598b95ef3cba3cf3a31c40620c3481ae978e4eb"  # frozen: v0.0.104
 hooks = [
   { id = "ty" },
 ]
