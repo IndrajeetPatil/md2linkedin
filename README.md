@@ -114,8 +114,7 @@ Styling relies on Unicode Mathematical Alphanumeric Symbols, which has trade-off
 
 ## See Also
 
-- [Documentation](https://www.indrapatil.com/md2linkedin/) — advanced usage, the full conversion table and the API reference.
-- [md2linkedin Web App](https://019d695e-8448-ee38-5db3-7ca4acf2ce2c.share.connect.posit.cloud/) — an interactive web interface for `md2linkedin`, built by [Yann Cohen](https://github.com/iamYannC).
+- [Documentation](https://www.indrapatil.com/md2linkedin/) — advanced usage, the full conversion table, and the API reference.
 
 ## License
 
