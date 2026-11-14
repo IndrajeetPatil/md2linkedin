@@ -114,7 +114,7 @@ Styling relies on Unicode Mathematical Alphanumeric Symbols, which has trade-off
 
 ## See Also
 
-- [Documentation](https://www.indrapatil.com/md2linkedin/) — advanced usage, the full conversion table and the API reference.
+- [Documentation](https://www.indrapatil.com/md2linkedin/) — advanced usage, the full conversion table, and the API reference.
 
 ## License
 
