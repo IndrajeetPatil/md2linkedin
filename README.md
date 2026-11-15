@@ -18,6 +18,8 @@ with a toolbar (bold, italics, headings, lists, and code), watch the LinkedIn
 version update as you type, and copy it with one click. Your text never leaves
 your device.
 
+[![The LinkedIn post formatter: a post with a heading, bold, italics, lists, and inline code in the editor on the left, and its LinkedIn-ready Unicode text on the right](https://raw.githubusercontent.com/IndrajeetPatil/md2linkedin/main/docs/assets/web-app.webp)](https://www.indrapatil.com/linkedin-post-formatter/)
+
 Install the package when you want to convert Markdown files, script the
 conversion, or call it from Python.
 
