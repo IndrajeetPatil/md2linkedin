@@ -721,8 +721,8 @@ def _write_markdown(tmp_path: Path, text: str) -> Path:
 
 
 class _ConvertFileOptions(TypedDict, total=False):
-    preserve_links: bool
-    monospace_code: bool
+    preserve_links: bool  # unref: ignore[unused-attribute]
+    monospace_code: bool  # unref: ignore[unused-attribute]
 
 
 class TestConvertFile:
