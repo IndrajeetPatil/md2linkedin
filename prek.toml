@@ -18,6 +18,13 @@ hooks = [
 ]
 
 [[repos]]
+repo = "https://github.com/Apakottur/unref"
+rev = "d7e9b1753549ee410beee2415f0727eca2812c6f"  # frozen: v0.3.0
+hooks = [
+  { id = "unref" },
+]
+
+[[repos]]
 repo = "builtin"
 hooks = [
   { id = "trailing-whitespace" },

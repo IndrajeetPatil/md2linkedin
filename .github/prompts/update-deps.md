@@ -18,7 +18,7 @@ Ensure that all dependencies in `pyproject.toml` remain alphabetically sorted.
 
 If the `uv` version changes, keep its hardcoded versions in sync: `required-version` and the `uv_build` bounds in `pyproject.toml`, and the minimum in `tests/benchmarks/README.md`.
 
-`make update-deps` runs `prek update --freeze`, which refreshes each prek hook to its latest tag but records the resolved commit SHA in `rev` with a `# frozen: <tag>` comment. Ensure that versions of hooks (like `ruff` and `ty`) in `prek.toml` are matching their respective versions in `pyproject.toml`. Never rewrite a frozen `rev` back to a bare mutable tag.
+`make update-deps` runs `prek update --freeze`, which refreshes each prek hook to its latest tag but records the resolved commit SHA in `rev` with a `# frozen: <tag>` comment. Ensure that versions of hooks (like `ruff`, `ty`, and `unref`) in `prek.toml` are matching their respective versions in `pyproject.toml`. Never rewrite a frozen `rev` back to a bare mutable tag.
 
 Once the dependency update is green, review relevant changelogs and current documentation for upgraded libraries. Apply small compatibility simplifications only when they reduce local complexity or remove a workaround, and rerun the affected checks after each change.
 
