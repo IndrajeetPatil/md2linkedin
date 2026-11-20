@@ -3,6 +3,12 @@ default_install_hook_types = ["pre-commit", "pre-push"]
 default_stages = ["pre-commit"]
 
 [[repos]]
+repo = "meta"
+hooks = [
+  { id = "check-useless-excludes" },
+]
+
+[[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
 rev = "ef6cf06c079dd6b299dfc720b0f14400c9d168e1"  # frozen: v0.17.5
 hooks = [
@@ -21,7 +27,7 @@ hooks = [
 repo = "https://github.com/Apakottur/unref"
 rev = "d7e9b1753549ee410beee2415f0727eca2812c6f"  # frozen: v0.3.0
 hooks = [
-  { id = "unref" },
+  { id = "unref", args = ["--show-transitive"] },
 ]
 
 [[repos]]
@@ -34,20 +40,16 @@ hooks = [
   { id = "check-json" },
   { id = "check-merge-conflict" },
   { id = "mixed-line-ending", args = ["--fix=lf"] },
-  { id = "check-case-conflict" },
-  { id = "check-illegal-windows-names" },
-  { id = "destroyed-symlinks" },
-  { id = "check-shebang-scripts-are-executable" },
-  { id = "check-vcs-permalinks" },
-  { id = "check-added-large-files" },
+  { id = "check-added-large-files", args = ["--enforce-all"] },
   { id = "detect-private-key" },
   { id = "fix-byte-order-marker" },
+  { id = "check-case-conflict" },
+  { id = "check-illegal-windows-names" },
+  { id = "check-executables-have-shebangs" },
+  { id = "check-shebang-scripts-are-executable" },
+  { id = "check-symlinks" },
+  { id = "destroyed-symlinks" },
+  { id = "forbid-new-submodules" },
+  { id = "check-vcs-permalinks" },
   { id = "no-commit-to-branch", args = ["--branch=main"] },
-]
-
-[[repos]]
-repo = "meta"
-hooks = [
-  { id = "check-hooks-apply" },
-  { id = "check-useless-excludes" },
 ]
