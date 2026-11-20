@@ -114,6 +114,12 @@ ignore = [
     "subprocess-without-shell-equals-true",
 ]
 
+[tool.ruff.lint.flake8-type-checking]
+strict = true
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
 [tool.ruff.format]
 preview = true
 docstring-code-format = true
@@ -123,6 +129,15 @@ docstring-code-format = true
 # and strict_xfail, plus any strictness options future pytest releases add. uv.lock
 # pins pytest, so new options only arrive through a reviewed dependency update.
 strict = true
+minversion = "9.2"
+empty_parameter_set_mark = "fail_at_collect"
+collect_imported_tests = false
+required_plugins = [
+    "pytest-random-order",
+    "pytest-cov",
+    "pytest_codeblocks",
+    "pytest-codspeed",
+]
 addopts = [
     # show extra test summary info for everything
     "-ra",
@@ -141,6 +156,7 @@ source = ["md2linkedin"]
 
 [tool.coverage.report]
 fail_under = 100
+precision = 2
 format = "markdown"
 sort = "-Cover"
 show_missing = true
@@ -179,6 +195,9 @@ strict-generic-narrowing = true
 
 [tool.uv]
 required-version = ">=0.13.0"
+
+[tool.unref]
+show-transitive = true
 
 [tool.deptry]
 known_first_party = ["md2linkedin"]

@@ -33,7 +33,7 @@ typecheck:
 	uv run ty check
 
 typecoverage:
-	uv run pyrefly coverage check --fail-under 100
+	uv run pyrefly coverage check --fail-under 100 --strict
 
 audit:
 	uv audit --no-dev --preview-features audit && uv run deptry src
@@ -105,7 +105,7 @@ help:
 	@printf "    $(RED)format$(NC)        - Format code using ruff\n"
 	@printf "    $(RED)lint$(NC)          - Lint code with ruff and fix issues\n"
 	@printf "    $(RED)typecheck$(NC)     - Run type checking with ty\n"
-	@printf "    $(RED)typecoverage$(NC)  - Enforce 100%% type coverage with pyrefly\n"
+	@printf "    $(RED)typecoverage$(NC)  - Enforce 100%% strict type coverage with pyrefly\n"
 	@printf "    $(RED)audit$(NC)         - Audit prod dependencies for vulnerabilities\n"
 	@printf "    $(RED)deadcode$(NC)      - Check for dead code with unref\n"
 	@printf "    $(RED)qa$(NC)            - Run all quality checks (format, lint, typecheck, typecoverage, audit, deadcode)\n"
