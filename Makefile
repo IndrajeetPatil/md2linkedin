@@ -39,7 +39,7 @@ audit:
 	uv audit --no-dev --preview-features audit && uv run deptry src
 
 deadcode:
-	uv run unref
+	uv run unref --show-transitive
 
 qa: format lint typecheck typecoverage audit deadcode
 
