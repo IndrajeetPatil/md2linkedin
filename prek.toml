@@ -4,52 +4,96 @@ default_stages = ["pre-commit"]
 
 [[repos]]
 repo = "meta"
-hooks = [
-  { id = "check-useless-excludes" },
-]
+
+[[repos.hooks]]
+id = "check-useless-excludes"
 
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "ef6cf06c079dd6b299dfc720b0f14400c9d168e1"  # frozen: v0.17.5
-hooks = [
-  { id = "ruff-check", args = ["--fix"] },
-  { id = "ruff-format" },
-]
+rev = "ef6cf06c079dd6b299dfc720b0f14400c9d168e1" # frozen: v0.17.5
+
+[[repos.hooks]]
+id = "ruff-check"
+args = ["--fix"]
+
+[[repos.hooks]]
+id = "ruff-format"
 
 [[repos]]
 repo = "https://github.com/astral-sh/ty-pre-commit"
-rev = "91e0bd1d7b352efe4c3af0d60bdc1645ef58e2b6"  # frozen: v0.0.106
-hooks = [
-  { id = "ty" },
-]
+rev = "91e0bd1d7b352efe4c3af0d60bdc1645ef58e2b6" # frozen: v0.0.106
+
+[[repos.hooks]]
+id = "ty"
 
 [[repos]]
 repo = "https://github.com/Apakottur/unref"
-rev = "d7e9b1753549ee410beee2415f0727eca2812c6f"  # frozen: v0.3.0
-hooks = [
-  { id = "unref", args = ["--show-transitive"] },
-]
+rev = "d7e9b1753549ee410beee2415f0727eca2812c6f" # frozen: v0.3.0
+
+[[repos.hooks]]
+id = "unref"
+args = ["--show-transitive"]
 
 [[repos]]
 repo = "builtin"
-hooks = [
-  { id = "trailing-whitespace" },
-  { id = "end-of-file-fixer" },
-  { id = "check-yaml", args = ["--unsafe"] },
-  { id = "check-toml" },
-  { id = "check-json" },
-  { id = "check-merge-conflict" },
-  { id = "mixed-line-ending", args = ["--fix=lf"] },
-  { id = "check-added-large-files", args = ["--enforce-all"] },
-  { id = "detect-private-key" },
-  { id = "fix-byte-order-marker" },
-  { id = "check-case-conflict" },
-  { id = "check-illegal-windows-names" },
-  { id = "check-executables-have-shebangs" },
-  { id = "check-shebang-scripts-are-executable" },
-  { id = "check-symlinks" },
-  { id = "destroyed-symlinks" },
-  { id = "forbid-new-submodules" },
-  { id = "check-vcs-permalinks" },
-  { id = "no-commit-to-branch", args = ["--branch=main"] },
-]
+
+[[repos.hooks]]
+id = "trailing-whitespace"
+
+[[repos.hooks]]
+id = "end-of-file-fixer"
+
+[[repos.hooks]]
+id = "check-yaml"
+args = ["--unsafe"]
+
+[[repos.hooks]]
+id = "check-toml"
+
+[[repos.hooks]]
+id = "check-json"
+
+[[repos.hooks]]
+id = "check-merge-conflict"
+
+[[repos.hooks]]
+id = "mixed-line-ending"
+args = ["--fix=lf"]
+
+[[repos.hooks]]
+id = "check-added-large-files"
+args = ["--enforce-all"]
+
+[[repos.hooks]]
+id = "detect-private-key"
+
+[[repos.hooks]]
+id = "fix-byte-order-marker"
+
+[[repos.hooks]]
+id = "check-case-conflict"
+
+[[repos.hooks]]
+id = "check-illegal-windows-names"
+
+[[repos.hooks]]
+id = "check-executables-have-shebangs"
+
+[[repos.hooks]]
+id = "check-shebang-scripts-are-executable"
+
+[[repos.hooks]]
+id = "check-symlinks"
+
+[[repos.hooks]]
+id = "destroyed-symlinks"
+
+[[repos.hooks]]
+id = "forbid-new-submodules"
+
+[[repos.hooks]]
+id = "check-vcs-permalinks"
+
+[[repos.hooks]]
+id = "no-commit-to-branch"
+args = ["--branch=main"]
