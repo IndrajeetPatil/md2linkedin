@@ -24,4 +24,6 @@ catches semantic changes to the source, not just line coverage.
 - CI runs mutation testing weekly, on `workflow_dispatch`, and on pull
   requests that change `pyproject.toml`, `Makefile`, `uv.lock` or the workflow
   itself (`.github/workflows/mutation-test.yml`). It is intentionally not gated
-  on every PR because full runs are slow.
+  on every PR because full runs are slow. The job calls the shared
+  `IndrajeetPatil/workflows` `python-mutation-test.yaml` workflow, which runs
+  `make mutation-test` and uploads `mutants/` as the `mutmut-report` artifact.
