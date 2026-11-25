@@ -1,10 +1,12 @@
 site_name: md2linkedin
 site_description: Convert Markdown to LinkedIn-friendly Unicode text
 site_url: https://www.indrapatil.com/md2linkedin/
-site_author: IndrajeetPatil
+site_author: Indrajeet Patil
 
 repo_name: md2linkedin
 repo_url: https://github.com/IndrajeetPatil/md2linkedin
+
+copyright: 'Copyright &copy; 2026 <a href="https://www.indrapatil.com/">Indrajeet Patil</a>'
 
 edit_uri: edit/main/docs/
 
@@ -120,6 +122,10 @@ extra_css:
   - stylesheets/pyodide_runner.css
 
 extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/IndrajeetPatil
+      name: Indrajeet Patil on GitHub
   analytics:
     provider: google
     property: G-3BQ49J7KYH
