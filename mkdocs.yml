@@ -1,7 +1,7 @@
 site_name: md2linkedin
 site_description: Convert Markdown to LinkedIn-friendly Unicode text
 site_url: https://www.indrapatil.com/md2linkedin/
-site_author: IndrajeetPatil
+site_author: Indrajeet Patil
 
 repo_name: md2linkedin
 repo_url: https://github.com/IndrajeetPatil/md2linkedin
