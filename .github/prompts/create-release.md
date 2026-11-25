@@ -73,14 +73,6 @@ review threads remain. Address actionable feedback, push fixes, and rerun the
 relevant gates. When the pull request is mergeable and green, squash-merge it.
 Verify that `origin/main` contains the release commit before publishing.
 
-## Learn from mistakes
-
-When a check fails, a reviewer raises a finding, or you notice a mistake in
-your own work, fix it, then ask what led you to it. If a skill, its scripts or
-templates, a prompt, or `AGENTS.md` gave missing, ambiguous, or wrong
-guidance, correct that guidance in the same pull request, stating the general
-rule rather than the incident. Never weaken a quality gate instead.
-
 ## Publish and verify
 
 Dispatch the trusted-publishing workflow from the merged `main` branch:
