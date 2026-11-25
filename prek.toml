@@ -10,7 +10,7 @@ id = "check-useless-excludes"
 
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "ef6cf06c079dd6b299dfc720b0f14400c9d168e1" # frozen: v0.17.5
+rev = "9026c9127e153371d7a78dfcb0c45ae2046a3d10" # frozen: v0.17.6
 
 [[repos.hooks]]
 id = "ruff-check"
@@ -21,14 +21,14 @@ id = "ruff-format"
 
 [[repos]]
 repo = "https://github.com/astral-sh/ty-pre-commit"
-rev = "91e0bd1d7b352efe4c3af0d60bdc1645ef58e2b6" # frozen: v0.0.106
+rev = "85bff61a55f10dcc0a58fff7f9ee5bf83d1dc419" # frozen: v0.0.110
 
 [[repos.hooks]]
 id = "ty"
 
 [[repos]]
-repo = "https://github.com/Apakottur/unref"
-rev = "d7e9b1753549ee410beee2415f0727eca2812c6f" # frozen: v0.3.0
+repo = "https://github.com/Apakottur/unref-pre-commit"
+rev = "4310b723fdfd8aee12b897cdf9a120c54ec35050" # frozen: v0.5.1
 
 [[repos.hooks]]
 id = "unref"
