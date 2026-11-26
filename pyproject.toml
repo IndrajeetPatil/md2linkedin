@@ -55,7 +55,7 @@ dev = [
     "pytest-cov>=7.1.0",
     "pytest-random-order>=1.2.0",
     "ruff>=0.17.6",
-    "ty>=0.0.110",
+    "ty>=0.0.111",
     "unref>=0.5.1",
     "zensical>=0.1.3",
 ]
