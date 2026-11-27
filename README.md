@@ -38,6 +38,7 @@ uv add md2linkedin
 ### Python API
 
 ```python
+# @pyodide
 from md2linkedin import convert
 
 md = """
