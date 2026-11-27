@@ -114,6 +114,13 @@ validation:
   unrecognized_links: error
   anchors: error
 
+extra_javascript:
+  - javascripts/config.js
+  - javascripts/pyodide_runner.js
+
+extra_css:
+  - stylesheets/pyodide_runner.css
+
 extra:
   social:
     - icon: fontawesome/brands/github

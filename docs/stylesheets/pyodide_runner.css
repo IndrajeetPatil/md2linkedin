@@ -1,0 +1,84 @@
+/**
+ * Styles for Pyodide interactive code blocks
+ */
+
+.pyodide-controls {
+  margin: 0.5rem 0;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pyodide-run-btn,
+.pyodide-clear-btn {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pyodide-run-btn {
+  background-color: #4caf50;
+  color: white;
+}
+
+.pyodide-run-btn:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.pyodide-run-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.pyodide-clear-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.pyodide-clear-btn:hover {
+  background-color: #da190b;
+}
+
+/* Output reuses Material's native `pre > code` styling so it matches the
+   static code blocks; only spacing and error colouring are customised. */
+.pyodide-result {
+  margin: 1em 0;
+}
+
+.md-typeset .pyodide-result pre {
+  margin: 0;
+}
+
+.md-typeset .pyodide-error > code {
+  color: #d32f2f;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .pyodide-error > code {
+  color: #ef5350;
+}
+
+.pyodide-loading {
+  color: #666;
+  font-style: italic;
+}
+
+[data-md-color-scheme="slate"] .pyodide-loading {
+  color: #999;
+}
+
+.pyodide-success {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+[data-md-color-scheme="slate"] .pyodide-success {
+  color: #66bb6a;
+}
+
+/* Sit the Run/Clear controls directly under their code block. */
+.highlight.pyodide-enabled {
+  margin-bottom: 0;
+}
