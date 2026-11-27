@@ -1,49 +1,33 @@
 /**
- * Pyodide-based code runner for documentation site
- * Enables interactive Python code execution in the browser
+ * Pyodide-based code runner for documentation site.
+ * Enables interactive Python code execution in the browser.
  */
 
 class PyodideRunner {
   constructor() {
     this.pyodide = null;
-    this.loading = false;
-    this.loaded = false;
     this.loadPromise = null;
+    this.installedPackages = new Set();
   }
 
   /**
-   * Load Pyodide and initialize it
+   * Load Pyodide and initialize micropip using native ES module import.
    */
   async loadPyodide() {
-    if (this.loaded) return this.pyodide;
-    if (this.loading) return this.loadPromise;
+    if (this.pyodide) return this.pyodide;
+    if (this.loadPromise) return this.loadPromise;
 
-    this.loading = true;
     this.loadPromise = (async () => {
       try {
-        // Load Pyodide from CDN
-        const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/pyodide/v0.28.3/full/pyodide.js";
-        document.head.appendChild(script);
-
-        await new Promise((resolve, reject) => {
-          script.onload = resolve;
-          script.onerror = reject;
-        });
-
-        // Initialize Pyodide
+        const { loadPyodide } = await import(
+          "https://cdn.jsdelivr.net/pyodide/v314.0.8/full/pyodide.mjs"
+        );
         this.pyodide = await loadPyodide({
-          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.28.3/full/",
+          packages: ["micropip"],
         });
-
-        // Load micropip for package installation
-        await this.pyodide.loadPackage("micropip");
-
-        this.loaded = true;
-        this.loading = false;
         return this.pyodide;
       } catch (error) {
-        this.loading = false;
+        this.loadPromise = null;
         throw new Error(`Failed to load Pyodide: ${error.message}`);
       }
     })();
@@ -52,34 +36,28 @@ class PyodideRunner {
   }
 
   /**
-   * Install Python packages using micropip
+   * Install Python packages using micropip.
    */
   async installPackages(packages) {
+    const toInstall = packages.filter((pkg) => !this.installedPackages.has(pkg));
+    if (toInstall.length === 0) return;
+
     const pyodide = await this.loadPyodide();
     const micropip = pyodide.pyimport("micropip");
 
-    for (const pkg of packages) {
-      try {
-        console.log(`Installing package: ${pkg}`);
-        // Install package (micropip handles dependencies automatically)
-        await micropip.install(pkg);
-        console.log(`Successfully installed: ${pkg}`);
-      } catch (error) {
-        // Log warning but don't fail - package might already be available
-        console.warn(`Could not install/upgrade ${pkg}:`, error);
-      }
+    for (const pkg of toInstall) {
+      await micropip.install(pkg);
+      this.installedPackages.add(pkg);
     }
   }
 
   /**
-   * Execute Python code
+   * Execute Python code and capture stdout/stderr.
    */
   async runCode(code, packages = []) {
     const pyodide = await this.loadPyodide();
 
-    // Install packages if needed
     if (packages.length > 0) {
-      console.log("Installing packages:", packages);
       try {
         await this.installPackages(packages);
       } catch (error) {
@@ -91,20 +69,19 @@ class PyodideRunner {
       }
     }
 
-    // Capture stdout verbatim. The `batched` handler strips newlines, so use
-    // the raw `write` handler and decode the bytes ourselves.
     const decoder = new TextDecoder();
     const output = [];
-    pyodide.setStdout({
-      write: (buffer) => {
-        output.push(decoder.decode(buffer, { stream: true }));
-        return buffer.length;
-      },
-    });
+    const writeHandler = (buffer) => {
+      output.push(decoder.decode(buffer, { stream: true }));
+      return buffer.length;
+    };
+
+    pyodide.setStdout({ write: writeHandler });
+    pyodide.setStderr({ write: writeHandler });
+
     const collect = () => output.join("") + decoder.decode();
 
     try {
-      // Run the code
       await pyodide.runPythonAsync(code);
       return {
         success: true,
@@ -131,7 +108,6 @@ class InteractiveCodeBlock {
   constructor(element) {
     this.element = element;
     this.code = this.extractCode();
-    // Mark element as Pyodide-enabled for CSS styling
     element.classList.add("pyodide-enabled");
     this.setupUI();
   }
@@ -140,28 +116,24 @@ class InteractiveCodeBlock {
     const codeElement = this.element.querySelector("code");
     if (!codeElement) return "";
     const raw = codeElement.textContent || "";
-    // Strip any marker line like "# @pyodide" from the code before execution
-    // Keep detection logic elsewhere based on the raw content
-    const sanitized = raw
+    return raw
       .split(/\r?\n/)
       .filter((line) => !/^\s*#\s*@pyodide\b/.test(line))
       .join("\n");
-    return sanitized;
   }
 
   setupUI() {
-    // Create container for buttons and output
     const container = document.createElement("div");
     container.className = "pyodide-controls";
 
-    // Run button
     const runButton = document.createElement("button");
+    runButton.type = "button";
     runButton.className = "pyodide-run-btn";
     runButton.textContent = "▶ Run";
     runButton.onclick = () => this.runCode();
 
-    // Clear button
     const clearButton = document.createElement("button");
+    clearButton.type = "button";
     clearButton.className = "pyodide-clear-btn";
     clearButton.textContent = "✕ Clear";
     clearButton.onclick = () => this.clearOutput();
@@ -170,16 +142,13 @@ class InteractiveCodeBlock {
     container.appendChild(runButton);
     container.appendChild(clearButton);
 
-    // Create output div (hidden initially)
     const outputDiv = document.createElement("div");
     outputDiv.className = "pyodide-result";
     outputDiv.style.display = "none";
 
-    // Insert controls and output after the code block
     this.element.parentNode.insertBefore(container, this.element.nextSibling);
     container.after(outputDiv);
 
-    // Store references
     this.runButton = runButton;
     this.clearButton = clearButton;
     this.container = container;
@@ -187,27 +156,17 @@ class InteractiveCodeBlock {
   }
 
   async runCode() {
-    // Disable button during execution
     this.runButton.disabled = true;
     this.runButton.textContent = "⏳ Running...";
 
-    // Clear previous output content
-    this.outputDiv.innerHTML = "";
+    this.outputDiv.innerHTML =
+      '<div class="pyodide-loading">Loading Python environment...</div>';
     this.outputDiv.style.display = "block";
 
     try {
-      // Show loading message
-      this.outputDiv.innerHTML =
-        '<div class="pyodide-loading">Loading Python environment...</div>';
-
-      // Get packages from config
-      // Fallback to md2linkedin for robustness if config is not loaded
-      const packages = window.pyodide_run_deps || ["md2linkedin"];
-
-      // Run the code
+      const packages = window.pyodide_run_deps || [];
       const result = await window.pyodideRunner.runCode(this.code, packages);
 
-      // Display output
       if (result.success) {
         if (result.output) {
           this.outputDiv.innerHTML = `<pre class="pyodide-stdout"><code>${this.escapeHtml(
@@ -223,7 +182,6 @@ class InteractiveCodeBlock {
         )}</code></pre>`;
       }
 
-      // Show clear button
       this.clearButton.style.display = "inline-block";
     } catch (error) {
       this.outputDiv.innerHTML = `<pre class="pyodide-error"><code>Failed to execute: ${this.escapeHtml(
@@ -231,7 +189,6 @@ class InteractiveCodeBlock {
       )}</code></pre>`;
       this.clearButton.style.display = "inline-block";
     } finally {
-      // Re-enable button
       this.runButton.disabled = false;
       this.runButton.textContent = "▶ Run";
     }
@@ -253,15 +210,14 @@ class InteractiveCodeBlock {
 }
 
 /**
- * Track processed code blocks to avoid duplicate initialization
+ * Track processed code blocks to avoid duplicate initialization.
  */
 const processedBlocks = new WeakSet();
 
 /**
- * Initialize interactive code blocks
+ * Initialize interactive code blocks.
  */
 function initPyodideCodeBlocks() {
-  // Find all Python code blocks
   const codeBlocks = document.querySelectorAll(
     ".language-python, .language-py"
   );
@@ -270,10 +226,8 @@ function initPyodideCodeBlocks() {
     const codeElement = block.querySelector("code");
     if (codeElement) {
       const code = codeElement.textContent;
-      // Check if code has a special marker comment for Pyodide
       if (code.includes("# @pyodide") || block.classList.contains("pyodide")) {
         const highlightContainer = block.closest(".highlight");
-        // Only process if container exists and hasn't been processed
         if (highlightContainer && !processedBlocks.has(highlightContainer)) {
           processedBlocks.add(highlightContainer);
           new InteractiveCodeBlock(highlightContainer);
@@ -283,28 +237,13 @@ function initPyodideCodeBlocks() {
   });
 }
 
-// Set up a MutationObserver to (re)initialize newly injected content
-function setupMutationObserver() {
-  // Avoid multiple observers by storing a flag on window
-  if (window.__pyodideObserverAttached) return;
-  window.__pyodideObserverAttached = true;
-  let debounceTimer;
-  const observer = new MutationObserver(() => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      initPyodideCodeBlocks();
-    }, 250); // Debounce for 250ms
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-}
-
-// Initialize immediately if possible, otherwise on DOMContentLoaded
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => {
+// Subscribe to Material for MkDocs / Zensical document$ observable for instant navigation
+if (typeof document$ !== "undefined") {
+  document$.subscribe(() => {
     initPyodideCodeBlocks();
-    setupMutationObserver();
   });
+} else if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initPyodideCodeBlocks);
 } else {
   initPyodideCodeBlocks();
-  setupMutationObserver();
 }
