@@ -11,4 +11,4 @@ permissions:
 
 jobs:
   test:
-    uses: IndrajeetPatil/workflows/.github/workflows/python-test.yaml@main
+    uses: IndrajeetPatil/workflows/.github/workflows/python-test.yaml@ci/python-3.15t
