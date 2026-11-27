@@ -62,7 +62,10 @@ args = ["--fix=lf"]
 
 [[repos.hooks]]
 id = "check-added-large-files"
-args = ["--enforce-all"]
+args = [
+  "--enforce-all",
+  "--maxkb=2000",
+]
 
 [[repos.hooks]]
 id = "detect-private-key"
